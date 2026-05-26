@@ -1,10 +1,14 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 
-# Build output
+# Build output (per-workspace)
 dist/
-dist-ssr/
-*.local
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
 
 # Logs
 *.log
@@ -40,9 +44,7 @@ Thumbs.db
 # Deployment platforms
 .vercel/
 
-# v0 / Next.js leftovers (legacy — kept to prevent accidental commits)
-.next/
-next-env.d.ts
+# v0 / legacy
 next.user-config.*
 __v0_runtime_loader.js
 __v0_devtools.tsx
@@ -50,9 +52,6 @@ __v0_jsx-dev-runtime.ts
 .snowflake/
 .v0-trash/
 
-# Sisyphus internals (commit selectively)
-.sisyphus/tmp/
-.sisyphus/cache/
-
-# OpenCode / OhMyOpenCode tool state (never commit)
+# Sisyphus / OpenCode tool state (never commit)
+.sisyphus/
 .omx/

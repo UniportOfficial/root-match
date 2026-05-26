@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import {
   Search,
   Shield,
@@ -19,8 +19,35 @@ import {
   X
 } from 'lucide-vue-next'
 import { ref } from 'vue'
+import AuthModal from '@/components/common/AuthModal.vue'
+import { useUserStore } from '@/stores/user'
 
 const mobileMenuOpen = ref(false)
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'signup'>('login')
+const userStore = useUserStore()
+const router = useRouter()
+
+function openAuthModal(mode: 'login' | 'signup') {
+  authMode.value = mode
+  showAuthModal.value = true
+}
+
+function handleCloseAuth() {
+  showAuthModal.value = false
+}
+
+function handleLogin(payload: { email: string; password: string }) {
+  userStore.login(payload.email)
+  showAuthModal.value = false
+  router.push({ name: 'dashboard' })
+}
+
+function handleSignup(payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }) {
+  userStore.register(payload)
+  showAuthModal.value = false
+  router.push({ name: 'dashboard' })
+}
 
 const metrics = [
   {
@@ -111,18 +138,20 @@ const solutions = [
 
           <!-- Desktop CTA -->
           <div class="hidden md:flex items-center gap-3">
-            <RouterLink
-              to="/dashboard"
+            <button
+              type="button"
               class="px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+              @click="openAuthModal('login')"
             >
               로그인
-            </RouterLink>
-            <RouterLink
-              to="/client/request"
+            </button>
+            <button
+              type="button"
               class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              @click="openAuthModal('signup')"
             >
-              견적 요청하기
-            </RouterLink>
+              회원가입
+            </button>
           </div>
 
           <!-- Mobile Menu Button -->
@@ -143,18 +172,27 @@ const solutions = [
             <a href="#contract" class="px-3 py-2 text-gray-600 hover:text-blue-600">안심 계약</a>
             <a href="#contact" class="px-3 py-2 text-gray-600 hover:text-blue-600">문의</a>
             <div class="flex flex-col gap-2 pt-3 border-t border-gray-100">
-              <RouterLink to="/dashboard" class="px-3 py-2 text-gray-700">로그인</RouterLink>
-              <RouterLink
-                to="/client/request"
+              <button type="button" class="px-3 py-2 text-gray-700 text-left" @click="openAuthModal('login')">로그인</button>
+              <button
+                type="button"
                 class="mx-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-center font-medium"
+                @click="openAuthModal('signup')"
               >
-                견적 요청하기
-              </RouterLink>
+                회원가입
+              </button>
             </div>
           </nav>
         </div>
       </div>
     </header>
+
+    <AuthModal
+      v-if="showAuthModal"
+      :mode="authMode"
+      @close="handleCloseAuth"
+      @login="handleLogin"
+      @signup="handleSignup"
+    />
 
     <!-- Hero Section -->
     <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">

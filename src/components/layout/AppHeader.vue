@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notifications'
 import { useMessageStore } from '@/stores/messages'
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue'
+import AuthModal from '@/components/common/AuthModal.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -14,10 +15,14 @@ const messageStore = useMessageStore()
 const searchQuery = ref('')
 const showNotifications = ref(false)
 const showUserMenu = ref(false)
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'signup'>('login')
 
-const totalUnread = computed(() => 
+const totalUnread = computed(() =>
   notificationStore.unreadCount + messageStore.unreadCount
 )
+
+const isAuthenticated = computed(() => userStore.isAuthenticated)
 
 const userInitials = computed(() => {
   if (!userStore.currentUser?.name) return 'U'
@@ -38,6 +43,27 @@ function toggleNotifications() {
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
   showNotifications.value = false
+}
+
+function openAuthModal(mode: 'login' | 'signup') {
+  authMode.value = mode
+  showAuthModal.value = true
+  showNotifications.value = false
+  showUserMenu.value = false
+}
+
+function closeAuthModal() {
+  showAuthModal.value = false
+}
+
+function handleLogin(payload: { email: string; password: string }) {
+  userStore.login(payload.email)
+  showAuthModal.value = false
+}
+
+function handleSignup(payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }) {
+  userStore.register(payload)
+  showAuthModal.value = false
 }
 
 function closeDropdowns() {
@@ -86,7 +112,12 @@ function closeDropdowns() {
         </RouterLink>
       </div>
 
-      <div class="user-menu-wrapper">
+      <div v-if="!isAuthenticated" class="auth-buttons">
+        <button class="btn btn-ghost btn-sm" type="button" @click="openAuthModal('login')">로그인</button>
+        <button class="btn btn-primary btn-sm" type="button" @click="openAuthModal('signup')">회원가입</button>
+      </div>
+
+      <div v-else class="user-menu-wrapper">
         <button class="user-btn" @click="toggleUserMenu">
           <div class="avatar">{{ userInitials }}</div>
           <div class="user-info">
@@ -134,6 +165,14 @@ function closeDropdowns() {
         @close="showNotifications = false"
       />
     </Transition>
+
+    <AuthModal
+      v-if="showAuthModal"
+      :mode="authMode"
+      @close="closeAuthModal"
+      @login="handleLogin"
+      @signup="handleSignup"
+    />
   </header>
 </template>
 

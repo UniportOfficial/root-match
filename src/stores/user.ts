@@ -7,6 +7,49 @@ export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(mockCurrentUser)
   const isAuthenticated = computed(() => currentUser.value !== null)
 
+  function login(email: string) {
+    currentUser.value = {
+      ...mockCurrentUser,
+      id: `user-${Date.now()}`,
+      email,
+      name: mockCurrentUser.name
+    }
+  }
+
+  function register(payload: {
+    name: string
+    email: string
+    password: string
+    companyName: string
+    position: string
+    phone: string
+  }) {
+    currentUser.value = {
+      id: `user-${Date.now()}`,
+      email: payload.email,
+      name: payload.name,
+      position: payload.position,
+      phone: payload.phone,
+      role: 'member',
+      company: {
+        id: `company-${Date.now()}`,
+        name: payload.companyName,
+        industry: '제조/서비스',
+        region: '서울',
+        size: '중소기업',
+        description: `${payload.companyName} 회원사`,
+        tags: ['회원가입'],
+        contactEmail: payload.email,
+        contactPhone: payload.phone,
+        website: '',
+        establishedYear: new Date().getFullYear(),
+        employeeCount: 10,
+        certifications: [],
+        createdAt: new Date().toISOString()
+      }
+    }
+  }
+
   function updateProfile(updates: Partial<User>) {
     if (currentUser.value) {
       currentUser.value = { ...currentUser.value, ...updates }
@@ -26,6 +69,8 @@ export const useUserStore = defineStore('user', () => {
   return {
     currentUser,
     isAuthenticated,
+    login,
+    register,
     updateProfile,
     updateCompany,
     logout

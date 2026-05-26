@@ -11,9 +11,7 @@ const companyStore = useCompanyStore()
 const stats = mockDashboardStats
 const activities = mockActivityLogs.slice(0, 5)
 
-const recommendedCompanies = computed(() => 
-  companyStore.companies.slice(1, 4)
-)
+const recommendedCompanies = computed(() => companyStore.companies.slice(1, 4))
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString)
@@ -29,11 +27,16 @@ const formatTime = (dateString: string) => {
 
 const getActivityIcon = (type: string) => {
   switch (type) {
-    case 'view': return 'eye'
-    case 'inquiry': return 'message-circle'
-    case 'match': return 'link'
-    case 'message': return 'send'
-    default: return 'activity'
+    case 'view':
+      return 'eye'
+    case 'inquiry':
+      return 'message-circle'
+    case 'match':
+      return 'link'
+    case 'message':
+      return 'send'
+    default:
+      return 'activity'
   }
 }
 </script>
@@ -56,8 +59,8 @@ const getActivityIcon = (type: string) => {
       <div class="stat-card">
         <div class="stat-icon views">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
         </div>
         <div class="stat-content">
@@ -69,7 +72,9 @@ const getActivityIcon = (type: string) => {
       <div class="stat-card">
         <div class="stat-icon inquiries">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            <path
+              d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+            />
           </svg>
         </div>
         <div class="stat-content">
@@ -81,8 +86,8 @@ const getActivityIcon = (type: string) => {
       <div class="stat-card">
         <div class="stat-icon matches">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         </div>
         <div class="stat-content">
@@ -94,8 +99,8 @@ const getActivityIcon = (type: string) => {
       <div class="stat-card">
         <div class="stat-icon messages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
           </svg>
         </div>
         <div class="stat-content">
@@ -113,9 +118,9 @@ const getActivityIcon = (type: string) => {
           <RouterLink to="/companies" class="view-all">전체 보기</RouterLink>
         </div>
         <div class="companies-grid">
-          <CompanyCard 
-            v-for="company in recommendedCompanies" 
-            :key="company.id" 
+          <CompanyCard
+            v-for="company in recommendedCompanies"
+            :key="company.id"
             :company="company"
           />
         </div>
@@ -129,20 +134,40 @@ const getActivityIcon = (type: string) => {
         <div class="activity-list">
           <div v-for="activity in activities" :key="activity.id" class="activity-item">
             <div class="activity-icon" :class="activity.type">
-              <svg v-if="getActivityIcon(activity.type) === 'eye'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
+              <svg
+                v-if="getActivityIcon(activity.type) === 'eye'"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
               </svg>
-              <svg v-else-if="getActivityIcon(activity.type) === 'message-circle'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              <svg
+                v-else-if="getActivityIcon(activity.type) === 'message-circle'"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                />
               </svg>
-              <svg v-else-if="getActivityIcon(activity.type) === 'link'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              <svg
+                v-else-if="getActivityIcon(activity.type) === 'link'"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
               <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" x2="11" y1="2" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                <line x1="22" x2="11" y1="2" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
             </div>
             <div class="activity-content">

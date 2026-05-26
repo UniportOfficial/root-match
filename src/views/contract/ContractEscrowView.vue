@@ -15,14 +15,14 @@ const paymentMethod = computed({
   get: () => workflowStore.paymentMethod,
   set: (value) => {
     workflowStore.paymentMethod = value
-  }
+  },
 })
 
 const steps = [
   { title: '계약 확인', description: '프로젝트 조건과 금액을 확인합니다.' },
   { title: '전자서명', description: '양측 서명 후 계약이 확정됩니다.' },
   { title: '에스크로 결제', description: '대금을 플랫폼이 안전하게 보관합니다.' },
-  { title: '거래 시작', description: '공장이 제작을 시작합니다.' }
+  { title: '거래 시작', description: '공장이 제작을 시작합니다.' },
 ]
 
 function completePayment() {
@@ -81,8 +81,15 @@ function completePayment() {
               <CreditCard class="h-6 w-6 text-blue-600" />
               <h2 class="text-2xl font-bold text-slate-950">결제 방식</h2>
             </div>
-            <label class="flex cursor-pointer items-start gap-4 rounded-xl border border-blue-200 bg-blue-50 p-5">
-              <input v-model="paymentMethod" type="radio" value="escrow" class="mt-1 h-5 w-5 text-blue-600" />
+            <label
+              class="flex cursor-pointer items-start gap-4 rounded-xl border border-blue-200 bg-blue-50 p-5"
+            >
+              <input
+                v-model="paymentMethod"
+                type="radio"
+                value="escrow"
+                class="mt-1 h-5 w-5 text-blue-600"
+              />
               <div>
                 <div class="flex items-center gap-2">
                   <span class="text-lg font-bold text-slate-950">에스크로 결제</span>
@@ -108,7 +115,8 @@ function completePayment() {
               <div>
                 <h2 class="text-xl font-bold text-slate-950">대금 보호</h2>
                 <p class="mt-2 text-base leading-7 text-slate-600">
-                  결제 완료 후에도 검수 전까지 대금이 바로 정산되지 않아 양측의 거래 리스크를 줄입니다.
+                  결제 완료 후에도 검수 전까지 대금이 바로 정산되지 않아 양측의 거래 리스크를
+                  줄입니다.
                 </p>
               </div>
             </div>

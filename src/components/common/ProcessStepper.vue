@@ -21,13 +21,19 @@ defineProps<{
       <div class="flex items-start gap-4">
         <div
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold"
-          :class="index + 1 <= (currentStep ?? 1) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'"
+          :class="
+            index + 1 <= (currentStep ?? 1)
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 text-slate-500'
+          "
         >
           {{ index + 1 }}
         </div>
         <div>
           <h3 class="text-base font-bold text-slate-950">{{ step.title }}</h3>
-          <p v-if="step.description" class="mt-1 text-sm leading-6 text-slate-600">{{ step.description }}</p>
+          <p v-if="step.description" class="mt-1 text-sm leading-6 text-slate-600">
+            {{ step.description }}
+          </p>
         </div>
       </div>
     </li>

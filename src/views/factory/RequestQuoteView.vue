@@ -11,7 +11,10 @@ const route = useRoute()
 const router = useRouter()
 
 const request = computed(() => {
-  return mockReceivedQuoteRequests.find((item) => item.id === route.params.id) || mockReceivedQuoteRequests[0]
+  return (
+    mockReceivedQuoteRequests.find((item) => item.id === route.params.id) ||
+    mockReceivedQuoteRequests[0]
+  )
 })
 
 const quoteForm = reactive({
@@ -20,7 +23,7 @@ const quoteForm = reactive({
   availableDeliveryDate: '2026년 5월 18일',
   paymentCondition: '에스크로 결제, 검수 완료 후 정산',
   message:
-    '보유 중인 5축 CNC와 아노다이징 협력 라인으로 요청 사양 대응 가능합니다. 초도품 10개 선검수 후 잔여 수량 제작 방식으로 진행을 제안드립니다.'
+    '보유 중인 5축 CNC와 아노다이징 협력 라인으로 요청 사양 대응 가능합니다. 초도품 10개 선검수 후 잔여 수량 제작 방식으로 진행을 제안드립니다.',
 })
 
 const steps = [
@@ -28,14 +31,14 @@ const steps = [
   { title: '요청 검토', description: '도면과 조건 확인' },
   { title: '견적 제출', description: '금액과 납기 제안' },
   { title: '발주처 승인', description: '견적 비교 및 확정' },
-  { title: '계약 진행', description: '표준 계약과 에스크로' }
+  { title: '계약 진행', description: '표준 계약과 에스크로' },
 ]
 
 function submitQuote() {
   console.log('Factory Quote Submitted:', {
     requestId: request.value.id,
     projectName: request.value.projectName,
-    quote: { ...quoteForm }
+    quote: { ...quoteForm },
   })
 
   router.push('/contract')
@@ -106,13 +109,18 @@ function submitQuote() {
                     <FileText class="h-5 w-5 shrink-0 text-blue-600" />
                     <span class="truncate font-medium text-slate-800">{{ file.name }}</span>
                   </span>
-                  <span class="text-sm text-slate-500">{{ (file.size / 1024 / 1024).toFixed(1) }}MB</span>
+                  <span class="text-sm text-slate-500"
+                    >{{ (file.size / 1024 / 1024).toFixed(1) }}MB</span
+                  >
                 </li>
               </ul>
             </div>
           </section>
 
-          <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" @submit.prevent="submitQuote">
+          <form
+            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+            @submit.prevent="submitQuote"
+          >
             <div class="mb-5 flex items-center gap-3">
               <Send class="h-6 w-6 text-blue-600" />
               <h2 class="text-2xl font-bold text-slate-950">견적 제출</h2>
@@ -120,7 +128,9 @@ function submitQuote() {
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
-                <label for="estimateAmount" class="mb-2 block text-base font-bold text-slate-950">견적 금액</label>
+                <label for="estimateAmount" class="mb-2 block text-base font-bold text-slate-950"
+                  >견적 금액</label
+                >
                 <input
                   id="estimateAmount"
                   v-model="quoteForm.estimateAmount"
@@ -129,7 +139,9 @@ function submitQuote() {
                 />
               </div>
               <div>
-                <label for="productionPeriod" class="mb-2 block text-base font-bold text-slate-950">제작 기간</label>
+                <label for="productionPeriod" class="mb-2 block text-base font-bold text-slate-950"
+                  >제작 기간</label
+                >
                 <input
                   id="productionPeriod"
                   v-model="quoteForm.productionPeriod"
@@ -138,7 +150,11 @@ function submitQuote() {
                 />
               </div>
               <div>
-                <label for="availableDeliveryDate" class="mb-2 block text-base font-bold text-slate-950">가능 납기</label>
+                <label
+                  for="availableDeliveryDate"
+                  class="mb-2 block text-base font-bold text-slate-950"
+                  >가능 납기</label
+                >
                 <input
                   id="availableDeliveryDate"
                   v-model="quoteForm.availableDeliveryDate"
@@ -147,7 +163,9 @@ function submitQuote() {
                 />
               </div>
               <div>
-                <label for="paymentCondition" class="mb-2 block text-base font-bold text-slate-950">결제 조건</label>
+                <label for="paymentCondition" class="mb-2 block text-base font-bold text-slate-950"
+                  >결제 조건</label
+                >
                 <input
                   id="paymentCondition"
                   v-model="quoteForm.paymentCondition"
@@ -156,7 +174,9 @@ function submitQuote() {
                 />
               </div>
               <div class="sm:col-span-2">
-                <label for="message" class="mb-2 block text-base font-bold text-slate-950">제안 메시지</label>
+                <label for="message" class="mb-2 block text-base font-bold text-slate-950"
+                  >제안 메시지</label
+                >
                 <textarea
                   id="message"
                   v-model="quoteForm.message"

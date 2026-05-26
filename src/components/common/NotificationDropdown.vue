@@ -22,23 +22,25 @@ const formatTime = (dateString: string) => {
 
 const getIcon = (type: string) => {
   switch (type) {
-    case 'message': return 'message'
-    case 'match': return 'link'
-    case 'inquiry': return 'eye'
-    default: return 'bell'
+    case 'message':
+      return 'message'
+    case 'match':
+      return 'link'
+    case 'inquiry':
+      return 'eye'
+    default:
+      return 'bell'
   }
 }
 
-const recentNotifications = computed(() => 
-  notificationStore.sortedNotifications.slice(0, 5)
-)
+const recentNotifications = computed(() => notificationStore.sortedNotifications.slice(0, 5))
 </script>
 
 <template>
   <div class="notification-dropdown" @click.stop>
     <div class="dropdown-header">
       <h3>알림</h3>
-      <button 
+      <button
         v-if="notificationStore.unreadCount > 0"
         class="mark-read-btn"
         @click="notificationStore.markAllAsRead"
@@ -49,29 +51,49 @@ const recentNotifications = computed(() =>
 
     <div class="notification-list">
       <template v-if="recentNotifications.length > 0">
-        <div 
-          v-for="notification in recentNotifications" 
+        <div
+          v-for="notification in recentNotifications"
           :key="notification.id"
           class="notification-item"
           :class="{ unread: !notification.isRead }"
           @click="notificationStore.markAsRead(notification.id)"
         >
           <div class="notification-icon" :class="notification.type">
-            <svg v-if="getIcon(notification.type) === 'message'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
+            <svg
+              v-if="getIcon(notification.type) === 'message'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+              />
+              <polyline points="22,6 12,13 2,6" />
             </svg>
-            <svg v-else-if="getIcon(notification.type) === 'link'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            <svg
+              v-else-if="getIcon(notification.type) === 'link'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
-            <svg v-else-if="getIcon(notification.type) === 'eye'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
+            <svg
+              v-else-if="getIcon(notification.type) === 'eye'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
             </svg>
             <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
             </svg>
           </div>
           <div class="notification-content">

@@ -25,7 +25,7 @@ function applyFilter() {
     industry: selectedIndustry.value || undefined,
     region: selectedRegion.value || undefined,
     size: selectedSize.value || undefined,
-    keyword: keyword.value || undefined
+    keyword: keyword.value || undefined,
   })
 }
 
@@ -53,14 +53,20 @@ function handleSearch() {
     <section class="filter-section">
       <div class="filter-row">
         <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.3-4.3"/>
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
-          <input 
+          <input
             v-model="keyword"
-            type="text" 
-            placeholder="기업명, 키워드로 검색..." 
+            type="text"
+            placeholder="기업명, 키워드로 검색..."
             class="input search-input"
             @keyup.enter="handleSearch"
           />
@@ -87,9 +93,7 @@ function handleSearch() {
           </option>
         </select>
 
-        <button class="btn btn-secondary" @click="clearFilter">
-          초기화
-        </button>
+        <button class="btn btn-secondary" @click="clearFilter">초기화</button>
       </div>
     </section>
 
@@ -97,22 +101,23 @@ function handleSearch() {
     <section class="results-section">
       <div class="results-header">
         <span class="results-count">
-          총 <strong>{{ companyStore.filteredCompanies.length }}</strong>개 기업
+          총 <strong>{{ companyStore.filteredCompanies.length }}</strong
+          >개 기업
         </span>
       </div>
 
       <div v-if="companyStore.filteredCompanies.length > 0" class="companies-grid">
-        <CompanyCard 
-          v-for="company in companyStore.filteredCompanies" 
-          :key="company.id" 
+        <CompanyCard
+          v-for="company in companyStore.filteredCompanies"
+          :key="company.id"
           :company="company"
         />
       </div>
 
       <div v-else class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.3-4.3"/>
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
         </svg>
         <h3>검색 결과가 없습니다</h3>
         <p>다른 조건으로 검색해 보세요</p>

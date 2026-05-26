@@ -6,10 +6,10 @@ const route = useRoute()
 const tabs = [
   { name: 'mypage-profile', label: '기업 프로필', path: '/mypage' },
   { name: 'mypage-analytics', label: '활동 분석', path: '/mypage/analytics' },
-  { name: 'mypage-settings', label: '계정 설정', path: '/mypage/settings' }
+  { name: 'mypage-settings', label: '계정 설정', path: '/mypage/settings' },
 ]
 
-const isActive = (tab: typeof tabs[0]) => {
+const isActive = (tab: (typeof tabs)[0]) => {
   if (tab.path === '/mypage') {
     return route.path === '/mypage' || route.name === 'mypage-profile'
   }
@@ -26,8 +26,8 @@ const isActive = (tab: typeof tabs[0]) => {
 
     <div class="tabs-container">
       <nav class="tabs">
-        <RouterLink 
-          v-for="tab in tabs" 
+        <RouterLink
+          v-for="tab in tabs"
           :key="tab.name"
           :to="tab.path"
           class="tab"

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { mockDefaultFactoryDetail, mockFactoryDetails, mockFactoryRecommendations } from '@/data/factoryData'
+import {
+  mockDefaultFactoryDetail,
+  mockFactoryDetails,
+  mockFactoryRecommendations,
+} from '@/data/factoryData'
 import { useWorkflowStore } from '@/stores/workflow'
 import {
   MapPin,
@@ -16,7 +20,7 @@ import {
   Package,
   Settings,
   Users,
-  Calendar
+  Calendar,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -164,7 +168,10 @@ const renderStars = (rating: number) => {
               <span class="kpi-value">{{ factory.kpi.deliveryRate }}%</span>
             </div>
             <div class="kpi-bar">
-              <div class="kpi-bar-fill kpi-bar-delivery" :style="{ width: `${factory.kpi.deliveryRate}%` }" />
+              <div
+                class="kpi-bar-fill kpi-bar-delivery"
+                :style="{ width: `${factory.kpi.deliveryRate}%` }"
+              />
             </div>
           </div>
 
@@ -177,7 +184,10 @@ const renderStars = (rating: number) => {
               <span class="kpi-value">{{ factory.kpi.qualitySatisfaction }} / 5.0</span>
             </div>
             <div class="kpi-bar">
-              <div class="kpi-bar-fill kpi-bar-quality" :style="{ width: `${(factory.kpi.qualitySatisfaction / 5) * 100}%` }" />
+              <div
+                class="kpi-bar-fill kpi-bar-quality"
+                :style="{ width: `${(factory.kpi.qualitySatisfaction / 5) * 100}%` }"
+              />
             </div>
           </div>
 
@@ -190,7 +200,10 @@ const renderStars = (rating: number) => {
               <span class="kpi-value">{{ factory.kpi.reorderRate }}%</span>
             </div>
             <div class="kpi-bar">
-              <div class="kpi-bar-fill kpi-bar-reorder" :style="{ width: `${factory.kpi.reorderRate}%` }" />
+              <div
+                class="kpi-bar-fill kpi-bar-reorder"
+                :style="{ width: `${factory.kpi.reorderRate}%` }"
+              />
             </div>
           </div>
 

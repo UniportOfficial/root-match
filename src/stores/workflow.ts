@@ -33,12 +33,12 @@ const initialRequest: QuoteRequestDraft = {
   desiredDeadline: '2026-05-20',
   budgetRange: '3,000만원 ~ 4,500만원',
   detailRequirements:
-    '6061 알루미늄 소재 기준으로 CNC 정밀가공과 표면 아노다이징 처리가 필요합니다. 외관 스크래치 기준이 엄격하며, 초도품 검수 후 양산 전환 예정입니다.'
+    '6061 알루미늄 소재 기준으로 CNC 정밀가공과 표면 아노다이징 처리가 필요합니다. 외관 스크래치 기준이 엄격하며, 초도품 검수 후 양산 전환 예정입니다.',
 }
 
 const initialFiles: MockWorkflowFile[] = [
   { name: 'housing_2d_drawing.pdf', size: 2400000, type: 'application/pdf' },
-  { name: 'housing_3d_model.step', size: 8200000, type: 'model/step' }
+  { name: 'housing_3d_model.step', size: 8200000, type: 'model/step' },
 ]
 
 function formatEstimate(factory: FactoryRecommendation | null) {
@@ -57,18 +57,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const deliveryFile = ref<MockWorkflowFile>({
     name: 'delivery_photo_package.zip',
     size: 12800000,
-    type: 'application/zip'
+    type: 'application/zip',
   })
   const inspectionFile = ref<MockWorkflowFile>({
     name: 'final_inspection_report.pdf',
     size: 3100000,
-    type: 'application/pdf'
+    type: 'application/pdf',
   })
   const review = ref<TransactionReviewDraft>({
     rating: 5,
     content:
       '납기와 품질 모두 만족스러웠습니다. 작업 상태 공유가 빠르고 검사 결과서도 상세해서 다음 양산 건도 논의하고 싶습니다.',
-    nextAction: 'reorder'
+    nextAction: 'reorder',
   })
 
   const contract = computed(() => ({
@@ -77,7 +77,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     factory: selectedFactory.value?.name ?? '공장 선택 대기',
     amount: formatEstimate(selectedFactory.value),
     dueDate: currentRequest.value.desiredDeadline,
-    paymentMethod: paymentMethod.value
+    paymentMethod: paymentMethod.value,
   }))
 
   const transaction = computed(() => ({
@@ -89,12 +89,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     status: transactionStatus.value,
     progressRate: progressRate.value,
     deliveryFile: deliveryFile.value,
-    inspectionFile: inspectionFile.value
+    inspectionFile: inspectionFile.value,
   }))
 
   const reviewContext = computed(() => ({
     projectName: currentRequest.value.projectName,
-    factory: selectedFactory.value?.name ?? '공장 선택 대기'
+    factory: selectedFactory.value?.name ?? '공장 선택 대기',
   }))
 
   function submitRequest(request: QuoteRequestDraft, files: MockWorkflowFile[]) {
@@ -139,6 +139,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     selectFactory,
     completePayment,
     approveInspection,
-    submitReview
+    submitReview,
   }
 })

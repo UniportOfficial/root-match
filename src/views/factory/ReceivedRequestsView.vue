@@ -62,7 +62,9 @@ function openRequest(id: string) {
             />
           </label>
           <label class="relative block">
-            <SlidersHorizontal class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <SlidersHorizontal
+              class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+            />
             <select
               v-model="statusFilter"
               class="h-12 w-full appearance-none rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-base outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
@@ -85,14 +87,18 @@ function openRequest(id: string) {
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div class="mb-3 flex flex-wrap items-center gap-2">
-                <AppBadge :variant="getStatusVariant(request.status)">{{ getStatusLabel(request.status) }}</AppBadge>
+                <AppBadge :variant="getStatusVariant(request.status)">{{
+                  getStatusLabel(request.status)
+                }}</AppBadge>
                 <span class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500">
                   <Clock class="h-4 w-4" />
                   {{ request.requestedAt }}
                 </span>
               </div>
               <h2 class="text-2xl font-bold text-slate-950">{{ request.projectName }}</h2>
-              <p class="mt-2 text-base text-slate-600">{{ request.clientName }} · {{ request.productItem }}</p>
+              <p class="mt-2 text-base text-slate-600">
+                {{ request.clientName }} · {{ request.productItem }}
+              </p>
             </div>
             <AppButton type="button" @click="openRequest(request.id)">
               <Send class="h-4 w-4" />
@@ -125,7 +131,10 @@ function openRequest(id: string) {
           </div>
         </article>
 
-        <div v-if="filteredRequests.length === 0" class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+        <div
+          v-if="filteredRequests.length === 0"
+          class="rounded-2xl border border-slate-200 bg-white p-12 text-center"
+        >
           <Inbox class="mx-auto h-12 w-12 text-slate-300" />
           <p class="mt-4 text-lg font-semibold text-slate-700">조건에 맞는 요청이 없습니다.</p>
         </div>

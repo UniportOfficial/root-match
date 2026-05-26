@@ -10,7 +10,7 @@ const filter = ref<'all' | 'unread'>('all')
 
 const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
-    return messageStore.sortedMessages.filter(m => !m.isRead)
+    return messageStore.sortedMessages.filter((m) => !m.isRead)
   }
   return messageStore.sortedMessages
 })
@@ -30,12 +30,12 @@ const formatDate = (dateString: string) => {
 
 const formatFullDate = (dateString: string) => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', { 
-    year: 'numeric', 
-    month: 'long', 
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -66,31 +66,23 @@ function deleteMessage(id: string) {
       <div class="message-list">
         <div class="list-header">
           <div class="filter-tabs">
-            <button 
-              class="tab" 
-              :class="{ active: filter === 'all' }"
-              @click="filter = 'all'"
-            >
+            <button class="tab" :class="{ active: filter === 'all' }" @click="filter = 'all'">
               전체
             </button>
-            <button 
-              class="tab" 
-              :class="{ active: filter === 'unread' }"
-              @click="filter = 'unread'"
-            >
+            <button class="tab" :class="{ active: filter === 'unread' }" @click="filter = 'unread'">
               읽지 않음 ({{ messageStore.unreadCount }})
             </button>
           </div>
         </div>
 
         <div v-if="filteredMessages.length > 0" class="messages">
-          <div 
-            v-for="message in filteredMessages" 
+          <div
+            v-for="message in filteredMessages"
             :key="message.id"
             class="message-item"
-            :class="{ 
+            :class="{
               unread: !message.isRead,
-              selected: selectedMessage?.id === message.id 
+              selected: selectedMessage?.id === message.id,
             }"
             @click="selectMessage(message)"
           >
@@ -111,8 +103,8 @@ function deleteMessage(id: string) {
 
         <div v-else class="empty-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
           </svg>
           <p>메시지가 없습니다</p>
         </div>
@@ -134,10 +126,12 @@ function deleteMessage(id: string) {
             <div class="detail-actions">
               <button class="btn btn-ghost" @click="deleteMessage(selectedMessage.id)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" x2="10" y1="11" y2="17"/>
-                  <line x1="14" x2="14" y1="11" y2="17"/>
+                  <polyline points="3 6 5 6 21 6" />
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  />
+                  <line x1="10" x2="10" y1="11" y2="17" />
+                  <line x1="14" x2="14" y1="11" y2="17" />
                 </svg>
               </button>
             </div>
@@ -156,8 +150,8 @@ function deleteMessage(id: string) {
           <div class="detail-footer">
             <button class="btn btn-primary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 17 4 12 9 7"/>
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                <polyline points="9 17 4 12 9 7" />
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
               </svg>
               답장하기
             </button>
@@ -166,8 +160,8 @@ function deleteMessage(id: string) {
 
         <div v-else class="no-selection">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
           </svg>
           <p>메시지를 선택하세요</p>
         </div>

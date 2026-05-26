@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Upload, X, FileText, CheckCircle, Sparkles, Clock, Star, RefreshCw, DollarSign } from 'lucide-vue-next'
+import {
+  Upload,
+  X,
+  FileText,
+  CheckCircle,
+  Sparkles,
+  Clock,
+  Star,
+  RefreshCw,
+  DollarSign,
+} from 'lucide-vue-next'
 import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
@@ -18,11 +28,13 @@ interface FormData {
 }
 
 const form = reactive<FormData>({
-  ...workflowStore.currentRequest
+  ...workflowStore.currentRequest,
 })
 
 const uploadedFiles = ref<File[]>([
-  ...workflowStore.requestFiles.map((file) => new File(['mock file data'], file.name, { type: file.type }))
+  ...workflowStore.requestFiles.map(
+    (file) => new File(['mock file data'], file.name, { type: file.type }),
+  ),
 ])
 const isDragging = ref(false)
 
@@ -32,7 +44,7 @@ const processTypes = [
   { value: 'forming', label: '소성가공' },
   { value: 'welding', label: '용접' },
   { value: 'surface', label: '표면처리' },
-  { value: 'heat', label: '열처리' }
+  { value: 'heat', label: '열처리' },
 ]
 
 const aiCriteria = [
@@ -40,7 +52,7 @@ const aiCriteria = [
   { icon: Clock, label: '납기 가능성', description: '희망 납기 내 제작 가능 여부' },
   { icon: Star, label: '품질 리뷰', description: '기존 고객 평가 및 품질 점수' },
   { icon: RefreshCw, label: '재거래율', description: '기존 고객과의 재거래 비율' },
-  { icon: DollarSign, label: '견적 경쟁력', description: '예산 범위 내 합리적 견적' }
+  { icon: DollarSign, label: '견적 경쟁력', description: '예산 범위 내 합리적 견적' },
 ]
 
 function handleDragOver(e: DragEvent) {
@@ -87,7 +99,7 @@ function formatFileSize(bytes: number): string {
 function handleSubmit() {
   workflowStore.submitRequest(
     { ...form },
-    uploadedFiles.value.map((file) => ({ name: file.name, size: file.size, type: file.type }))
+    uploadedFiles.value.map((file) => ({ name: file.name, size: file.size, type: file.type })),
   )
   router.push('/client/matching')
 }
@@ -105,7 +117,10 @@ function handleSubmit() {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Form Section -->
         <div class="lg:col-span-2">
-          <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <form
+            @submit.prevent="handleSubmit"
+            class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8"
+          >
             <div class="space-y-6">
               <!-- Project Name -->
               <div>
@@ -159,7 +174,10 @@ function handleSubmit() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Estimated Quantity -->
                 <div>
-                  <label for="estimatedQuantity" class="block text-sm font-medium text-slate-700 mb-2">
+                  <label
+                    for="estimatedQuantity"
+                    class="block text-sm font-medium text-slate-700 mb-2"
+                  >
                     예상 수량 <span class="text-red-500">*</span>
                   </label>
                   <input
@@ -174,7 +192,10 @@ function handleSubmit() {
 
                 <!-- Desired Deadline -->
                 <div>
-                  <label for="desiredDeadline" class="block text-sm font-medium text-slate-700 mb-2">
+                  <label
+                    for="desiredDeadline"
+                    class="block text-sm font-medium text-slate-700 mb-2"
+                  >
                     희망 납기 <span class="text-red-500">*</span>
                   </label>
                   <input
@@ -212,9 +233,9 @@ function handleSubmit() {
                   @drop="handleDrop"
                   :class="[
                     'relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer',
-                    isDragging 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-slate-300 hover:border-slate-400 bg-slate-50'
+                    isDragging
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-300 hover:border-slate-400 bg-slate-50',
                   ]"
                 >
                   <input
@@ -226,7 +247,8 @@ function handleSubmit() {
                   />
                   <Upload class="w-10 h-10 text-slate-400 mx-auto mb-3" />
                   <p class="text-sm text-slate-600">
-                    파일을 드래그하거나 <span class="text-blue-600 font-medium">클릭하여 업로드</span>
+                    파일을 드래그하거나
+                    <span class="text-blue-600 font-medium">클릭하여 업로드</span>
                   </p>
                   <p class="text-xs text-slate-500 mt-1">
                     PDF, DWG, DXF, STEP, IGES, JPG, PNG (최대 50MB)
@@ -260,7 +282,10 @@ function handleSubmit() {
 
               <!-- Detail Requirements -->
               <div>
-                <label for="detailRequirements" class="block text-sm font-medium text-slate-700 mb-2">
+                <label
+                  for="detailRequirements"
+                  class="block text-sm font-medium text-slate-700 mb-2"
+                >
                   상세 요구사항
                 </label>
                 <textarea
@@ -288,7 +313,9 @@ function handleSubmit() {
         <div class="lg:col-span-1">
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sticky top-8">
             <div class="flex items-center gap-3 mb-6">
-              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              <div
+                class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+              >
                 <Sparkles class="w-5 h-5 text-white" />
               </div>
               <h2 class="text-lg font-bold text-slate-900">AI 추천 기준</h2>
@@ -300,7 +327,9 @@ function handleSubmit() {
                 :key="index"
                 class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div
+                  class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
                   <component :is="criteria.icon" class="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
@@ -314,7 +343,8 @@ function handleSubmit() {
               <div class="flex items-start gap-2">
                 <CheckCircle class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p class="text-sm text-blue-800">
-                  AI가 위 기준을 종합하여 최적의 공장을 추천합니다. 상세한 요구사항을 입력할수록 정확도가 높아집니다.
+                  AI가 위 기준을 종합하여 최적의 공장을 추천합니다. 상세한 요구사항을 입력할수록
+                  정확도가 높아집니다.
                 </p>
               </div>
             </div>

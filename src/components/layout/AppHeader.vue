@@ -17,10 +17,9 @@ const showNotifications = ref(false)
 const showUserMenu = ref(false)
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'signup'>('login')
+const authError = ref('')
 
-const totalUnread = computed(() =>
-  notificationStore.unreadCount + messageStore.unreadCount
-)
+const totalUnread = computed(() => notificationStore.unreadCount + messageStore.unreadCount)
 
 const isAuthenticated = computed(() => userStore.isAuthenticated)
 
@@ -47,6 +46,7 @@ function toggleUserMenu() {
 
 function openAuthModal(mode: 'login' | 'signup') {
   authMode.value = mode
+  authError.value = ''
   showAuthModal.value = true
   showNotifications.value = false
   showUserMenu.value = false
@@ -54,16 +54,28 @@ function openAuthModal(mode: 'login' | 'signup') {
 
 function closeAuthModal() {
   showAuthModal.value = false
+  authError.value = ''
 }
 
 function handleLogin(payload: { email: string; password: string }) {
-  if (userStore.login(payload.email, payload.password)) {
+  const result = userStore.login(payload.email, payload.password)
+  if (result.ok) {
+    authError.value = ''
     showAuthModal.value = false
     router.push({ name: 'dashboard' })
+    return
   }
+  authError.value = '이메일 또는 비밀번호 형식이 올바르지 않습니다.'
 }
 
-function handleSignup(payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }) {
+function handleSignup(payload: {
+  name: string
+  email: string
+  password: string
+  companyName: string
+  position: string
+  phone: string
+}) {
   userStore.register(payload)
   showAuthModal.value = false
 }
@@ -78,14 +90,20 @@ function closeDropdowns() {
   <header class="app-header">
     <div class="header-left">
       <form class="search-form" @submit.prevent="handleSearch">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.3-4.3"/>
+        <svg
+          class="search-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
         </svg>
-        <input 
+        <input
           v-model="searchQuery"
-          type="text" 
-          placeholder="기업명, 업종, 키워드로 검색..." 
+          type="text"
+          placeholder="기업명, 업종, 키워드로 검색..."
           class="search-input"
         />
       </form>
@@ -93,30 +111,36 @@ function closeDropdowns() {
 
     <div class="header-right">
       <div class="header-actions">
-        <button 
+        <button
           class="action-btn"
           :class="{ active: showNotifications }"
           @click="toggleNotifications"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
           </svg>
           <span v-if="totalUnread > 0" class="badge-count">{{ totalUnread }}</span>
         </button>
 
         <RouterLink to="/messages" class="action-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
           </svg>
-          <span v-if="messageStore.unreadCount > 0" class="badge-count">{{ messageStore.unreadCount }}</span>
+          <span v-if="messageStore.unreadCount > 0" class="badge-count">{{
+            messageStore.unreadCount
+          }}</span>
         </RouterLink>
       </div>
 
       <div v-if="!isAuthenticated" class="auth-buttons">
-        <button class="btn btn-ghost btn-sm" type="button" @click="openAuthModal('login')">로그인</button>
-        <button class="btn btn-primary btn-sm" type="button" @click="openAuthModal('signup')">회원가입</button>
+        <button class="btn btn-ghost btn-sm" type="button" @click="openAuthModal('login')">
+          로그인
+        </button>
+        <button class="btn btn-primary btn-sm" type="button" @click="openAuthModal('signup')">
+          회원가입
+        </button>
       </div>
 
       <div v-else class="user-menu-wrapper">
@@ -126,8 +150,14 @@ function closeDropdowns() {
             <span class="user-name">{{ userStore.currentUser?.name }}</span>
             <span class="user-company">{{ userStore.currentUser?.company.name }}</span>
           </div>
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m6 9 6 6 6-6"/>
+          <svg
+            class="chevron"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="m6 9 6 6 6-6" />
           </svg>
         </button>
 
@@ -135,24 +165,26 @@ function closeDropdowns() {
           <div v-if="showUserMenu" class="dropdown-menu user-dropdown" @click="closeDropdowns">
             <RouterLink to="/mypage" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
               마이페이지
             </RouterLink>
             <RouterLink to="/mypage/settings" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
               </svg>
               계정 설정
             </RouterLink>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item logout" @click="userStore.logout">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" x2="9" y1="12" y2="12"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
               </svg>
               로그아웃
             </button>
@@ -162,15 +194,13 @@ function closeDropdowns() {
     </div>
 
     <Transition name="fade">
-      <NotificationDropdown 
-        v-if="showNotifications" 
-        @close="showNotifications = false"
-      />
+      <NotificationDropdown v-if="showNotifications" @close="showNotifications = false" />
     </Transition>
 
     <AuthModal
       v-if="showAuthModal"
       :mode="authMode"
+      :external-error="authError"
       @close="closeAuthModal"
       @login="handleLogin"
       @signup="handleSignup"

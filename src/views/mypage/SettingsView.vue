@@ -11,13 +11,13 @@ const profileForm = ref({
   name: userStore.currentUser?.name || '',
   email: userStore.currentUser?.email || '',
   phone: userStore.currentUser?.phone || '',
-  position: userStore.currentUser?.position || ''
+  position: userStore.currentUser?.position || '',
 })
 
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 const notificationSettings = ref({
@@ -25,20 +25,20 @@ const notificationSettings = ref({
   emailNewInquiry: true,
   emailWeeklyReport: false,
   pushNewMessage: true,
-  pushNewMatch: true
+  pushNewMatch: true,
 })
 
 async function updateProfile() {
   isUpdatingProfile.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
   userStore.updateProfile({
     name: profileForm.value.name,
     email: profileForm.value.email,
     phone: profileForm.value.phone,
-    position: profileForm.value.position
+    position: profileForm.value.position,
   })
-  
+
   isUpdatingProfile.value = false
   alert('프로필이 업데이트되었습니다.')
 }
@@ -48,16 +48,16 @@ async function updatePassword() {
     alert('새 비밀번호가 일치하지 않습니다.')
     return
   }
-  
+
   isUpdatingPassword.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
   passwordForm.value = {
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   }
-  
+
   isUpdatingPassword.value = false
   alert('비밀번호가 변경되었습니다.')
 }
@@ -202,9 +202,7 @@ async function updatePassword() {
         <h2>계정 삭제</h2>
         <p>계정을 삭제하면 모든 데이터가 영구적으로 삭제됩니다</p>
       </div>
-      <button class="btn btn-danger">
-        계정 삭제 요청
-      </button>
+      <button class="btn btn-danger">계정 삭제 요청</button>
     </section>
   </div>
 </template>

@@ -12,7 +12,7 @@ const workflowStore = useWorkflowStore()
 const review = reactive({
   rating: workflowStore.review.rating,
   content: workflowStore.review.content,
-  nextAction: workflowStore.review.nextAction
+  nextAction: workflowStore.review.nextAction,
 })
 
 function submitReview() {
@@ -30,13 +30,20 @@ function submitReview() {
           거래 완료
         </AppBadge>
         <h1 class="mt-4 text-3xl font-bold text-slate-950 sm:text-4xl">거래 완료 및 리뷰</h1>
-        <p class="mt-3 text-lg text-slate-600">정산이 완료되었습니다. 거래 후기를 남기고 다음 거래를 관리하세요.</p>
+        <p class="mt-3 text-lg text-slate-600">
+          정산이 완료되었습니다. 거래 후기를 남기고 다음 거래를 관리하세요.
+        </p>
       </header>
 
-      <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8" @submit.prevent="submitReview">
+      <form
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
+        @submit.prevent="submitReview"
+      >
         <div class="mb-6 rounded-xl bg-slate-50 p-5">
           <p class="text-sm font-semibold text-slate-500">프로젝트</p>
-          <h2 class="mt-2 text-xl font-bold text-slate-950">{{ workflowStore.reviewContext.projectName }}</h2>
+          <h2 class="mt-2 text-xl font-bold text-slate-950">
+            {{ workflowStore.reviewContext.projectName }}
+          </h2>
           <p class="mt-1 text-base text-slate-600">{{ workflowStore.reviewContext.factory }}</p>
         </div>
 
@@ -53,14 +60,18 @@ function submitReview() {
               >
                 <Star
                   class="h-8 w-8"
-                  :class="score <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'"
+                  :class="
+                    score <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                  "
                 />
               </button>
             </div>
           </div>
 
           <div>
-            <label for="reviewContent" class="mb-2 block text-base font-bold text-slate-950">거래 후기</label>
+            <label for="reviewContent" class="mb-2 block text-base font-bold text-slate-950"
+              >거래 후기</label
+            >
             <textarea
               id="reviewContent"
               v-model="review.content"
@@ -72,24 +83,42 @@ function submitReview() {
           <div>
             <label class="mb-3 block text-base font-bold text-slate-950">다음 관리</label>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4">
-                <input v-model="review.nextAction" type="radio" value="reorder" class="mt-1 h-5 w-5 text-blue-600" />
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4"
+              >
+                <input
+                  v-model="review.nextAction"
+                  type="radio"
+                  value="reorder"
+                  class="mt-1 h-5 w-5 text-blue-600"
+                />
                 <span>
                   <span class="flex items-center gap-2 font-bold text-slate-950">
                     <RefreshCw class="h-5 w-5 text-blue-600" />
                     재거래 후보로 저장
                   </span>
-                  <span class="mt-1 block text-sm text-slate-600">다음 발주 시 우선 추천 공장으로 관리합니다.</span>
+                  <span class="mt-1 block text-sm text-slate-600"
+                    >다음 발주 시 우선 추천 공장으로 관리합니다.</span
+                  >
                 </span>
               </label>
-              <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4">
-                <input v-model="review.nextAction" type="radio" value="crm" class="mt-1 h-5 w-5 text-blue-600" />
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4"
+              >
+                <input
+                  v-model="review.nextAction"
+                  type="radio"
+                  value="crm"
+                  class="mt-1 h-5 w-5 text-blue-600"
+                />
                 <span>
                   <span class="flex items-center gap-2 font-bold text-slate-950">
                     <MessageSquareText class="h-5 w-5 text-blue-600" />
                     CRM 메모로 관리
                   </span>
-                  <span class="mt-1 block text-sm text-slate-600">거래 특이사항을 파트너 관리 기록에 남깁니다.</span>
+                  <span class="mt-1 block text-sm text-slate-600"
+                    >거래 특이사항을 파트너 관리 기록에 남깁니다.</span
+                  >
                 </span>
               </label>
             </div>

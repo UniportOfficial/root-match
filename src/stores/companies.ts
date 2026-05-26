@@ -12,23 +12,24 @@ export const useCompanyStore = defineStore('companies', () => {
     let result = [...companies.value]
 
     if (filter.value.industry) {
-      result = result.filter(c => c.industry === filter.value.industry)
+      result = result.filter((c) => c.industry === filter.value.industry)
     }
 
     if (filter.value.region) {
-      result = result.filter(c => c.region === filter.value.region)
+      result = result.filter((c) => c.region === filter.value.region)
     }
 
     if (filter.value.size) {
-      result = result.filter(c => c.size === filter.value.size)
+      result = result.filter((c) => c.size === filter.value.size)
     }
 
     if (filter.value.keyword) {
       const keyword = filter.value.keyword.toLowerCase()
-      result = result.filter(c => 
-        c.name.toLowerCase().includes(keyword) ||
-        c.description.toLowerCase().includes(keyword) ||
-        c.tags.some(tag => tag.toLowerCase().includes(keyword))
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(keyword) ||
+          c.description.toLowerCase().includes(keyword) ||
+          c.tags.some((tag) => tag.toLowerCase().includes(keyword)),
       )
     }
 
@@ -44,7 +45,7 @@ export const useCompanyStore = defineStore('companies', () => {
   }
 
   function getCompanyById(id: string) {
-    return companies.value.find(c => c.id === id)
+    return companies.value.find((c) => c.id === id)
   }
 
   function toggleFavorite(companyId: string) {
@@ -60,8 +61,8 @@ export const useCompanyStore = defineStore('companies', () => {
     return favorites.value.includes(companyId)
   }
 
-  const favoriteCompanies = computed(() => 
-    companies.value.filter(c => favorites.value.includes(c.id))
+  const favoriteCompanies = computed(() =>
+    companies.value.filter((c) => favorites.value.includes(c.id)),
   )
 
   return {
@@ -74,6 +75,6 @@ export const useCompanyStore = defineStore('companies', () => {
     clearFilter,
     getCompanyById,
     toggleFavorite,
-    isFavorite
+    isFavorite,
   }
 })

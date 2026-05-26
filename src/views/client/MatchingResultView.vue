@@ -14,7 +14,7 @@ import {
   Check,
   TrendingUp,
   Shield,
-  Zap
+  Zap,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -34,7 +34,7 @@ const regionOptions = ['전체', '서울', '경기', '인천']
 const trustScoreOptions = ['전체', '90점 이상', '85점 이상', '80점 이상']
 
 const filteredFactories = computed(() => {
-  return factories.value.filter(factory => {
+  return factories.value.filter((factory) => {
     if (processFilter.value && processFilter.value !== '전체') {
       if (!factory.processes.includes(processFilter.value)) return false
     }
@@ -90,7 +90,9 @@ function getScoreBg(score: number): string {
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center gap-3 mb-2">
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+          <div
+            class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center"
+          >
             <Sparkles class="w-5 h-5 text-white" />
           </div>
           <h1 class="text-2xl font-bold text-slate-900">AI 추천 공장</h1>
@@ -115,7 +117,9 @@ function getScoreBg(score: number): string {
                   {{ option }}
                 </option>
               </select>
-              <ChevronDown class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+              />
             </div>
           </div>
 
@@ -131,7 +135,9 @@ function getScoreBg(score: number): string {
                   {{ option }}
                 </option>
               </select>
-              <ChevronDown class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+              />
             </div>
           </div>
 
@@ -147,13 +153,17 @@ function getScoreBg(score: number): string {
                   {{ option }}
                 </option>
               </select>
-              <ChevronDown class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+              />
             </div>
           </div>
 
           <!-- Delivery Filter -->
           <div class="flex items-end">
-            <label class="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg px-4 py-2">
+            <label
+              class="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg px-4 py-2"
+            >
               <input
                 type="checkbox"
                 v-model="deliveryFilter"
@@ -177,7 +187,7 @@ function getScoreBg(score: number): string {
             :class="[
               selectedFactory?.id === factory.id
                 ? 'border-blue-500 shadow-md'
-                : 'border-slate-200 hover:border-slate-300'
+                : 'border-slate-200 hover:border-slate-300',
             ]"
           >
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
@@ -185,7 +195,11 @@ function getScoreBg(score: number): string {
                 <div class="flex items-center gap-3 mb-2">
                   <h3 class="text-lg font-semibold text-slate-900">{{ factory.name }}</h3>
                   <span
-                    :class="[getScoreBg(factory.trustScore), 'px-2.5 py-0.5 rounded-full text-xs font-semibold border', getScoreColor(factory.trustScore)]"
+                    :class="[
+                      getScoreBg(factory.trustScore),
+                      'px-2.5 py-0.5 rounded-full text-xs font-semibold border',
+                      getScoreColor(factory.trustScore),
+                    ]"
                   >
                     신뢰 {{ factory.trustScore }}점
                   </span>
@@ -263,8 +277,13 @@ function getScoreBg(score: number): string {
           </div>
 
           <!-- Empty State -->
-          <div v-if="filteredFactories.length === 0" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div
+            v-if="filteredFactories.length === 0"
+            class="bg-white rounded-xl border border-slate-200 p-12 text-center"
+          >
+            <div
+              class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4"
+            >
               <Settings class="w-8 h-8 text-slate-400" />
             </div>
             <h3 class="text-lg font-semibold text-slate-900 mb-2">검색 결과가 없습니다</h3>
@@ -296,7 +315,9 @@ function getScoreBg(score: number): string {
                       <Shield class="w-4 h-4 text-emerald-600" />
                       <span class="text-sm font-medium text-slate-700">품질 점수</span>
                     </div>
-                    <span class="text-sm font-semibold text-slate-900">{{ selectedFactory.qualityScore }}점</span>
+                    <span class="text-sm font-semibold text-slate-900"
+                      >{{ selectedFactory.qualityScore }}점</span
+                    >
                   </div>
                   <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -313,7 +334,9 @@ function getScoreBg(score: number): string {
                       <Clock class="w-4 h-4 text-blue-600" />
                       <span class="text-sm font-medium text-slate-700">납기 점수</span>
                     </div>
-                    <span class="text-sm font-semibold text-slate-900">{{ selectedFactory.deliveryScore }}점</span>
+                    <span class="text-sm font-semibold text-slate-900"
+                      >{{ selectedFactory.deliveryScore }}점</span
+                    >
                   </div>
                   <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -330,7 +353,9 @@ function getScoreBg(score: number): string {
                       <Zap class="w-4 h-4 text-amber-600" />
                       <span class="text-sm font-medium text-slate-700">가격 경쟁력</span>
                     </div>
-                    <span class="text-sm font-semibold text-slate-900">{{ selectedFactory.priceCompetitiveness }}점</span>
+                    <span class="text-sm font-semibold text-slate-900"
+                      >{{ selectedFactory.priceCompetitiveness }}점</span
+                    >
                   </div>
                   <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -363,10 +388,14 @@ function getScoreBg(score: number): string {
             </div>
 
             <div v-else class="p-8 text-center">
-              <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div
+                class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3"
+              >
                 <Settings class="w-6 h-6 text-slate-400" />
               </div>
-              <p class="text-sm text-slate-500">공장을 선택하면<br />상세 비교 정보를 확인할 수 있습니다.</p>
+              <p class="text-sm text-slate-500">
+                공장을 선택하면<br />상세 비교 정보를 확인할 수 있습니다.
+              </p>
             </div>
           </div>
         </div>

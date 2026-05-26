@@ -17,7 +17,7 @@ const formData = ref({
   contactEmail: userStore.currentUser?.company.contactEmail || '',
   contactPhone: userStore.currentUser?.company.contactPhone || '',
   website: userStore.currentUser?.company.website || '',
-  tags: userStore.currentUser?.company.tags.join(', ') || ''
+  tags: userStore.currentUser?.company.tags.join(', ') || '',
 })
 
 const initials = computed(() => {
@@ -40,15 +40,15 @@ function cancelEditing() {
     contactEmail: userStore.currentUser?.company.contactEmail || '',
     contactPhone: userStore.currentUser?.company.contactPhone || '',
     website: userStore.currentUser?.company.website || '',
-    tags: userStore.currentUser?.company.tags.join(', ') || ''
+    tags: userStore.currentUser?.company.tags.join(', ') || '',
   }
 }
 
 async function saveProfile() {
   isSaving.value = true
-  
+
   // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   userStore.updateCompany({
     name: formData.value.name,
@@ -59,7 +59,10 @@ async function saveProfile() {
     contactEmail: formData.value.contactEmail,
     contactPhone: formData.value.contactPhone,
     website: formData.value.website,
-    tags: formData.value.tags.split(',').map(t => t.trim()).filter(t => t)
+    tags: formData.value.tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t),
   })
 
   isSaving.value = false
@@ -80,13 +83,9 @@ async function saveProfile() {
             <span class="badge">{{ userStore.currentUser?.company.industry }}</span>
           </div>
         </div>
-        <button 
-          v-if="!isEditing" 
-          class="btn btn-secondary"
-          @click="startEditing"
-        >
+        <button v-if="!isEditing" class="btn btn-secondary" @click="startEditing">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
           </svg>
           수정
         </button>
@@ -96,21 +95,12 @@ async function saveProfile() {
         <div class="form-grid">
           <div class="form-group full-width">
             <label class="label">기업명</label>
-            <input 
-              v-model="formData.name"
-              type="text" 
-              class="input"
-              :disabled="!isEditing"
-            />
+            <input v-model="formData.name" type="text" class="input" :disabled="!isEditing" />
           </div>
 
           <div class="form-group">
             <label class="label">업종</label>
-            <select 
-              v-model="formData.industry"
-              class="select"
-              :disabled="!isEditing"
-            >
+            <select v-model="formData.industry" class="select" :disabled="!isEditing">
               <option v-for="industry in industries" :key="industry" :value="industry">
                 {{ industry }}
               </option>
@@ -119,11 +109,7 @@ async function saveProfile() {
 
           <div class="form-group">
             <label class="label">지역</label>
-            <select 
-              v-model="formData.region"
-              class="select"
-              :disabled="!isEditing"
-            >
+            <select v-model="formData.region" class="select" :disabled="!isEditing">
               <option v-for="region in regions" :key="region" :value="region">
                 {{ region }}
               </option>
@@ -132,11 +118,7 @@ async function saveProfile() {
 
           <div class="form-group">
             <label class="label">기업 규모</label>
-            <select 
-              v-model="formData.size"
-              class="select"
-              :disabled="!isEditing"
-            >
+            <select v-model="formData.size" class="select" :disabled="!isEditing">
               <option v-for="size in companySizes" :key="size" :value="size">
                 {{ size }}
               </option>
@@ -145,9 +127,9 @@ async function saveProfile() {
 
           <div class="form-group">
             <label class="label">웹사이트</label>
-            <input 
+            <input
               v-model="formData.website"
-              type="url" 
+              type="url"
               class="input"
               placeholder="https://"
               :disabled="!isEditing"
@@ -156,7 +138,7 @@ async function saveProfile() {
 
           <div class="form-group full-width">
             <label class="label">기업 소개</label>
-            <textarea 
+            <textarea
               v-model="formData.description"
               class="textarea"
               rows="4"
@@ -166,9 +148,9 @@ async function saveProfile() {
 
           <div class="form-group">
             <label class="label">연락처 이메일</label>
-            <input 
+            <input
               v-model="formData.contactEmail"
-              type="email" 
+              type="email"
               class="input"
               :disabled="!isEditing"
             />
@@ -176,9 +158,9 @@ async function saveProfile() {
 
           <div class="form-group">
             <label class="label">연락처 전화번호</label>
-            <input 
+            <input
               v-model="formData.contactPhone"
-              type="tel" 
+              type="tel"
               class="input"
               :disabled="!isEditing"
             />
@@ -186,9 +168,9 @@ async function saveProfile() {
 
           <div class="form-group full-width">
             <label class="label">태그</label>
-            <input 
+            <input
               v-model="formData.tags"
-              type="text" 
+              type="text"
               class="input"
               placeholder="쉼표로 구분하여 입력 (예: AI, 빅데이터, B2B)"
               :disabled="!isEditing"
@@ -198,9 +180,7 @@ async function saveProfile() {
         </div>
 
         <div v-if="isEditing" class="form-actions">
-          <button type="button" class="btn btn-secondary" @click="cancelEditing">
-            취소
-          </button>
+          <button type="button" class="btn btn-secondary" @click="cancelEditing">취소</button>
           <button type="submit" class="btn btn-primary" :disabled="isSaving">
             <span v-if="isSaving" class="spinner"></span>
             {{ isSaving ? '저장 중...' : '저장' }}

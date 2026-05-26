@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,103 +14,103 @@ const router = createRouter({
       path: '/',
       name: 'landing',
       component: () => import('@/views/LandingView.vue'),
-      meta: { title: '홈', layout: 'none' }
+      meta: { title: '홈', layout: 'none', public: true },
     },
     {
       path: '/role-select',
       name: 'role-select',
       component: () => import('@/views/RoleSelectView.vue'),
-      meta: { title: '역할 선택', layout: 'none' }
+      meta: { title: '역할 선택', layout: 'none', public: true },
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
-      meta: { title: '로그인', layout: 'none' }
+      meta: { title: '로그인', layout: 'none', public: true },
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { title: '대시보드' }
+      meta: { title: '대시보드' },
     },
     {
       path: '/client/request',
       name: 'client-request',
       component: () => import('@/views/client/ClientRequestView.vue'),
-      meta: { title: '수주 의뢰 등록' }
+      meta: { title: '수주 의뢰 등록' },
     },
     {
       path: '/client/matching',
       name: 'client-matching',
       component: () => import('@/views/client/MatchingResultView.vue'),
-      meta: { title: 'AI 추천 공장' }
+      meta: { title: 'AI 추천 공장' },
     },
     {
       path: '/factory/onboarding',
       name: 'factory-onboarding',
       component: () => import('@/views/factory/FactoryOnboardingView.vue'),
-      meta: { title: '공장 프로필 등록' }
+      meta: { title: '공장 프로필 등록' },
     },
     {
       path: '/factory/requests',
       name: 'factory-requests',
       component: () => import('@/views/factory/ReceivedRequestsView.vue'),
-      meta: { title: '받은 견적 요청' }
+      meta: { title: '받은 견적 요청' },
     },
     {
       path: '/factory/requests/:id',
       name: 'factory-request-detail',
       component: () => import('@/views/factory/RequestQuoteView.vue'),
-      meta: { title: '요청 상세 및 견적 제출' }
+      meta: { title: '요청 상세 및 견적 제출' },
     },
     {
       path: '/factories/:id',
       name: 'factory-detail',
       component: () => import('@/views/factory/FactoryDetailView.vue'),
-      meta: { title: '공장 상세' }
+      meta: { title: '공장 상세' },
     },
     {
       path: '/contract',
       name: 'contract-escrow',
       component: () => import('@/views/contract/ContractEscrowView.vue'),
-      meta: { title: '계약 및 에스크로 결제' }
+      meta: { title: '계약 및 에스크로 결제' },
     },
     {
       path: '/transaction/progress',
       name: 'transaction-progress',
       component: () => import('@/views/transaction/TransactionProgressView.vue'),
-      meta: { title: '작업 진행 대시보드' }
+      meta: { title: '작업 진행 대시보드' },
     },
     {
       path: '/transaction/review',
       name: 'transaction-review',
       component: () => import('@/views/transaction/TransactionReviewView.vue'),
-      meta: { title: '거래 완료 및 리뷰' }
+      meta: { title: '거래 완료 및 리뷰' },
     },
     {
       path: '/disputes/mediation',
       name: 'dispute-mediation',
       component: () => import('@/views/dispute/DisputeMediationView.vue'),
-      meta: { title: '분쟁 중재 신청' }
+      meta: { title: '분쟁 중재 신청' },
     },
     {
       path: '/companies',
       name: 'companies',
       component: () => import('@/views/CompaniesView.vue'),
-      meta: { title: '기업 디렉토리' }
+      meta: { title: '기업 디렉토리' },
     },
     {
       path: '/companies/:id',
       name: 'company-detail',
       component: () => import('@/views/CompanyDetailView.vue'),
-      meta: { title: '기업 상세' }
+      meta: { title: '기업 상세' },
     },
     {
       path: '/messages',
       name: 'messages',
       component: () => import('@/views/MessagesView.vue'),
-      meta: { title: '메시지' }
+      meta: { title: '메시지' },
     },
     {
       path: '/mypage',
@@ -121,27 +122,41 @@ const router = createRouter({
           path: '',
           name: 'mypage-profile',
           component: () => import('@/views/mypage/ProfileView.vue'),
-          meta: { title: '기업 프로필' }
+          meta: { title: '기업 프로필' },
         },
         {
           path: 'analytics',
           name: 'mypage-analytics',
           component: () => import('@/views/mypage/AnalyticsView.vue'),
-          meta: { title: '활동 분석' }
+          meta: { title: '활동 분석' },
         },
         {
           path: 'settings',
           name: 'mypage-settings',
           component: () => import('@/views/mypage/SettingsView.vue'),
-          meta: { title: '계정 설정' }
-        }
-      ]
-    }
-  ]
+          meta: { title: '계정 설정' },
+        },
+      ],
+    },
+  ],
 })
 
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || 'RootMatching'} - RootMatching B2B`
+
+  const isPublic = to.meta.public === true
+  const userStore = useUserStore()
+
+  if (!isPublic && !userStore.isAuthenticated) {
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  if (isPublic && userStore.isAuthenticated && (to.name === 'login' || to.name === 'role-select')) {
+    next({ name: 'dashboard' })
+    return
+  }
+
   next()
 })
 

@@ -14,7 +14,7 @@ import {
   PackageCheck,
   ShieldCheck,
   Upload,
-  X
+  X,
 } from 'lucide-vue-next'
 import AppButton from '@/components/common/AppButton.vue'
 import ProcessStepper from '@/components/common/ProcessStepper.vue'
@@ -38,7 +38,9 @@ const selectedDisputeType = ref<DisputeType>('quality')
 const uploadedFiles = ref<File[]>([
   new File(['mock inspection data'], 'incoming_inspection_report.pdf', { type: 'application/pdf' }),
   new File(['mock photo data'], 'defect_photo_set.zip', { type: 'application/zip' }),
-  new File(['mock chat export'], 'delivery_chat_history.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  new File(['mock chat export'], 'delivery_chat_history.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  }),
 ])
 const router = useRouter()
 
@@ -46,30 +48,30 @@ const evidence = reactive<EvidenceState>({
   contract: true,
   chatHistory: true,
   deliveryPhotos: true,
-  inspectionReport: true
+  inspectionReport: true,
 })
 
 const disputeTypes: DisputeOption[] = [
   {
     value: 'delay',
     label: '납기 지연',
-    description: '약속된 납품 일정이 지연되었어요.'
+    description: '약속된 납품 일정이 지연되었어요.',
   },
   {
     value: 'quality',
     label: '품질 불량',
-    description: '검수 결과 기준에 맞지 않는 문제가 있어요.'
+    description: '검수 결과 기준에 맞지 않는 문제가 있어요.',
   },
   {
     value: 'payment',
     label: '대금 문제',
-    description: '결제, 정산, 추가 비용에 이견이 있어요.'
+    description: '결제, 정산, 추가 비용에 이견이 있어요.',
   },
   {
     value: 'contract',
     label: '계약 불이행',
-    description: '계약 조건이 지켜지지 않았어요.'
-  }
+    description: '계약 조건이 지켜지지 않았어요.',
+  },
 ]
 
 const transactionInfo = [
@@ -78,26 +80,26 @@ const transactionInfo = [
   { label: '공장', value: '문래정밀가공' },
   { label: '계약 금액', value: '4,200,000원' },
   { label: '납기', value: '2026년 5월 20일' },
-  { label: '현재 상태', value: '초도품 검수 이슈 접수' }
+  { label: '현재 상태', value: '초도품 검수 이슈 접수' },
 ]
 
 const mediationSteps = [
   {
     title: '분쟁 접수',
-    description: '신청 내용과 거래 정보를 확인합니다.'
+    description: '신청 내용과 거래 정보를 확인합니다.',
   },
   {
     title: '자료 검토',
-    description: '계약서, 대화, 증빙 파일을 함께 검토합니다.'
+    description: '계약서, 대화, 증빙 파일을 함께 검토합니다.',
   },
   {
     title: '조정안 제시',
-    description: '양측 입장을 반영한 해결안을 제안합니다.'
+    description: '양측 입장을 반영한 해결안을 제안합니다.',
   },
   {
     title: '합의 또는 법무 자문 연계',
-    description: '합의가 어렵다면 다음 절차를 안내합니다.'
-  }
+    description: '합의가 어렵다면 다음 절차를 안내합니다.',
+  },
 ]
 
 function handleFileSelect(event: Event) {
@@ -123,8 +125,8 @@ function handleSubmit() {
     uploadedFiles: uploadedFiles.value.map((file) => ({
       name: file.name,
       size: file.size,
-      type: file.type
-    }))
+      type: file.type,
+    })),
   })
 
   router.push('/transaction/review')
@@ -137,11 +139,15 @@ function handleSubmit() {
       <header class="mb-8 overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
         <div class="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_340px] lg:items-center">
           <div>
-            <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
+            <div
+              class="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700"
+            >
               <ShieldCheck class="h-4 w-4" />
               플랫폼 중재 센터
             </div>
-            <h1 class="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">분쟁 중재 신청</h1>
+            <h1 class="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
+              분쟁 중재 신청
+            </h1>
             <p class="mt-3 max-w-3xl text-lg leading-8 text-slate-600">
               계약서와 거래 이력을 기반으로 공정한 중재 절차를 진행합니다.
             </p>
@@ -149,7 +155,9 @@ function handleSubmit() {
 
           <div class="rounded-xl border border-blue-100 bg-blue-50 p-5">
             <div class="flex items-start gap-3">
-              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white"
+              >
                 <Handshake class="h-6 w-6" />
               </div>
               <div>
@@ -176,9 +184,18 @@ function handleSubmit() {
                 v-for="type in disputeTypes"
                 :key="type.value"
                 class="cursor-pointer rounded-xl border p-5 transition"
-                :class="selectedDisputeType === type.value ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'"
+                :class="
+                  selectedDisputeType === type.value
+                    ? 'border-blue-600 bg-blue-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-blue-300'
+                "
               >
-                <input v-model="selectedDisputeType" type="radio" class="sr-only" :value="type.value" />
+                <input
+                  v-model="selectedDisputeType"
+                  type="radio"
+                  class="sr-only"
+                  :value="type.value"
+                />
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <span class="text-lg font-bold text-slate-950">{{ type.label }}</span>
@@ -218,35 +235,72 @@ function handleSubmit() {
             </div>
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <input v-model="evidence.contract" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-blue-600" />
+              <label
+                class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <input
+                  v-model="evidence.contract"
+                  type="checkbox"
+                  class="h-5 w-5 rounded border-slate-300 text-blue-600"
+                />
                 <FileText class="h-5 w-5 text-slate-500" />
                 <span class="text-base font-semibold text-slate-800">계약서</span>
               </label>
-              <label class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <input v-model="evidence.chatHistory" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-blue-600" />
+              <label
+                class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <input
+                  v-model="evidence.chatHistory"
+                  type="checkbox"
+                  class="h-5 w-5 rounded border-slate-300 text-blue-600"
+                />
                 <MessageSquareText class="h-5 w-5 text-slate-500" />
                 <span class="text-base font-semibold text-slate-800">채팅 기록</span>
               </label>
-              <label class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <input v-model="evidence.deliveryPhotos" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-blue-600" />
+              <label
+                class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <input
+                  v-model="evidence.deliveryPhotos"
+                  type="checkbox"
+                  class="h-5 w-5 rounded border-slate-300 text-blue-600"
+                />
                 <PackageCheck class="h-5 w-5 text-slate-500" />
                 <span class="text-base font-semibold text-slate-800">납품 사진</span>
               </label>
-              <label class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <input v-model="evidence.inspectionReport" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-blue-600" />
+              <label
+                class="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <input
+                  v-model="evidence.inspectionReport"
+                  type="checkbox"
+                  class="h-5 w-5 rounded border-slate-300 text-blue-600"
+                />
                 <BadgeCheck class="h-5 w-5 text-slate-500" />
                 <span class="text-base font-semibold text-slate-800">검사 결과서</span>
               </label>
             </div>
 
-            <div class="mt-5 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-400">
-              <input id="evidenceFiles" type="file" multiple class="sr-only" @change="handleFileSelect" />
+            <div
+              class="mt-5 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-400"
+            >
+              <input
+                id="evidenceFiles"
+                type="file"
+                multiple
+                class="sr-only"
+                @change="handleFileSelect"
+              />
               <Upload class="mx-auto h-10 w-10 text-slate-400" />
-              <label for="evidenceFiles" class="mt-3 inline-flex cursor-pointer rounded-lg bg-white px-5 py-3 text-base font-bold text-blue-700 shadow-sm ring-1 ring-slate-200">
+              <label
+                for="evidenceFiles"
+                class="mt-3 inline-flex cursor-pointer rounded-lg bg-white px-5 py-3 text-base font-bold text-blue-700 shadow-sm ring-1 ring-slate-200"
+              >
                 추가 파일 업로드
               </label>
-              <p class="mt-3 text-sm text-slate-500">사진, PDF, 검사표 등 추가 자료를 첨부할 수 있습니다.</p>
+              <p class="mt-3 text-sm text-slate-500">
+                사진, PDF, 검사표 등 추가 자료를 첨부할 수 있습니다.
+              </p>
             </div>
 
             <ul v-if="uploadedFiles.length" class="mt-4 space-y-3">
@@ -289,7 +343,8 @@ function handleSubmit() {
               <div>
                 <h2 class="text-xl font-bold text-slate-950">중립적인 검토 기준</h2>
                 <p class="mt-2 text-base leading-7 text-slate-600">
-                  플랫폼은 계약 조건, 채팅 기록, 납품 및 검수 자료를 기준으로 분쟁 내용을 확인합니다.
+                  플랫폼은 계약 조건, 채팅 기록, 납품 및 검수 자료를 기준으로 분쟁 내용을
+                  확인합니다.
                 </p>
               </div>
             </div>
@@ -319,7 +374,8 @@ function handleSubmit() {
               <h3 class="text-lg font-bold text-slate-950">대금 보호 안내</h3>
             </div>
             <p class="mt-3 text-base leading-7 text-slate-600">
-              중재가 접수되면 관련 정산 상태를 함께 확인하여 일방적인 손실이 발생하지 않도록 검토합니다.
+              중재가 접수되면 관련 정산 상태를 함께 확인하여 일방적인 손실이 발생하지 않도록
+              검토합니다.
             </p>
           </div>
         </aside>

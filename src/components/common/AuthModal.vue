@@ -1,92 +1,139 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { MOCK_LOGIN_CREDENTIALS } from '@/stores/user'
+import { computed, ref, watch } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { z } from 'zod'
 
-const props = defineProps<{ mode?: 'login' | 'signup' }>()
+const props = defineProps<{
+  mode?: 'login' | 'signup'
+  externalError?: string
+}>()
+
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'login', payload: { email: string; password: string }): void
-  (e: 'signup', payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }): void
+  (
+    e: 'signup',
+    payload: {
+      name: string
+      email: string
+      password: string
+      companyName: string
+      position: string
+      phone: string
+    },
+  ): void
 }>()
 
-const viewMode = ref(props.mode ?? 'login')
-const errorMessage = ref('')
+const viewMode = ref<'login' | 'signup'>(props.mode ?? 'login')
+const externalErrorMessage = ref(props.externalError ?? '')
 
-const form = reactive({
-  name: '',
-  email: MOCK_LOGIN_CREDENTIALS.email,
-  password: MOCK_LOGIN_CREDENTIALS.password,
-  companyName: '',
-  position: '담당자',
-  phone: '',
-  agreeTerms: false
+const loginSchema = z.object({
+  email: z.string().min(1, '이메일을 입력하세요.').email('유효한 이메일을 입력하세요.'),
+  password: z.string().min(6, '비밀번호는 6자 이상이어야 합니다.'),
+  name: z.string().optional(),
+  companyName: z.string().optional(),
+  position: z.string().optional(),
+  phone: z.string().optional(),
+  agreeTerms: z.boolean().optional(),
 })
+
+const signupSchema = z.object({
+  email: z.string().min(1, '이메일을 입력하세요.').email('유효한 이메일을 입력하세요.'),
+  password: z.string().min(6, '비밀번호는 6자 이상이어야 합니다.'),
+  name: z.string().min(1, '이름을 입력하세요.'),
+  companyName: z.string().min(1, '회사명을 입력하세요.'),
+  position: z.string().min(1, '직책을 입력하세요.'),
+  phone: z
+    .string()
+    .min(1, '연락처를 입력하세요.')
+    .regex(/^[\d-+\s()]+$/, '유효한 연락처 형식을 입력하세요.'),
+  agreeTerms: z.boolean().refine((v) => v === true, { message: '이용 약관에 동의해야 합니다.' }),
+})
+
+const validationSchema = computed(() =>
+  toTypedSchema(viewMode.value === 'login' ? loginSchema : signupSchema),
+)
+
+const { handleSubmit, defineField, errors, resetForm } = useForm({
+  validationSchema,
+  initialValues: {
+    email: '',
+    password: '',
+    name: '',
+    companyName: '',
+    position: '담당자',
+    phone: '',
+    agreeTerms: false,
+  },
+})
+
+const [email] = defineField('email')
+const [password] = defineField('password')
+const [name] = defineField('name')
+const [companyName] = defineField('companyName')
+const [position] = defineField('position')
+const [phone] = defineField('phone')
+const [agreeTerms] = defineField('agreeTerms')
 
 watch(
   () => props.mode,
   (value) => {
-    if (value) {
+    if (value && value !== viewMode.value) {
       viewMode.value = value
-      errorMessage.value = ''
+      externalErrorMessage.value = ''
+      resetForm()
     }
-  }
+  },
+)
+
+watch(
+  () => props.externalError,
+  (value) => {
+    externalErrorMessage.value = value ?? ''
+  },
 )
 
 const title = computed(() => (viewMode.value === 'login' ? '로그인' : '회원가입'))
 const ctaText = computed(() => (viewMode.value === 'login' ? '로그인' : '계정 생성'))
-const switchText = computed(() => (viewMode.value === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'))
+const switchText = computed(() =>
+  viewMode.value === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인',
+)
 
-function validateEmail(email: string) {
-  return /^\S+@\S+\.\S+$/.test(email)
-}
+const firstError = computed(() => {
+  if (externalErrorMessage.value) return externalErrorMessage.value
+  return (
+    errors.value.email ||
+    errors.value.password ||
+    errors.value.name ||
+    errors.value.companyName ||
+    errors.value.position ||
+    errors.value.phone ||
+    errors.value.agreeTerms ||
+    ''
+  )
+})
 
-function submitForm() {
-  errorMessage.value = ''
-
-  if (!validateEmail(form.email)) {
-    errorMessage.value = '유효한 이메일을 입력하세요.'
-    return
-  }
-
-  if (form.password.length < 6) {
-    errorMessage.value = '비밀번호는 6자 이상이어야 합니다.'
-    return
-  }
-
+const onSubmit = handleSubmit((values) => {
+  externalErrorMessage.value = ''
   if (viewMode.value === 'signup') {
-    if (!form.name.trim() || !form.companyName.trim()) {
-      errorMessage.value = '이름과 회사명을 입력하세요.'
-      return
-    }
-    if (!form.agreeTerms) {
-      errorMessage.value = '이용 약관에 동의해야 합니다.'
-      return
-    }
     emit('signup', {
-      name: form.name.trim(),
-      email: form.email,
-      password: form.password,
-      companyName: form.companyName.trim(),
-      position: form.position.trim() || '담당자',
-      phone: form.phone.trim() || '010-0000-0000'
+      name: values.name ?? '',
+      email: values.email,
+      password: values.password,
+      companyName: values.companyName ?? '',
+      position: values.position || '담당자',
+      phone: values.phone || '010-0000-0000',
     })
     return
   }
-
-  if (form.email !== MOCK_LOGIN_CREDENTIALS.email || form.password !== MOCK_LOGIN_CREDENTIALS.password) {
-    errorMessage.value = '이메일 또는 비밀번호가 일치하지 않습니다.'
-    return
-  }
-
-  emit('login', {
-    email: form.email,
-    password: form.password
-  })
-}
+  emit('login', { email: values.email, password: values.password })
+})
 
 function toggleMode() {
   viewMode.value = viewMode.value === 'login' ? 'signup' : 'login'
-  errorMessage.value = ''
+  externalErrorMessage.value = ''
+  resetForm()
 }
 
 function closeModal() {
@@ -106,51 +153,98 @@ function closeModal() {
       </div>
 
       <p class="auth-modal-description">
-        {{ viewMode === 'login' ? '이메일과 비밀번호로 로그인하세요.' : '회원가입 후 RootMatching을 시작하세요.' }}
+        {{
+          viewMode === 'login'
+            ? '이메일과 비밀번호로 로그인하세요.'
+            : '회원가입 후 RootMatching을 시작하세요.'
+        }}
       </p>
 
-      <div class="auth-form">
+      <form class="auth-form" @submit.prevent="onSubmit">
         <div class="form-group">
           <label for="email">이메일</label>
-          <input id="email" v-model="form.email" type="email" class="input" placeholder="example@company.com" />
+          <input
+            id="email"
+            v-model="email"
+            type="email"
+            class="input"
+            placeholder="example@company.com"
+            autocomplete="email"
+          />
         </div>
 
         <div v-if="viewMode === 'signup'" class="form-group">
           <label for="name">이름</label>
-          <input id="name" v-model="form.name" type="text" class="input" placeholder="홍길동" />
+          <input
+            id="name"
+            v-model="name"
+            type="text"
+            class="input"
+            placeholder="홍길동"
+            autocomplete="name"
+          />
         </div>
 
         <div v-if="viewMode === 'signup'" class="form-group">
           <label for="companyName">회사명</label>
-          <input id="companyName" v-model="form.companyName" type="text" class="input" placeholder="회사명을 입력하세요" />
+          <input
+            id="companyName"
+            v-model="companyName"
+            type="text"
+            class="input"
+            placeholder="회사명을 입력하세요"
+            autocomplete="organization"
+          />
         </div>
 
         <div class="form-group">
           <label for="password">비밀번호</label>
-          <input id="password" v-model="form.password" type="password" class="input" placeholder="6자 이상 입력" />
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            class="input"
+            placeholder="6자 이상 입력"
+            :autocomplete="viewMode === 'login' ? 'current-password' : 'new-password'"
+          />
         </div>
 
         <div v-if="viewMode === 'signup'" class="form-grid">
           <div class="form-group">
             <label for="position">직책</label>
-            <input id="position" v-model="form.position" type="text" class="input" placeholder="대표 / 담당자" />
+            <input
+              id="position"
+              v-model="position"
+              type="text"
+              class="input"
+              placeholder="대표 / 담당자"
+            />
           </div>
           <div class="form-group">
             <label for="phone">연락처</label>
-            <input id="phone" v-model="form.phone" type="tel" class="input" placeholder="010-1234-5678" />
+            <input
+              id="phone"
+              v-model="phone"
+              type="tel"
+              class="input"
+              placeholder="010-1234-5678"
+              autocomplete="tel"
+            />
           </div>
         </div>
 
         <div v-if="viewMode === 'signup'" class="form-group checkbox-group">
-          <input id="agreeTerms" v-model="form.agreeTerms" type="checkbox" />
+          <input id="agreeTerms" v-model="agreeTerms" type="checkbox" />
           <label for="agreeTerms">이용 약관 및 개인정보 처리방침에 동의합니다.</label>
         </div>
 
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <p v-if="firstError" class="error-message">{{ firstError }}</p>
 
-        <button class="btn btn-primary btn-lg w-full" type="button" @click="submitForm">{{ ctaText }}</button>
-        <button class="btn btn-ghost btn-sm w-full" type="button" @click="toggleMode">{{ switchText }}</button>
-      </div>
+        <button class="btn btn-primary btn-lg w-full" type="submit">{{ ctaText }}</button>
+        <button class="btn btn-ghost btn-sm w-full" type="button" @click="toggleMode">
+          {{ switchText }}
+        </button>
+      </form>
     </div>
   </div>
 </template>

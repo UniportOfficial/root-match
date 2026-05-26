@@ -24,34 +24,30 @@ const form = reactive<FactoryProfileForm>({
   location: '서울 영등포구 문래동',
   contact: '02-2678-4567',
   mainProcesses: ['금형', '소성가공', '표면처리'],
-  facilities: '5축 CNC 머시닝센터 4대, Wire-cut EDM 2대, 고속 드릴링머신 3대, 정밀 연삭기 2대, 3차원 측정기 1대',
-  producibleItems: '알루미늄 하우징, 자동차 정밀 브라켓, 전자기기 케이스, 소형 금형 부품, 산업용 지그',
+  facilities:
+    '5축 CNC 머시닝센터 4대, Wire-cut EDM 2대, 고속 드릴링머신 3대, 정밀 연삭기 2대, 3차원 측정기 1대',
+  producibleItems:
+    '알루미늄 하우징, 자동차 정밀 브라켓, 전자기기 케이스, 소형 금형 부품, 산업용 지그',
   monthlyCapacity: '시제품 월 300건, 양산 월 5,000개 이상',
   certifications: 'ISO 9001, 뿌리기업 확인서, 소재부품장비 전문기업',
-  introduction: '문래동에서 18년간 정밀가공을 전문으로 운영해 온 공장입니다. 소량 시제품부터 월 단위 양산까지 대응 가능하며, 납기 준수와 외관 품질 관리를 가장 중요하게 보고 있습니다.'
+  introduction:
+    '문래동에서 18년간 정밀가공을 전문으로 운영해 온 공장입니다. 소량 시제품부터 월 단위 양산까지 대응 가능하며, 납기 준수와 외관 품질 관리를 가장 중요하게 보고 있습니다.',
 })
 
 const portfolioImages = ref<File[]>([
   new File(['mock image data'], 'cnc_working_photo.jpg', { type: 'image/jpeg' }),
   new File(['mock image data'], 'aluminum_housing_sample.png', { type: 'image/png' }),
-  new File(['mock image data'], 'inspection_equipment.jpg', { type: 'image/jpeg' })
+  new File(['mock image data'], 'inspection_equipment.jpg', { type: 'image/jpeg' }),
 ])
 const isDragging = ref(false)
 
-const processOptions = [
-  '주조',
-  '금형',
-  '소성가공',
-  '용접',
-  '표면처리',
-  '열처리'
-]
+const processOptions = ['주조', '금형', '소성가공', '용접', '표면처리', '열처리']
 
 const profileTips = [
   '실제 작업 사진을 등록하세요.',
   '가능한 공정을 구체적으로 입력하세요.',
   '납기 가능 범위를 명확히 작성하세요.',
-  '인증 정보가 있으면 신뢰 점수가 올라갑니다.'
+  '인증 정보가 있으면 신뢰 점수가 올라갑니다.',
 ]
 
 function handleProcessToggle(process: string) {
@@ -107,8 +103,8 @@ function handleSubmit() {
     portfolioImages: portfolioImages.value.map((file) => ({
       name: file.name,
       size: file.size,
-      type: file.type
-    }))
+      type: file.type,
+    })),
   })
 
   router.push('/dashboard')
@@ -119,16 +115,25 @@ function handleSubmit() {
   <div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
       <header class="mb-8">
-        <p class="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
+        <p
+          class="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700"
+        >
           <ClipboardCheck class="h-4 w-4" />
           신규 공장 등록
         </p>
-        <h1 class="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">공장 프로필 등록</h1>
-        <p class="mt-3 text-lg text-slate-600">공장 정보를 등록하면 발주처에게 추천될 수 있습니다.</p>
+        <h1 class="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
+          공장 프로필 등록
+        </h1>
+        <p class="mt-3 text-lg text-slate-600">
+          공장 정보를 등록하면 발주처에게 추천될 수 있습니다.
+        </p>
       </header>
 
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <form class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8" @submit.prevent="handleSubmit">
+        <form
+          class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
+          @submit.prevent="handleSubmit"
+        >
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label for="factoryName" class="mb-2 block text-base font-semibold text-slate-900">
@@ -199,7 +204,7 @@ function handleSubmit() {
                   'min-h-14 rounded-lg border px-4 text-base font-semibold transition',
                   form.mainProcesses.includes(process)
                     ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
-                    : 'border-slate-300 bg-white text-slate-800 hover:border-blue-400 hover:bg-blue-50'
+                    : 'border-slate-300 bg-white text-slate-800 hover:border-blue-400 hover:bg-blue-50',
                 ]"
                 @click="handleProcessToggle(process)"
               >
@@ -210,7 +215,9 @@ function handleSubmit() {
 
           <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label for="facilities" class="mb-2 block text-base font-semibold text-slate-900">보유 설비</label>
+              <label for="facilities" class="mb-2 block text-base font-semibold text-slate-900"
+                >보유 설비</label
+              >
               <textarea
                 id="facilities"
                 v-model="form.facilities"
@@ -221,7 +228,9 @@ function handleSubmit() {
             </div>
 
             <div>
-              <label for="producibleItems" class="mb-2 block text-base font-semibold text-slate-900">생산 가능 품목</label>
+              <label for="producibleItems" class="mb-2 block text-base font-semibold text-slate-900"
+                >생산 가능 품목</label
+              >
               <textarea
                 id="producibleItems"
                 v-model="form.producibleItems"
@@ -232,7 +241,9 @@ function handleSubmit() {
             </div>
 
             <div>
-              <label for="monthlyCapacity" class="mb-2 block text-base font-semibold text-slate-900">월 생산 가능량</label>
+              <label for="monthlyCapacity" class="mb-2 block text-base font-semibold text-slate-900"
+                >월 생산 가능량</label
+              >
               <input
                 id="monthlyCapacity"
                 v-model="form.monthlyCapacity"
@@ -243,7 +254,9 @@ function handleSubmit() {
             </div>
 
             <div>
-              <label for="certifications" class="mb-2 block text-base font-semibold text-slate-900">인증/자격 정보</label>
+              <label for="certifications" class="mb-2 block text-base font-semibold text-slate-900"
+                >인증/자격 정보</label
+              >
               <input
                 id="certifications"
                 v-model="form.certifications"
@@ -255,11 +268,15 @@ function handleSubmit() {
           </div>
 
           <section class="mt-8">
-            <label class="mb-2 block text-base font-semibold text-slate-900">포트폴리오 이미지 업로드</label>
+            <label class="mb-2 block text-base font-semibold text-slate-900"
+              >포트폴리오 이미지 업로드</label
+            >
             <div
               :class="[
                 'relative rounded-xl border-2 border-dashed p-8 text-center transition',
-                isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:border-slate-400'
+                isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-300 bg-slate-50 hover:border-slate-400',
               ]"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
@@ -273,8 +290,12 @@ function handleSubmit() {
                 @change="handleFileSelect"
               />
               <ImagePlus class="mx-auto h-12 w-12 text-slate-400" />
-              <p class="mt-3 text-lg font-semibold text-slate-800">사진을 선택하거나 이곳에 끌어놓으세요</p>
-              <p class="mt-1 text-base text-slate-500">작업 현장, 설비, 완성품 사진을 등록할 수 있습니다.</p>
+              <p class="mt-3 text-lg font-semibold text-slate-800">
+                사진을 선택하거나 이곳에 끌어놓으세요
+              </p>
+              <p class="mt-1 text-base text-slate-500">
+                작업 현장, 설비, 완성품 사진을 등록할 수 있습니다.
+              </p>
             </div>
 
             <ul v-if="portfolioImages.length" class="mt-4 space-y-3">
@@ -285,7 +306,9 @@ function handleSubmit() {
               >
                 <div class="flex min-w-0 items-center gap-3">
                   <Upload class="h-5 w-5 shrink-0 text-blue-600" />
-                  <span class="truncate text-base font-medium text-slate-800">{{ image.name }}</span>
+                  <span class="truncate text-base font-medium text-slate-800">{{
+                    image.name
+                  }}</span>
                 </div>
                 <button
                   type="button"
@@ -300,7 +323,9 @@ function handleSubmit() {
           </section>
 
           <section class="mt-8">
-            <label for="introduction" class="mb-2 block text-base font-semibold text-slate-900">소개글</label>
+            <label for="introduction" class="mb-2 block text-base font-semibold text-slate-900"
+              >소개글</label
+            >
             <textarea
               id="introduction"
               v-model="form.introduction"
@@ -322,7 +347,9 @@ function handleSubmit() {
         <aside class="lg:sticky lg:top-8 lg:self-start">
           <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center gap-3">
-              <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+              <div
+                class="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700"
+              >
                 <Lightbulb class="h-6 w-6" />
               </div>
               <h2 class="text-xl font-bold text-slate-950">좋은 프로필 작성 팁</h2>

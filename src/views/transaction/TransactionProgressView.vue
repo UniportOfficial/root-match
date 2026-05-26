@@ -10,7 +10,7 @@ import {
   PackageCheck,
   RefreshCw,
   ShieldCheck,
-  Truck
+  Truck,
 } from 'lucide-vue-next'
 import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
@@ -28,14 +28,30 @@ const steps = [
   { title: '에스크로 결제', description: '대금 보호 적용' },
   { title: '작업 진행', description: '제작 및 상태 업데이트' },
   { title: '납품 검수', description: '납품 자료 확인' },
-  { title: '거래 완료 및 리뷰', description: '정산과 후기 작성' }
+  { title: '거래 완료 및 리뷰', description: '정산과 후기 작성' },
 ]
 
 const statusUpdates = [
-  { title: '소재 입고 완료', date: '2026.05.03', description: '6061 알루미늄 소재 입고 및 수량 확인 완료' },
-  { title: 'CNC 1차 가공 완료', date: '2026.05.09', description: '하우징 외형 가공 및 주요 공차 측정 완료' },
-  { title: '표면처리 완료', date: '2026.05.15', description: '블랙 아노다이징 처리 및 외관 검사 완료' },
-  { title: '납품 등록 완료', date: '2026.05.18', description: '납품 사진과 검사 결과서가 등록되었습니다.' }
+  {
+    title: '소재 입고 완료',
+    date: '2026.05.03',
+    description: '6061 알루미늄 소재 입고 및 수량 확인 완료',
+  },
+  {
+    title: 'CNC 1차 가공 완료',
+    date: '2026.05.09',
+    description: '하우징 외형 가공 및 주요 공차 측정 완료',
+  },
+  {
+    title: '표면처리 완료',
+    date: '2026.05.15',
+    description: '블랙 아노다이징 처리 및 외관 검사 완료',
+  },
+  {
+    title: '납품 등록 완료',
+    date: '2026.05.18',
+    description: '납품 사진과 검사 결과서가 등록되었습니다.',
+  },
 ]
 
 function approveInspection() {
@@ -59,7 +75,9 @@ function reportIssue() {
         <div class="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 class="text-3xl font-bold text-slate-950 sm:text-4xl">작업 진행 대시보드</h1>
-            <p class="mt-3 text-lg text-slate-600">결제 이후 작업 상태, 납품 자료, 검수 결과를 한 화면에서 관리합니다.</p>
+            <p class="mt-3 text-lg text-slate-600">
+              결제 이후 작업 상태, 납품 자료, 검수 결과를 한 화면에서 관리합니다.
+            </p>
           </div>
           <AppBadge variant="green">
             <CheckCircle class="h-4 w-4" />
@@ -81,16 +99,25 @@ function reportIssue() {
               <h2 class="text-2xl font-bold text-slate-950">작업 상태 업데이트</h2>
             </div>
             <div class="mb-6">
-              <div class="mb-2 flex items-center justify-between text-sm font-semibold text-slate-600">
+              <div
+                class="mb-2 flex items-center justify-between text-sm font-semibold text-slate-600"
+              >
                 <span>진행률</span>
                 <span>{{ transaction.progressRate }}%</span>
               </div>
               <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                <div class="h-full rounded-full bg-blue-600" :style="{ width: `${transaction.progressRate}%` }"></div>
+                <div
+                  class="h-full rounded-full bg-blue-600"
+                  :style="{ width: `${transaction.progressRate}%` }"
+                ></div>
               </div>
             </div>
             <ol class="space-y-4">
-              <li v-for="item in statusUpdates" :key="item.title" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <li
+                v-for="item in statusUpdates"
+                :key="item.title"
+                class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+              >
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <h3 class="text-lg font-bold text-slate-950">{{ item.title }}</h3>
@@ -128,7 +155,13 @@ function reportIssue() {
                 <PackageCheck class="h-6 w-6" />
                 검수 승인하고 리뷰 작성
               </AppButton>
-              <AppButton type="button" size="lg" variant="secondary" full-width @click="reportIssue">
+              <AppButton
+                type="button"
+                size="lg"
+                variant="secondary"
+                full-width
+                @click="reportIssue"
+              >
                 <AlertTriangle class="h-6 w-6" />
                 문제 발생, 중재 신청
               </AppButton>

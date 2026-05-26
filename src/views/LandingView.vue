@@ -16,7 +16,7 @@ import {
   Factory,
   Building2,
   Menu,
-  X
+  X,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import AuthModal from '@/components/common/AuthModal.vue'
@@ -25,26 +25,40 @@ import { useUserStore } from '@/stores/user'
 const mobileMenuOpen = ref(false)
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'signup'>('login')
+const authError = ref('')
 const userStore = useUserStore()
 const router = useRouter()
 
 function openAuthModal(mode: 'login' | 'signup') {
   authMode.value = mode
+  authError.value = ''
   showAuthModal.value = true
 }
 
 function handleCloseAuth() {
   showAuthModal.value = false
+  authError.value = ''
 }
 
 function handleLogin(payload: { email: string; password: string }) {
-  if (userStore.login(payload.email, payload.password)) {
+  const result = userStore.login(payload.email, payload.password)
+  if (result.ok) {
+    authError.value = ''
     showAuthModal.value = false
     router.push({ name: 'dashboard' })
+    return
   }
+  authError.value = '이메일 또는 비밀번호 형식이 올바르지 않습니다.'
 }
 
-function handleSignup(payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }) {
+function handleSignup(payload: {
+  name: string
+  email: string
+  password: string
+  companyName: string
+  position: string
+  phone: string
+}) {
   userStore.register(payload)
   showAuthModal.value = false
   router.push({ name: 'dashboard' })
@@ -56,69 +70,72 @@ const metrics = [
     before: '14일',
     after: '3일',
     label: '파트너 탐색 기간',
-    description: '기존 대비 78% 단축'
+    description: '기존 대비 78% 단축',
   },
   {
     icon: TrendingUp,
     value: '20%+',
     label: '신규 수주 증가',
-    description: '플랫폼 활용 시 기대'
+    description: '플랫폼 활용 시 기대',
   },
   {
     icon: Settings,
     value: '6대',
     label: '공정 특화 매칭',
-    description: '주조·금형·소성가공·용접·표면처리·열처리'
+    description: '주조·금형·소성가공·용접·표면처리·열처리',
   },
   {
     icon: Shield,
     value: '통합',
     label: '계약·결제·분쟁 관리',
-    description: '원스톱 서비스 제공'
-  }
+    description: '원스톱 서비스 제공',
+  },
 ]
 
 const factoryPains = [
   { icon: Users, text: '영업 인력 부재로 신규 고객 발굴 어려움' },
   { icon: AlertTriangle, text: '기존 거래처 의존도 높아 리스크 집중' },
-  { icon: TrendingUp, text: '매출 성장 정체 및 수주 불안정' }
+  { icon: TrendingUp, text: '매출 성장 정체 및 수주 불안정' },
 ]
 
 const clientPains = [
   { icon: Search, text: '신뢰할 수 있는 공장 탐색의 어려움' },
   { icon: AlertTriangle, text: '품질 불량 및 납기 지연 리스크' },
-  { icon: Scale, text: '대금 분쟁 및 계약 불이행 위험' }
+  { icon: Scale, text: '대금 분쟁 및 계약 불이행 위험' },
 ]
 
 const solutions = [
   {
     layer: 'LAYER 1',
     title: 'AI 수주 매칭 엔진',
-    description: '공정별 전문성, 설비 역량, 평판 데이터를 기반으로 최적의 파트너를 자동 매칭합니다.',
+    description:
+      '공정별 전문성, 설비 역량, 평판 데이터를 기반으로 최적의 파트너를 자동 매칭합니다.',
     icon: Zap,
-    features: ['6대 공정 특화 분석', '설비·인증 기반 필터링', '실시간 가용량 확인']
+    features: ['6대 공정 특화 분석', '설비·인증 기반 필터링', '실시간 가용량 확인'],
   },
   {
     layer: 'LAYER 2',
     title: '안심 계약 시스템',
     description: '표준 계약서, 전자서명, 에스크로 결제로 거래의 신뢰를 보장합니다.',
     icon: FileSignature,
-    features: ['법률 검토 완료 표준 계약서', '공인 전자서명', '에스크로 안전 결제']
+    features: ['법률 검토 완료 표준 계약서', '공인 전자서명', '에스크로 안전 결제'],
   },
   {
     layer: 'LAYER 3',
     title: '분쟁 중재 시스템',
     description: '전문 중재 위원회가 공정하고 신속하게 분쟁을 해결합니다.',
     icon: Scale,
-    features: ['전문가 중재 위원회', '투명한 처리 프로세스', '이행 보증 제도']
-  }
+    features: ['전문가 중재 위원회', '투명한 처리 프로세스', '이행 보증 제도'],
+  },
 ]
 </script>
 
 <template>
   <div class="min-h-screen bg-white">
     <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">
+    <header
+      class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50"
+    >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
@@ -131,9 +148,15 @@ const solutions = [
 
           <!-- Desktop Navigation -->
           <nav class="hidden md:flex items-center gap-8">
-            <a href="#service" class="text-gray-600 hover:text-blue-600 transition-colors">서비스 소개</a>
-            <a href="#matching" class="text-gray-600 hover:text-blue-600 transition-colors">AI 매칭</a>
-            <a href="#contract" class="text-gray-600 hover:text-blue-600 transition-colors">안심 계약</a>
+            <a href="#service" class="text-gray-600 hover:text-blue-600 transition-colors"
+              >서비스 소개</a
+            >
+            <a href="#matching" class="text-gray-600 hover:text-blue-600 transition-colors"
+              >AI 매칭</a
+            >
+            <a href="#contract" class="text-gray-600 hover:text-blue-600 transition-colors"
+              >안심 계약</a
+            >
             <a href="#contact" class="text-gray-600 hover:text-blue-600 transition-colors">문의</a>
           </nav>
 
@@ -156,10 +179,7 @@ const solutions = [
           </div>
 
           <!-- Mobile Menu Button -->
-          <button
-            @click="mobileMenuOpen = !mobileMenuOpen"
-            class="md:hidden p-2 text-gray-600"
-          >
+          <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 text-gray-600">
             <Menu v-if="!mobileMenuOpen" class="w-6 h-6" />
             <X v-else class="w-6 h-6" />
           </button>
@@ -173,7 +193,13 @@ const solutions = [
             <a href="#contract" class="px-3 py-2 text-gray-600 hover:text-blue-600">안심 계약</a>
             <a href="#contact" class="px-3 py-2 text-gray-600 hover:text-blue-600">문의</a>
             <div class="flex flex-col gap-2 pt-3 border-t border-gray-100">
-              <button type="button" class="px-3 py-2 text-gray-700 text-left" @click="openAuthModal('login')">로그인</button>
+              <button
+                type="button"
+                class="px-3 py-2 text-gray-700 text-left"
+                @click="openAuthModal('login')"
+              >
+                로그인
+              </button>
               <button
                 type="button"
                 class="mx-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-center font-medium"
@@ -190,6 +216,7 @@ const solutions = [
     <AuthModal
       v-if="showAuthModal"
       :mode="authMode"
+      :external-error="authError"
       @close="handleCloseAuth"
       @login="handleLogin"
       @signup="handleSignup"
@@ -277,7 +304,9 @@ const solutions = [
                 :key="pain.text"
                 class="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
               >
-                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div
+                  class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
                   <component :is="pain.icon" class="w-4 h-4 text-red-500" />
                 </div>
                 <span class="text-gray-700">{{ pain.text }}</span>
@@ -299,7 +328,9 @@ const solutions = [
                 :key="pain.text"
                 class="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
               >
-                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div
+                  class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
                   <component :is="pain.icon" class="w-4 h-4 text-red-500" />
                 </div>
                 <span class="text-gray-700">{{ pain.text }}</span>
@@ -325,7 +356,9 @@ const solutions = [
           >
             <div class="flex flex-col lg:flex-row lg:items-center gap-6">
               <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/25">
+                <div
+                  class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/25"
+                >
                   <component :is="solution.icon" class="w-7 h-7 text-white" />
                 </div>
                 <div>
@@ -353,11 +386,12 @@ const solutions = [
     </section>
 
     <!-- CTA Section -->
-    <section id="contract" class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 to-blue-700">
+    <section
+      id="contract"
+      class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 to-blue-700"
+    >
       <div class="max-w-4xl mx-auto text-center">
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
-          지금 바로 시작하세요
-        </h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">지금 바로 시작하세요</h2>
         <p class="text-blue-100 text-lg mb-8">
           RootMatching과 함께 새로운 비즈니스 기회를 만나보세요
         </p>
@@ -427,7 +461,9 @@ const solutions = [
           </div>
         </div>
 
-        <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div
+          class="border-t border-gray-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
           <p class="text-sm">&copy; 2024 RootMatching. All rights reserved.</p>
           <div class="flex items-center gap-6 text-sm">
             <a href="#" class="hover:text-blue-400 transition-colors">이용약관</a>

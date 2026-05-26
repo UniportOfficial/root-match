@@ -15,9 +15,15 @@ export const mockReceivedQuoteRequests: ReceivedQuoteRequest[] = [
     description:
       '6061 알루미늄 소재 기준으로 CNC 정밀가공과 표면 아노다이징 처리가 필요합니다. 외관 스크래치 기준이 엄격하며, 초도품 검수 후 양산 전환 예정입니다.',
     attachments: [
-      { id: 'att-001', name: 'housing_2d_drawing.pdf', url: '#', size: 2400000, type: 'application/pdf' },
-      { id: 'att-002', name: 'housing_3d_model.step', url: '#', size: 8200000, type: 'model/step' }
-    ]
+      {
+        id: 'att-001',
+        name: 'housing_2d_drawing.pdf',
+        url: '#',
+        size: 2400000,
+        type: 'application/pdf',
+      },
+      { id: 'att-002', name: 'housing_3d_model.step', url: '#', size: 8200000, type: 'model/step' },
+    ],
   },
   {
     id: 'req-002',
@@ -33,8 +39,14 @@ export const mockReceivedQuoteRequests: ReceivedQuoteRequest[] = [
     description:
       '프레스 성형 후 아연도금 처리가 필요합니다. 양산 전 PPAP 수준의 검사 성적서 제출이 가능한 업체를 찾고 있습니다.',
     attachments: [
-      { id: 'att-003', name: 'bracket_specification.xlsx', url: '#', size: 920000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
-    ]
+      {
+        id: 'att-003',
+        name: 'bracket_specification.xlsx',
+        url: '#',
+        size: 920000,
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+    ],
   },
   {
     id: 'req-003',
@@ -50,7 +62,7 @@ export const mockReceivedQuoteRequests: ReceivedQuoteRequest[] = [
     description:
       'SS400 판재 절곡 및 용접 후 분체도장 마감이 필요합니다. 설치 현장 납품 가능 여부도 함께 검토해 주세요.',
     attachments: [
-      { id: 'att-004', name: 'cover_layout.pdf', url: '#', size: 3100000, type: 'application/pdf' }
-    ]
-  }
+      { id: 'att-004', name: 'cover_layout.pdf', url: '#', size: 3100000, type: 'application/pdf' },
+    ],
+  },
 ]

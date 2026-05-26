@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockFactoryRecommendations } from '@/data/factoryData'
 import type { FactoryRecommendation } from '@/types'
+import { useWorkflowStore } from '@/stores/workflow'
 import {
   MapPin,
   Settings,
@@ -18,10 +18,10 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
-const factories = ref<FactoryRecommendation[]>(mockFactoryRecommendations)
-
-const selectedFactory = ref<FactoryRecommendation | null>(factories.value[0])
+const factories = computed<FactoryRecommendation[]>(() => workflowStore.recommendations)
+const selectedFactory = computed<FactoryRecommendation | null>(() => workflowStore.selectedFactory)
 
 // Filter states
 const processFilter = ref('')
@@ -53,7 +53,7 @@ const filteredFactories = computed(() => {
 })
 
 function selectFactory(factory: FactoryRecommendation) {
-  selectedFactory.value = factory
+  workflowStore.selectFactory(factory)
 }
 
 function goToDetail(id: string) {
@@ -61,6 +61,9 @@ function goToDetail(id: string) {
 }
 
 function requestQuote() {
+  if (!workflowStore.selectedFactory && filteredFactories.value[0]) {
+    workflowStore.selectFactory(filteredFactories.value[0])
+  }
   router.push('/contract')
 }
 

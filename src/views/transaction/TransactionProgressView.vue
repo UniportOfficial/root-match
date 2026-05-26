@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
@@ -15,20 +15,12 @@ import {
 import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import ProcessStepper from '@/components/common/ProcessStepper.vue'
+import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
-const transaction = reactive({
-  projectName: '알루미늄 하우징 시제품 제작',
-  client: '루트테크',
-  factory: '문래정밀가공',
-  amount: '4,200,000원',
-  dueDate: '2026년 5월 20일',
-  status: '납품 검수 대기',
-  progressRate: 100,
-  deliveryFile: new File(['mock delivery data'], 'delivery_photo_package.zip', { type: 'application/zip' }),
-  inspectionFile: new File(['mock inspection data'], 'final_inspection_report.pdf', { type: 'application/pdf' })
-})
+const transaction = computed(() => workflowStore.transaction)
 
 const steps = [
   { title: '표준 계약서 생성', description: '계약 조건 확정' },
@@ -47,7 +39,7 @@ const statusUpdates = [
 ]
 
 function approveInspection() {
-  console.log('Inspection Approved:', { ...transaction })
+  workflowStore.approveInspection()
   router.push('/transaction/review')
 }
 

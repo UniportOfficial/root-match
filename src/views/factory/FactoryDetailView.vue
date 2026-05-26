@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { mockDefaultFactoryDetail, mockFactoryDetails } from '@/data/factoryData'
+import { mockDefaultFactoryDetail, mockFactoryDetails, mockFactoryRecommendations } from '@/data/factoryData'
+import { useWorkflowStore } from '@/stores/workflow'
 import {
   MapPin,
   ShieldCheck,
@@ -20,11 +21,16 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
 const factoryId = computed(() => route.params.id as string)
 const factory = computed(() => mockFactoryDetails[factoryId.value] || mockDefaultFactoryDetail)
 
 const handleQuoteRequest = () => {
+  const recommendation = mockFactoryRecommendations.find((item) => item.id === factoryId.value)
+  if (recommendation) {
+    workflowStore.selectFactory(recommendation)
+  }
   router.push('/contract')
 }
 

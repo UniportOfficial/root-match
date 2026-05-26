@@ -2,8 +2,10 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Upload, X, FileText, CheckCircle, Sparkles, Clock, Star, RefreshCw, DollarSign } from 'lucide-vue-next'
+import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
 interface FormData {
   projectName: string
@@ -16,18 +18,11 @@ interface FormData {
 }
 
 const form = reactive<FormData>({
-  projectName: '알루미늄 하우징 시제품 제작',
-  processType: 'mold',
-  productItem: '전장 모듈용 알루미늄 케이스',
-  estimatedQuantity: '1차 500개, 양산 월 3,000개',
-  desiredDeadline: '2026-05-20',
-  budgetRange: '3,000만원 ~ 4,500만원',
-  detailRequirements: '6061 알루미늄 소재 기준으로 CNC 정밀가공과 표면 아노다이징 처리가 필요합니다. 외관 스크래치 기준이 엄격하며, 초도품 검수 후 양산 전환 예정입니다.'
+  ...workflowStore.currentRequest
 })
 
 const uploadedFiles = ref<File[]>([
-  new File(['mock drawing data'], 'housing_2d_drawing.pdf', { type: 'application/pdf' }),
-  new File(['mock step data'], 'housing_3d_model.step', { type: 'model/step' })
+  ...workflowStore.requestFiles.map((file) => new File(['mock file data'], file.name, { type: file.type }))
 ])
 const isDragging = ref(false)
 
@@ -90,10 +85,10 @@ function formatFileSize(bytes: number): string {
 }
 
 function handleSubmit() {
-  console.log('Form Data:', {
-    ...form,
-    files: uploadedFiles.value.map(f => ({ name: f.name, size: f.size, type: f.type }))
-  })
+  workflowStore.submitRequest(
+    { ...form },
+    uploadedFiles.value.map((file) => ({ name: file.name, size: file.size, type: file.type }))
+  )
   router.push('/client/matching')
 }
 </script>

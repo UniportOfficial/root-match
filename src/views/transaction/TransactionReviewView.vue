@@ -4,19 +4,19 @@ import { useRouter } from 'vue-router'
 import { CheckCircle, MessageSquareText, RefreshCw, Star } from 'lucide-vue-next'
 import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
+import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
 const review = reactive({
-  projectName: '알루미늄 하우징 시제품 제작',
-  factory: '문래정밀가공',
-  rating: 5,
-  content: '납기와 품질 모두 만족스러웠습니다. 작업 상태 공유가 빠르고 검사 결과서도 상세해서 다음 양산 건도 논의하고 싶습니다.',
-  nextAction: 'reorder'
+  rating: workflowStore.review.rating,
+  content: workflowStore.review.content,
+  nextAction: workflowStore.review.nextAction
 })
 
 function submitReview() {
-  console.log('Transaction Review:', { ...review })
+  workflowStore.submitReview({ ...review })
   router.push('/dashboard')
 }
 </script>
@@ -36,8 +36,8 @@ function submitReview() {
       <form class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8" @submit.prevent="submitReview">
         <div class="mb-6 rounded-xl bg-slate-50 p-5">
           <p class="text-sm font-semibold text-slate-500">프로젝트</p>
-          <h2 class="mt-2 text-xl font-bold text-slate-950">{{ review.projectName }}</h2>
-          <p class="mt-1 text-base text-slate-600">{{ review.factory }}</p>
+          <h2 class="mt-2 text-xl font-bold text-slate-950">{{ workflowStore.reviewContext.projectName }}</h2>
+          <p class="mt-1 text-base text-slate-600">{{ workflowStore.reviewContext.factory }}</p>
         </div>
 
         <section class="space-y-5">

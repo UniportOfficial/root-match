@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { CheckCircle, CreditCard, FileSignature, LockKeyhole, ShieldCheck } from 'lucide-vue-next'
 import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import ProcessStepper from '@/components/common/ProcessStepper.vue'
+import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
+const workflowStore = useWorkflowStore()
 
-const contract = reactive({
-  projectName: '알루미늄 하우징 시제품 제작',
-  client: '루트테크',
-  factory: '문래정밀가공',
-  amount: '4,200,000원',
-  dueDate: '2026년 5월 20일',
-  paymentMethod: 'escrow'
+const contract = computed(() => workflowStore.contract)
+const paymentMethod = computed({
+  get: () => workflowStore.paymentMethod,
+  set: (value) => {
+    workflowStore.paymentMethod = value
+  }
 })
 
 const steps = [
@@ -25,7 +26,7 @@ const steps = [
 ]
 
 function completePayment() {
-  console.log('Contract Escrow Payment:', { ...contract })
+  workflowStore.completePayment()
   router.push('/transaction/progress')
 }
 </script>
@@ -81,7 +82,7 @@ function completePayment() {
               <h2 class="text-2xl font-bold text-slate-950">결제 방식</h2>
             </div>
             <label class="flex cursor-pointer items-start gap-4 rounded-xl border border-blue-200 bg-blue-50 p-5">
-              <input v-model="contract.paymentMethod" type="radio" value="escrow" class="mt-1 h-5 w-5 text-blue-600" />
+              <input v-model="paymentMethod" type="radio" value="escrow" class="mt-1 h-5 w-5 text-blue-600" />
               <div>
                 <div class="flex items-center gap-2">
                   <span class="text-lg font-bold text-slate-950">에스크로 결제</span>

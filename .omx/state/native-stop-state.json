@@ -9,6 +9,16 @@
         "last_turn_id": "019e639d-2bd1-7273-aeab-1dd47d02c319",
         "last_thread_id": null
       }
+    },
+    "019e639c-b112-72a1-bcb4-8dd5cc094d9a": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|?��? 결과: ???�크?�로?�는 ?�면 ?�동 기�??�로???�주 가?�합?�다. ?�만 ?�사?�자가 ?�린 견적 ??추천받�? 공장 ??계약 ??거래 진행 ???�기???�이?��? ?�어지???�제 ?�무 ?�름?�로???�직 부족합?�다. 검증한 ?�름: `/client/request` ??`/client/matching` ??`/contract` ??`/transaction/progress` ??`/transaction/review` ??`/dashboard` 증거: - `pnpm build` ?�공 - dev ?�버?�서 ??주요 경로 모두 http 200 ?�답 ?�인 - 검�???dev ?�버??종료?�고, ?�성??`dist/`???�거?�습?�다. 주요 ?�슈??3개입?�다. 1. 견적 ?�록 ?�이?��? ?�음 ?�계�??�달?��? ?�습?�다. [clientrequestview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/client/clientrequestview.vue:92)?�서 ?�출 ??`console.log`�??�고 `/client/matching`?�로 ?�동?�니?? ?�로???�일�??�력값이 store, query, route state, backend ?�디?�도 ?�?�되지 ?�습?�다. 2. 추천 공장 ?�택??계약 ?�면??반영?��? ?�습?�다. [matchingresultview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/client/matchingresultview.vue:63)?�서 ?�떤 공장??골라??그냥 `/contract`�??�동?�니?? 계약 ?�면?� [contractescrowview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/contract/contractescrowview.vue:11)??고정 mock 계약 ?�이?��? ?�용?�니?? 3. 계약, 검???�인, ?�기 ?�록???�제 ?�???�이 ?�동�??�니?? [contractescrowview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/contract/contractescrowview.vue:27), [transactionprogressview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/transaction/transactionprogressview.vue:49), [transactionreviewview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/transaction/transactionreviewview.vue:18) 모두 `console.log` ???�음 ?�면?�로 ?�기??구조?�니?? ?�정: **?�로?��????�로?�로??pass, ?�제 주요 ?�크?�로?�로??revise**?�니?? ?�선?�위??`견적/?�택공장/계약/거래/?�기`�??�나??pinia store??mock transaction store�?묶어???�계별로 같�? ?�이?��? ?�어받게 만드??것입?�다.",
+        "first_seen_at": "2026-05-26T09:40:21.227Z",
+        "last_seen_at": "2026-05-26T09:40:21.227Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e63a6-5d13-7f71-ac0c-c560d5b75907",
+        "last_thread_id": null
+      }
     }
   }
 }

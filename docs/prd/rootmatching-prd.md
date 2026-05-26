@@ -7,10 +7,10 @@
 | 프로젝트명 | **Rootmatching** (rootmatching)                                                                                                                                     |
 | 도메인     | 한국 뿌리산업(6대 공정) 발주처 ↔ 공장 매칭 플랫폼                                                                                                                   |
 | 작성 기준  | 2026-05-26                                                                                                                                                          |
-| 버전       | **PRD v0.3**                                                                                                                                                        |
+| 버전       | **PRD v0.4**                                                                                                                                                        |
 | 작성자     | Rootmatching 팀 (동국대 2026-1 기술창업캡스톤디자인 1)                                                                                                              |
 | 팀 구성    | 팀장 **이용우** · 팀원 **박세준 · 서동건 · 장준서**                                                                                                                 |
-| 상태       | v0.3 — **스택 전환 결정** (Vue 3 프로토타입 → Next.js + NestJS 모노레포). Phase 0 archived, Phase 1 셋업 대기.                                                      |
+| 상태       | v0.4 — **인증 전략 확정** (Better Auth 자체 호스팅 채택). Phase 1.Week 1 완료, Week 2 시작 직전.                                                                    |
 | 참고 자료  | rootmatching-deck v1.7 (본문 24장 + Appendix 10장), 12장 캡스톤 발표 덱, IR PDF 24장, `docs/design-system.md`, Phase 0 Vue 프로토타입 (`dev-vue3-prototype` 브랜치) |
 | 문서 위치  | `docs/prd/rootmatching-prd.md` (v0.2부터 이전: `.sisyphus/prd/`)                                                                                                    |
 
@@ -29,6 +29,8 @@
 > **Why Now**: 분쟁이 +42% YoY(2,846→4,041건)로 폭발 중이고, 영세 81.5% + 60대 31.4%의 인구학적 구조 때문에 일반 SaaS는 절대 못 들어오는 시장 — 정책 정합성(중기부 MSS · 소진공 SEMAS · 산자부 MOTIE)도 확보된 진입 적기.
 
 > **v0.3 핵심 변경**: 비즈니스 가설은 v0.1/v0.2와 동일. 기술 스택을 **Next.js 15 (App Router) + NestJS 11 + Prisma + PostgreSQL** 모노레포로 전면 전환. Vue 3 프로토타입은 `dev-vue3-prototype` 브랜치에 보존되어 UI 패턴·비즈니스 흐름 검증용 레퍼런스로만 사용한다.
+
+> **v0.4 핵심 변경**: 인증 전략을 자체 NestJS JWT(passport-jwt + bcrypt)에서 **Better Auth 자체 호스팅**(NestJS 안에 `better-auth` 라이브러리 + Prisma adapter)으로 전환. 소셜 로그인(Google/GitHub/Kakao)을 빌트인으로 확보하고, 세션·refresh rotation·CSRF·rate limiting을 Better Auth가 처리. **Vendor lock-in 0** — DB만 통제하므로 Railway/Fly.io 이전 자유. 비즈니스 가설은 v0.1~v0.3과 동일. §FR-1, §9.3, §13 Phase 1.Week 2, §15.2, §17.4 갱신.
 
 ---
 
@@ -307,18 +309,20 @@ Step 11. 정산·평판 적립 (재거래·재수주 트리거)
 
 ### FR-1. 인증 및 권한
 
-| ID      | 요구사항                                              | Priority |
-| ------- | ----------------------------------------------------- | -------- |
-| FR-1.1  | 이메일 + 비밀번호 로그인 (NestJS JWT)                 | P0       |
-| FR-1.2  | 회원가입 (역할 선택: client / factory / operator)     | P0       |
-| FR-1.3  | 비밀번호 8자 이상 + bcrypt 해싱 + 비밀번호 확인       | P0       |
-| FR-1.4  | 이메일 중복 검증 (Prisma unique constraint)           | P0       |
-| FR-1.5  | 세션 유지 (httpOnly refresh cookie + access JWT 15분) | P0       |
-| FR-1.6  | 로그아웃 (refresh token revoke)                       | P0       |
-| FR-1.7  | 라우터 가드: Next.js `middleware.ts` + NestJS Guards  | P0       |
-| FR-1.8  | 역할별 라우트 분리                                    | P0       |
-| FR-1.9  | 약관 동의 (전자상거래법 + 개인정보처리방침)           | P0       |
-| FR-1.10 | 카카오톡 알림톡 가입 안내                             | P1       |
+| ID      | 요구사항                                                                       | Priority |
+| ------- | ------------------------------------------------------------------------------ | -------- |
+| FR-1.1  | 이메일 + 비밀번호 로그인 (Better Auth `signInEmail`)                           | P0       |
+| FR-1.2  | 회원가입 (역할 선택: client / factory / operator)                              | P0       |
+| FR-1.3  | 비밀번호 8자 이상 + Better Auth scrypt 해싱 + 비밀번호 확인                    | P0       |
+| FR-1.4  | 이메일 중복 검증 (Better Auth + Prisma unique constraint)                      | P0       |
+| FR-1.5  | 세션 유지 (Better Auth session 7일 / httpOnly + SameSite=Strict cookie)        | P0       |
+| FR-1.6  | 로그아웃 (Better Auth session DB 즉시 무효화)                                  | P0       |
+| FR-1.7  | 라우터 가드: Next.js `middleware.ts` + NestJS Guard (Better Auth session 검증) | P0       |
+| FR-1.8  | 역할별 라우트 분리                                                             | P0       |
+| FR-1.9  | 약관 동의 (전자상거래법 + 개인정보처리방침)                                    | P0       |
+| FR-1.10 | 카카오톡 알림톡 가입 안내                                                      | P1       |
+| FR-1.11 | 소셜 로그인 — Google / GitHub (Better Auth 빌트인)                             | P1       |
+| FR-1.12 | 카카오 OAuth (Better Auth `generic-oauth` 플러그인)                            | P2       |
 
 ### FR-2. 발주 (Client Request)
 
@@ -603,20 +607,21 @@ rootmatching/
 
 ### 9.3 Backend (apps/api)
 
-| 항목         | 선택                                                                        |
-| ------------ | --------------------------------------------------------------------------- |
-| Framework    | NestJS 11                                                                   |
-| TypeScript   | 5.7+ strict                                                                 |
-| ORM          | Prisma 6                                                                    |
-| Database     | PostgreSQL 16 (Neon serverless)                                             |
-| Auth         | `@nestjs/passport` + `passport-jwt` + `bcrypt`                              |
-| Validation   | `nestjs-zod` (FE/BE schema 공유) 또는 class-validator + class-transformer   |
-| API Docs     | `@nestjs/swagger` (OpenAPI 자동 생성)                                       |
-| Logger       | `nestjs-pino`                                                               |
-| Rate Limit   | `@nestjs/throttler`                                                         |
-| Cron         | `@nestjs/schedule` (평판 batch, 견적 만료)                                  |
-| Health Check | `@nestjs/terminus`                                                          |
-| 배포         | **Railway** 또는 **Fly.io** (PoC), production은 Vercel Functions/AWS도 후보 |
+| 항목         | 선택                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework    | NestJS 11                                                                                                                                           |
+| TypeScript   | 5.7+ strict                                                                                                                                         |
+| ORM          | Prisma 6                                                                                                                                            |
+| Database     | PostgreSQL 16 (Neon serverless)                                                                                                                     |
+| Auth         | **Better Auth 자체 호스팅** (`better-auth` + `better-auth/adapters/prisma`) + NestJS Guard (session 검증) — 자체 JWT/passport-jwt/bcrypt 사용 안 함 |
+| OAuth        | Better Auth 빌트인 (Google, GitHub) + `generic-oauth` 플러그인 (Kakao) — Phase 2+에서 활성                                                          |
+| Validation   | `nestjs-zod` (FE/BE schema 공유) — 인증 외 DTO 검증에 사용                                                                                          |
+| API Docs     | `@nestjs/swagger` (OpenAPI 자동 생성)                                                                                                               |
+| Logger       | `nestjs-pino`                                                                                                                                       |
+| Rate Limit   | `@nestjs/throttler`                                                                                                                                 |
+| Cron         | `@nestjs/schedule` (평판 batch, 견적 만료)                                                                                                          |
+| Health Check | `@nestjs/terminus`                                                                                                                                  |
+| 배포         | **Railway** 또는 **Fly.io** (PoC), production은 Vercel Functions/AWS도 후보                                                                         |
 
 ### 9.4 Shared (packages/shared)
 
@@ -829,15 +834,24 @@ SENTRY_DSN=
 - GitHub Actions: lint + typecheck (PR 차단)
 - Vercel project 연동 (web preview)
 
-**Week 2: 백엔드 기반 (apps/api)**
+**Week 2: 백엔드 기반 (apps/api) — Better Auth 자체 호스팅**
 
-- NestJS 11 init + Prisma 6 + Neon PostgreSQL 연결
-- User / Company / Auth 도메인 모듈
-- JWT (access 15분 + refresh 7일 httpOnly cookie)
-- bcrypt cost 12 + zod validation pipe (nestjs-zod)
+- Prisma 6 + Neon PostgreSQL 연결 (`apps/api/prisma/schema.prisma`)
+  - Better Auth 표준 테이블 (`User`, `Session`, `Account`, `Verification`) + Rootmatching 비즈니스 테이블 (`Company`, `Profile` 등) 공존
+  - `User.role`은 Prisma enum (`CLIENT | FACTORY | OPERATOR`) — Better Auth 기본 user에 우리 도메인 필드 확장
+- Better Auth 통합
+  - `better-auth` 라이브러리 + `better-auth/adapters/prisma`
+  - email/password (Better Auth scrypt 해싱) + 세션 7일 httpOnly + SameSite=Strict + Secure(prod)
+  - 회원가입 시 `agreeTerms`, `role`, `companyName`, `phone` 등 도메인 필드는 `additionalFields`로 확장
+  - Better Auth handler를 NestJS controller에 마운트 (`/api/auth/*`)
+- NestJS Guard / Decorator
+  - `BetterAuthGuard` — session 검증 + `req.user` 주입
+  - `@Roles('operator')` + `RolesGuard` — 운영자 권한 분리
+- `nestjs-zod` validation pipe — 인증 외 DTO 검증 일관성 (Request, Quote 등)
 - `@nestjs/swagger` OpenAPI 자동 문서 (`/api/docs`)
-- Supertest E2E: `POST /auth/register` → `POST /auth/login` → `GET /me`
-- Railway 데모 배포
+- 보안 + 운영: `@nestjs/throttler` (분당 5회 로그인 제한) + `helmet` + `nestjs-pino`
+- E2E 테스트 (Supertest): `signUpEmail` → `signInEmail` → `GET /me` (Better Auth 표준 handler 경유)
+- (선택) Railway 데모 배포 — Week 4로 연기 가능
 
 **Week 3: 프론트 기반 (apps/web)**
 
@@ -968,17 +982,18 @@ SENTRY_DSN=
 | 일반 SaaS 진입 (네이버/카카오) | 시장 잠식         | 운영자 + 법적 책임 구조로 차별 |
 | 정부 시스템 유사 사업          | 정책 정합성 약화  | 협업 모델 (위탁/연계) 검토     |
 
-### 15.2 기술 리스크 (v0.3 갱신)
+### 15.2 기술 리스크 (v0.4 갱신)
 
-| 리스크                            | 영향                  | 대응                                     |
-| --------------------------------- | --------------------- | ---------------------------------------- |
-| Next.js 15 + React 19 안정성      | 신규 버그 가능        | 1~2 minor release 후 production deploy   |
-| Prisma → Neon serverless 연결 풀  | Cold start            | Prisma Accelerate 또는 Prisma Data Proxy |
-| 전자계약 자체 구현 법적 효력 의문 | 분쟁 시 약점          | MVP는 모두싸인/이폼사인 연계             |
-| 토스페이먼츠 에스크로 비용        | 1% 결제보호 마진 압박 | 거래량 확보 후 협상                      |
-| 분쟁 중재 자동화 한계             | 운영자 부담 폭증      | 100% Human-in-the-Loop, 비자동화 명시    |
-| 60대 사용자 UX 검증 부족          | 도입 실패             | Phase 6 베타 5명+ 60대 공장주 실측       |
-| 모노레포 빌드/배포 복잡도         | DevOps 부담           | Turborepo 도입 검토 (Phase 1.Week 4)     |
+| 리스크                            | 영향                                  | 대응                                                                                                        |
+| --------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Next.js 15 + React 19 안정성      | 신규 버그 가능                        | 1~2 minor release 후 production deploy                                                                      |
+| Prisma → Neon serverless 연결 풀  | Cold start                            | Prisma Accelerate 또는 Prisma Data Proxy                                                                    |
+| **Better Auth 신생 라이브러리**   | API 안정성·NestJS adapter 패턴 미확립 | 정확한 버전 핀(`pnpm-workspace.yaml`) + Better Auth changelog 1주 단위 추적 + 자체 JWT fallback 패턴 문서화 |
+| 전자계약 자체 구현 법적 효력 의문 | 분쟁 시 약점                          | MVP는 모두싸인/이폼사인 연계                                                                                |
+| 토스페이먼츠 에스크로 비용        | 1% 결제보호 마진 압박                 | 거래량 확보 후 협상                                                                                         |
+| 분쟁 중재 자동화 한계             | 운영자 부담 폭증                      | 100% Human-in-the-Loop, 비자동화 명시                                                                       |
+| 60대 사용자 UX 검증 부족          | 도입 실패                             | Phase 6 베타 5명+ 60대 공장주 실측                                                                          |
+| 모노레포 빌드/배포 복잡도         | DevOps 부담                           | Turborepo 도입 검토 (Phase 1.Week 4)                                                                        |
 
 ### 15.3 핵심 가정
 
@@ -1081,24 +1096,25 @@ SENTRY_DSN=
 
 ### 17.4 결정된 사항 / 남은 결정
 
-#### 결정됨 (v0.3)
+#### 결정됨 (v0.4 기준)
 
-| 항목                | 결정                                                                     |
-| ------------------- | ------------------------------------------------------------------------ |
-| 기술 스택 (프론트)  | **Next.js 15 (App Router, React 19)**                                    |
-| 기술 스택 (백엔드)  | **NestJS 11 + Prisma 6 + PostgreSQL**                                    |
-| 저장소 구조         | **pnpm workspaces 모노레포** (`apps/web`, `apps/api`, `packages/shared`) |
-| Vue 코드 처리       | `dev-vue3-prototype` 브랜치 보존, main 미반영                            |
-| 디자인 시스템       | `docs/design-system.md` 토큰 Tailwind로 이식                             |
-| 폼 라이브러리 (web) | React Hook Form + zod                                                    |
-| User.role           | `client \| factory \| operator` (Prisma enum + shared zod)               |
-| 금액 단위           | 원(₩) 정수 (DB), 포맷팅 layer만 만원 표시                                |
-| trustScore 단위     | 0~100 정수                                                               |
-| 인증 방식           | NestJS JWT (access 15분 + refresh 7일 httpOnly)                          |
-| 데이터베이스        | Neon (PostgreSQL serverless)                                             |
-| 배포                | Vercel (web) + Railway/Fly (api)                                         |
-| 전자계약            | 외부 연계 (모두싸인 또는 이폼사인)                                       |
-| PG                  | 토스페이먼츠                                                             |
+| 항목                | 결정                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 기술 스택 (프론트)  | **Next.js 15 (App Router, React 19)**                                                                                     |
+| 기술 스택 (백엔드)  | **NestJS 11 + Prisma 6 + PostgreSQL**                                                                                     |
+| 저장소 구조         | **pnpm workspaces 모노레포** (`apps/web`, `apps/api`, `packages/shared`)                                                  |
+| Vue 코드 처리       | `dev-vue3-prototype` 브랜치 보존, main 미반영                                                                             |
+| 디자인 시스템       | `docs/design-system.md` 토큰 Tailwind로 이식                                                                              |
+| 폼 라이브러리 (web) | React Hook Form + zod                                                                                                     |
+| User.role           | `client \| factory \| operator` (Prisma enum + shared zod)                                                                |
+| 금액 단위           | 원(₩) 정수 (DB), 포맷팅 layer만 만원 표시                                                                                 |
+| trustScore 단위     | 0~100 정수                                                                                                                |
+| **인증 방식**       | **Better Auth 자체 호스팅** (`better-auth` + Prisma adapter) — 세션 7일 httpOnly cookie, scrypt 해싱, NestJS Guard로 보호 |
+| **소셜 로그인**     | Google / GitHub (Better Auth 빌트인, P1) · Kakao (`generic-oauth` 플러그인, P2)                                           |
+| 데이터베이스        | Neon (PostgreSQL serverless)                                                                                              |
+| 배포                | Vercel (web) + Railway/Fly (api)                                                                                          |
+| 전자계약            | 외부 연계 (모두싸인 또는 이폼사인)                                                                                        |
+| PG                  | 토스페이먼츠                                                                                                              |
 
 #### 남은 결정
 
@@ -1106,7 +1122,6 @@ SENTRY_DSN=
 | -------------------- | ---------------------------------------- | --------------- |
 | Tailwind 버전        | 3.4 (안정) vs 4.x (최신)                 | Phase 1.Week 3  |
 | Turborepo 도입       | pnpm workspaces 단독 vs +Turborepo       | Phase 1.Week 4  |
-| Auth 라이브러리      | Next-Auth v5 vs 자체 JWT 클라이언트      | Phase 1.Week 3  |
 | Server State         | TanStack Query vs Server Components 위주 | Phase 1.Week 3  |
 | BM 단위 시뮬레이션   | 100개 vs 700개 vs 1,000개 단위 통일 여부 | Phase 6 베타 후 |
 | 카카오 알림톡 공급자 | NHN Toast vs Bizmsg                      | Phase 5         |
@@ -1115,8 +1130,9 @@ SENTRY_DSN=
 
 ## 변경 이력
 
-| 버전     | 날짜           | 변경 사항                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| -------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| v0.1     | 2026-05-26     | 초안 작성 — 3개 핸드오프 문서 + 디자인 시스템 + 현재 코드베이스 통합                                                                                                                                                                                                                                                                                                                                                                 |
-| v0.2     | 2026-05-26     | **Phase A.Week 1+2 실행 완료** (Vue 3 기반). 환경 정리(pnpm 단일화 / next-env 제거 / ESLint+Prettier 도입) + 인증 안정화(mock credential 제거 / Pinia persistence / Vue Router 가드 / vee-validate+zod). 모든 검증 통과 (vue-tsc 0, ESLint 0, Prettier 0, vite build 482ms, dev HTTP 200). User.role 충돌 §17.4 등록.                                                                                                                |
-| **v0.3** | **2026-05-26** | **스택 전환 결정**. Vue 3 + Pinia + Vite → **Next.js 15 + NestJS 11 + Prisma + PostgreSQL** (pnpm workspaces 모노레포). Phase 0 Vue 프로토타입은 `dev-vue3-prototype` 브랜치로 보존. PRD 위치 `.sisyphus/prd/` → `docs/prd/` 이동. §9 기술 아키텍처 전면 재작성, §13 로드맵 재구성 (Phase 0 archived + Phase 1~6 신규), §16 Phase 전환 분석 신설, §17.4 결정/미결정 사항 정리. 비즈니스 부분(§1~§5, §10~§12, §14~§15)은 v0.2와 동일. |
+| 버전     | 날짜           | 변경 사항                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v0.1     | 2026-05-26     | 초안 작성 — 3개 핸드오프 문서 + 디자인 시스템 + 현재 코드베이스 통합                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| v0.2     | 2026-05-26     | **Phase A.Week 1+2 실행 완료** (Vue 3 기반). 환경 정리(pnpm 단일화 / next-env 제거 / ESLint+Prettier 도입) + 인증 안정화(mock credential 제거 / Pinia persistence / Vue Router 가드 / vee-validate+zod). 모든 검증 통과 (vue-tsc 0, ESLint 0, Prettier 0, vite build 482ms, dev HTTP 200). User.role 충돌 §17.4 등록.                                                                                                                                                                                                                                      |
+| v0.3     | 2026-05-26     | **스택 전환 결정**. Vue 3 + Pinia + Vite → **Next.js 15 + NestJS 11 + Prisma + PostgreSQL** (pnpm workspaces 모노레포). Phase 0 Vue 프로토타입은 `dev-vue3-prototype` 브랜치로 보존. PRD 위치 `.sisyphus/prd/` → `docs/prd/` 이동. §9 기술 아키텍처 전면 재작성, §13 로드맵 재구성 (Phase 0 archived + Phase 1~6 신규), §16 Phase 전환 분석 신설, §17.4 결정/미결정 사항 정리. 비즈니스 부분(§1~§5, §10~§12, §14~§15)은 v0.2와 동일.                                                                                                                       |
+| **v0.4** | **2026-05-26** | **인증 전략 확정**. v0.3의 자체 NestJS JWT(passport-jwt + bcrypt) 계획을 **Better Auth 자체 호스팅** (`better-auth` + Prisma adapter, NestJS 안에 내장)으로 전환. 소셜 로그인(Google/GitHub: P1, Kakao: P2)을 빌트인으로 확보, 세션·CSRF·rate limiting을 Better Auth가 처리. **Vendor lock-in 0** — DB만 통제하므로 Railway/Fly.io 이전 자유. §FR-1.1~1.7 갱신 + FR-1.11/1.12 신설, §9.3 Backend Auth 행 재작성, §13 Phase 1.Week 2 재작성, §15.2 Better Auth 신생 라이브러리 리스크 추가, §17.4 인증 방식 "결정됨"으로 이동. 비즈니스 부분은 v0.3과 동일. |

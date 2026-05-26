@@ -203,77 +203,88 @@ corepack pnpm --filter @rootmatching/web dev     # http://localhost:3000
 corepack pnpm --filter @rootmatching/api start:dev  # http://localhost:3000 (port conflict 주의)
 ```
 
-### 2. Phase 1.Week 2 작업 항목 (PRD §13)
+### 2. Phase 1.Week 2 작업 항목 (PRD v0.4 §13)
 
-**목표: apps/api에 인증 가능한 백엔드 기반 구축**
+**목표: apps/api에 Better Auth 기반 인증 + Prisma + Neon이 동작하는 백엔드 기반 구축**
+
+> ⚠️ **v0.4에서 인증 전략 변경**: ~~자체 JWT (passport-jwt + bcrypt)~~ → **Better Auth 자체 호스팅** (`better-auth` + Prisma adapter, NestJS 안에 내장). 소셜 로그인 빌트인 + Vendor lock-in 0 + 세션·CSRF·rate limiting을 Better Auth가 처리.
 
 1. **Prisma 6 + Neon PostgreSQL 연결**
 
    ```bash
-   corepack pnpm --filter @rootmatching/api add @prisma/client@6.19.2
-   corepack pnpm --filter @rootmatching/api add -D prisma@6.19.2
-   cd apps/api && corepack pnpm exec prisma init
+   corepack pnpm --filter @rootmatching/api add @prisma/client@^6.19.2
+   corepack pnpm --filter @rootmatching/api add -D prisma@^6.19.2
    ```
 
-   - User / Company 모델 schema 작성
-   - `.env`에 `DATABASE_URL` (Neon connection string)
+   - `apps/api/prisma/schema.prisma` 생성
+   - **Better Auth 표준 테이블**: `User`, `Session`, `Account`, `Verification` (Better Auth CLI `npx @better-auth/cli generate` 로 자동 생성)
+   - **비즈니스 도메인 테이블**: `Company` (1:1 with User), `Profile`, 추후 `Request` / `Quote` 등
+   - `User.role` Prisma enum: `CLIENT | FACTORY | OPERATOR` — Better Auth `additionalFields`로 확장
+   - `.env`에 `DATABASE_URL` (Neon connection string) + `BETTER_AUTH_SECRET` + `BETTER_AUTH_URL`
    - `apps/api/src/prisma/{prisma.module.ts, prisma.service.ts}` 생성
 
-2. **인증 도메인 모듈**
+2. **Better Auth 통합** (PRD v0.4의 핵심 변경)
+
+   ```bash
+   corepack pnpm --filter @rootmatching/api add better-auth
+   ```
+
+   - `apps/api/src/auth/better-auth.config.ts`: Better Auth instance + Prisma adapter
+     - `emailAndPassword: { enabled: true }`
+     - 세션 7일 + httpOnly + SameSite=Strict + Secure(prod)
+     - `additionalFields`: `role`, `companyName`, `phone`, `agreeTerms`
+   - `apps/api/src/auth/auth.controller.ts`: Better Auth handler를 NestJS controller에 mount (`/api/auth/*` catch-all)
+   - `apps/api/src/auth/guards/better-auth.guard.ts`: session 검증 + `req.user` 주입
+   - `apps/api/src/auth/decorators/roles.decorator.ts` + `RolesGuard`: 운영자 권한 분리
+   - `apps/api/src/auth/auth.module.ts`: 위 컴포넌트 묶음
+
+   > ❌ 사용 안 함: `@nestjs/passport`, `passport-jwt`, `@nestjs/jwt`, `bcrypt` — Better Auth가 모두 내장 처리
+
+3. **DTO 검증 (`nestjs-zod`)**
+
+   ```bash
+   corepack pnpm --filter @rootmatching/api add nestjs-zod
+   ```
+
+   - 인증 외 DTO에 사용 (Request, Quote 등 Phase 2+)
+   - 회원가입 추가 필드 검증은 `@rootmatching/shared`의 `RegisterSchema`를 Better Auth `onAfterUser` hook에서 zod 적용
+
+4. **Users / Companies 비즈니스 모듈**
+   - `apps/api/src/users/users.{module,service,controller}.ts` — 프로필 조회/수정
+   - `apps/api/src/companies/...` — 회사 정보 CRUD
+   - 모두 `BetterAuthGuard`로 보호
+
+5. **Swagger OpenAPI**
+
+   ```bash
+   corepack pnpm --filter @rootmatching/api add @nestjs/swagger
+   ```
+
+   - `main.ts`에 `SwaggerModule.setup('api/docs', ...)`
+   - DocumentBuilder cookie security 등록 (Better Auth 세션 쿠키 명시)
+
+6. **보안 + 운영성**
 
    ```bash
    corepack pnpm --filter @rootmatching/api add \
-     @nestjs/config \
-     @nestjs/passport passport passport-jwt \
-     @nestjs/jwt \
-     bcrypt \
-     nestjs-zod
-   corepack pnpm --filter @rootmatching/api add -D \
-     @types/passport-jwt \
-     @types/bcrypt
+     @nestjs/throttler helmet nestjs-pino pino pino-http cookie-parser
+   corepack pnpm --filter @rootmatching/api add -D pino-pretty @types/cookie-parser
    ```
 
-   - `apps/api/src/auth/{auth.module, auth.service, auth.controller}.ts`
-   - `apps/api/src/auth/strategies/{access-token, refresh-token}.strategy.ts`
-   - DTO는 `@rootmatching/shared`의 zod schema 활용 → `nestjs-zod.createZodDto`
-   - JWT: access 15분 + refresh 7일 (httpOnly cookie)
-   - bcrypt cost 12
+   - ThrottlerGuard 전역 (분당 100회) + 로그인 분당 5회 별도 제한
+   - helmet middleware (CSP는 Better Auth와 충돌 없게 조정)
+   - nestjs-pino logger (JSON 구조)
+   - cookie-parser 등록 (Better Auth 세션 쿠키 파싱)
 
-3. **Users / Companies 모듈**
-   - `apps/api/src/users/users.{module,service,controller}.ts`
-   - `apps/api/src/companies/...`
-
-4. **Swagger OpenAPI**
-
-   ```bash
-   corepack pnpm --filter @rootmatching/api add @nestjs/swagger swagger-ui-express
-   ```
-
-   - `main.ts`에 SwaggerModule.setup('docs', ...)
-   - `/api/docs` 경로 활성
-
-5. **보안 + 운영성**
-
-   ```bash
-   corepack pnpm --filter @rootmatching/api add \
-     @nestjs/throttler \
-     helmet \
-     nestjs-pino pino pino-http
-   corepack pnpm --filter @rootmatching/api add -D pino-pretty
-   ```
-
-   - ThrottlerGuard 전역 (분당 100회 기본)
-   - helmet middleware
-   - nestjs-pino logger
-
-6. **E2E 테스트**
-   - `apps/api/test/auth.e2e-spec.ts`: register → login → /me
+7. **E2E 테스트 (Supertest)**
+   - `apps/api/test/auth.e2e-spec.ts`:
+     - `POST /api/auth/sign-up/email` → 201 + session cookie 발급
+     - `POST /api/auth/sign-in/email` → 200 + session cookie
+     - `GET /me` (BetterAuthGuard 적용) → 200 + user 정보
+     - `POST /api/auth/sign-out` → 200 + 세션 무효화
    - `corepack pnpm --filter @rootmatching/api run test:e2e` 통과
 
-7. **Railway 또는 Fly.io 데모 배포** (선택)
-   - Railway 프로젝트 생성 + GitHub 연동
-   - DATABASE_URL 등 환경변수 등록
-   - PR preview 자동 deploy
+8. **Railway 또는 Fly.io 데모 배포** (Week 4로 연기 권장 — 사용자 결정)
 
 ---
 
@@ -300,21 +311,34 @@ corepack pnpm --filter @rootmatching/api start:dev  # http://localhost:3000 (por
 
 ### 결정 필요 (Phase 1.Week 2/3/4에서)
 
-| 항목                    | 옵션                                                                | 결정 시점                               |
-| ----------------------- | ------------------------------------------------------------------- | --------------------------------------- |
-| Tailwind 버전           | **3.4.19** (Toss 토큰 이식 위해 권장) vs 4.x (CSS-first)            | Week 3 (apps/web Tailwind 수동 설치 시) |
-| Auth 라이브러리         | Next-Auth v5 (Auth.js) vs **자체 JWT 클라이언트** (백엔드 JWT 활용) | Week 3                                  |
-| Server State            | TanStack Query 5 vs **Server Components 위주** (외부 의존성 ↓)      | Week 3                                  |
-| Turborepo 도입          | 안 함 (3 workspaces라 불필요) vs 도입                               | Week 4 (CI 가속 필요 시)                |
-| Neon vs 로컬 PostgreSQL | **Neon (serverless)** vs Docker Postgres                            | Week 2 (Prisma init 직전)               |
-| 운영자 Admin 위치       | **`apps/web/app/(admin)/*` 보호 segment** vs 별도 sub-app           | Phase 5                                 |
+| 항목              | 옵션                                                           | 결정 시점                               |
+| ----------------- | -------------------------------------------------------------- | --------------------------------------- |
+| Tailwind 버전     | **3.4.19** (Toss 토큰 이식 위해 권장) vs 4.x (CSS-first)       | Week 3 (apps/web Tailwind 수동 설치 시) |
+| Server State      | TanStack Query 5 vs **Server Components 위주** (외부 의존성 ↓) | Week 3                                  |
+| Turborepo 도입    | 안 함 (3 workspaces라 불필요) vs 도입                          | Week 4 (CI 가속 필요 시)                |
+| 운영자 Admin 위치 | **`apps/web/app/(admin)/*` 보호 segment** vs 별도 sub-app      | Phase 5                                 |
+
+### 결정됨 (PRD v0.4 — 2026-05-26 세션)
+
+| 항목              | 결정                                                                   |
+| ----------------- | ---------------------------------------------------------------------- |
+| 인증 라이브러리   | **Better Auth 자체 호스팅** (자체 JWT / Next-Auth 후보 모두 폐기)      |
+| 데이터베이스      | **Neon (PostgreSQL serverless)** — 신규 프로젝트, Neon Auth는 비활성화 |
+| 세션 / refresh    | **Better Auth Session 7일 (DB 저장)** — rotation + 즉시 revoke 가능    |
+| Railway 데모 배포 | Week 4로 연기 (이번 세션 제외)                                         |
 
 ### 외부 작업 (사용자가 직접 처리)
 
-1. **Neon 프로젝트 생성**: https://neon.tech → PostgreSQL 16 instance → connection string 확보
-2. **Vercel 프로젝트 연동**: `vercel link` → apps/web 디렉토리 지정 → 환경변수 등록
-3. **Railway/Fly.io 프로젝트 생성**: apps/api 배포용 (Phase 1.Week 4)
-4. **GitHub repo 권한**: dev/main 브랜치 보호 룰 (선택)
+1. **Neon 프로젝트 생성**: https://console.neon.tech → PostgreSQL 16 instance → connection string 확보
+   - **Neon Auth는 비활성화** (Better Auth를 NestJS 안에 자체 호스팅하므로 불필요)
+   - Region 권장: AWS ap-northeast-2 (Seoul) 또는 ap-northeast-1 (Tokyo)
+2. **`.env` 환경변수** (apps/api/.env, 다음 세션에서 작성):
+   - `DATABASE_URL` (Neon에서 받은 connection string)
+   - `BETTER_AUTH_SECRET` (`openssl rand -base64 32`로 생성)
+   - `BETTER_AUTH_URL` (개발: `http://localhost:3001`, 운영: 배포 도메인)
+3. **Vercel 프로젝트 연동**: `vercel link` → apps/web 디렉토리 지정 → 환경변수 등록
+4. **Railway/Fly.io 프로젝트 생성**: apps/api 배포용 (Phase 1.Week 4)
+5. **GitHub repo 권한**: dev/main 브랜치 보호 룰 (선택)
 
 ---
 
@@ -382,6 +406,7 @@ Git user: B-oxygen <113986828+B-oxygen@users.noreply.github.com>
 
 ## 변경 이력 (이 핸드오프 문서)
 
-| 버전 | 날짜       | 변경                                          |
-| ---- | ---------- | --------------------------------------------- |
-| v1.0 | 2026-05-26 | Phase 1.Week 1 완료 + Week 2 시작 가이드 정리 |
+| 버전 | 날짜       | 변경                                                                                                 |
+| ---- | ---------- | ---------------------------------------------------------------------------------------------------- |
+| v1.0 | 2026-05-26 | Phase 1.Week 1 완료 + Week 2 시작 가이드 정리                                                        |
+| v1.1 | 2026-05-26 | PRD v0.4 인증 전략 확정(Better Auth 자체 호스팅) 반영. Week 2 가이드 재작성 + 결정됨/외부 작업 갱신. |

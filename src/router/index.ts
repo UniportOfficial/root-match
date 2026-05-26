@@ -24,7 +24,8 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      redirect: '/dashboard'
+      component: () => import('@/views/LoginView.vue'),
+      meta: { title: '로그인', layout: 'none' }
     },
     {
       path: '/dashboard',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { MOCK_LOGIN_CREDENTIALS } from '@/stores/user'
 
 const props = defineProps<{ mode?: 'login' | 'signup' }>()
 const emit = defineEmits<{
@@ -9,6 +10,18 @@ const emit = defineEmits<{
 }>()
 
 const viewMode = ref(props.mode ?? 'login')
+const errorMessage = ref('')
+
+const form = reactive({
+  name: '',
+  email: MOCK_LOGIN_CREDENTIALS.email,
+  password: MOCK_LOGIN_CREDENTIALS.password,
+  companyName: '',
+  position: '담당자',
+  phone: '',
+  agreeTerms: false
+})
+
 watch(
   () => props.mode,
   (value) => {
@@ -19,17 +32,6 @@ watch(
   }
 )
 
-const form = reactive({
-  name: '',
-  email: '',
-  password: '',
-  companyName: '',
-  position: '대표',
-  phone: '',
-  agreeTerms: false
-})
-
-const errorMessage = ref('')
 const title = computed(() => (viewMode.value === 'login' ? '로그인' : '회원가입'))
 const ctaText = computed(() => (viewMode.value === 'login' ? '로그인' : '계정 생성'))
 const switchText = computed(() => (viewMode.value === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'))
@@ -53,7 +55,7 @@ function submitForm() {
 
   if (viewMode.value === 'signup') {
     if (!form.name.trim() || !form.companyName.trim()) {
-      errorMessage.value = '이름과 회사명을 입력해주세요.'
+      errorMessage.value = '이름과 회사명을 입력하세요.'
       return
     }
     if (!form.agreeTerms) {
@@ -65,15 +67,21 @@ function submitForm() {
       email: form.email,
       password: form.password,
       companyName: form.companyName.trim(),
-      position: form.position.trim() || '대표',
+      position: form.position.trim() || '담당자',
       phone: form.phone.trim() || '010-0000-0000'
     })
-  } else {
-    emit('login', {
-      email: form.email,
-      password: form.password
-    })
+    return
   }
+
+  if (form.email !== MOCK_LOGIN_CREDENTIALS.email || form.password !== MOCK_LOGIN_CREDENTIALS.password) {
+    errorMessage.value = '이메일 또는 비밀번호가 일치하지 않습니다.'
+    return
+  }
+
+  emit('login', {
+    email: form.email,
+    password: form.password
+  })
 }
 
 function toggleMode() {
@@ -94,11 +102,11 @@ function closeModal() {
           <p class="eyebrow">ROOTMATCHING</p>
           <h2>{{ title }}</h2>
         </div>
-        <button class="close-button" type="button" @click="closeModal">×</button>
+        <button class="close-button" type="button" aria-label="닫기" @click="closeModal">x</button>
       </div>
 
       <p class="auth-modal-description">
-        {{ viewMode === 'login' ? '이메일과 비밀번호로 로그인하세요.' : '빠르게 회원가입하고 RootMatching을 시작하세요.' }}
+        {{ viewMode === 'login' ? '이메일과 비밀번호로 로그인하세요.' : '회원가입 후 RootMatching을 시작하세요.' }}
       </p>
 
       <div class="auth-form">
@@ -141,7 +149,6 @@ function closeModal() {
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
         <button class="btn btn-primary btn-lg w-full" type="button" @click="submitForm">{{ ctaText }}</button>
-
         <button class="btn btn-ghost btn-sm w-full" type="button" @click="toggleMode">{{ switchText }}</button>
       </div>
     </div>

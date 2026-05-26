@@ -3,17 +3,27 @@ import { ref, computed } from 'vue'
 import type { User, Company } from '@/types'
 import { mockCurrentUser } from '@/data/mockData'
 
+export const MOCK_LOGIN_CREDENTIALS = {
+  email: 'hong@techsolution.co.kr',
+  password: '123456'
+} as const
+
 export const useUserStore = defineStore('user', () => {
-  const currentUser = ref<User | null>(mockCurrentUser)
+  const currentUser = ref<User | null>(null)
   const isAuthenticated = computed(() => currentUser.value !== null)
 
-  function login(email: string) {
+  function login(email: string, password: string) {
+    if (email !== MOCK_LOGIN_CREDENTIALS.email || password !== MOCK_LOGIN_CREDENTIALS.password) {
+      return false
+    }
+
     currentUser.value = {
       ...mockCurrentUser,
       id: `user-${Date.now()}`,
       email,
       name: mockCurrentUser.name
     }
+    return true
   }
 
   function register(payload: {

@@ -38,9 +38,10 @@ function handleCloseAuth() {
 }
 
 function handleLogin(payload: { email: string; password: string }) {
-  userStore.login(payload.email)
-  showAuthModal.value = false
-  router.push({ name: 'dashboard' })
+  if (userStore.login(payload.email, payload.password)) {
+    showAuthModal.value = false
+    router.push({ name: 'dashboard' })
+  }
 }
 
 function handleSignup(payload: { name: string; email: string; password: string; companyName: string; position: string; phone: string }) {

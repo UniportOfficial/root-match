@@ -34,6 +34,24 @@ const router = createRouter({
       meta: { title: '대시보드' }
     },
     {
+      path: '/quote-requests',
+      name: 'quote-request-board',
+      component: () => import('@/views/QuoteRequestBoardView.vue'),
+      meta: { title: '견적 요청 게시판' }
+    },
+    {
+      path: '/client/requests',
+      name: 'client-requests',
+      component: () => import('@/views/client/ClientRequestListView.vue'),
+      meta: { title: '내 견적 요청 내역' }
+    },
+    {
+      path: '/client/requests/:id',
+      name: 'client-request-detail',
+      component: () => import('@/views/client/ClientRequestDetailView.vue'),
+      meta: { title: '견적 요청 상세' }
+    },
+    {
       path: '/client/request',
       name: 'client-request',
       component: () => import('@/views/client/ClientRequestView.vue'),

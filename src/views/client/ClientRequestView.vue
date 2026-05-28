@@ -306,7 +306,7 @@ function handleSubmit() {
     { ...form },
     uploadedFiles.value.map((file) => ({ name: file.name, size: file.size, type: file.type }))
   )
-  router.push('/client/matching')
+  router.push('/client/requests')
 }
 </script>
 

@@ -11,10 +11,16 @@ const navItems = [
     path: '/dashboard'
   },
   {
-    name: 'client-request',
-    label: '견적 요청',
+    name: 'quote-request-board',
+    label: '견적 요청 게시판',
     icon: 'request',
-    path: '/client/request'
+    path: '/quote-requests'
+  },
+  {
+    name: 'client-requests',
+    label: '견적 요청 내역',
+    icon: 'request',
+    path: '/client/requests'
   },
   {
     name: 'factory-onboarding',

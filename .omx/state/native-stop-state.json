@@ -22,11 +22,11 @@
     },
     "019e6e01-c823-7712-a652-b98515ddcd39": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|거래 진행??분쟁 중재처럼 목록/?�세�??�눴?�니?? 변�??�용: - ??거래 목록 ?�이지: `/transactions` - 거래 ?�세 ?�이지: `/transactions/:id` - ?�이?�바 `거래 진행`??`거래 진행 ?�황`?�로 바꾸�?목록?�로 ?�결 - 목록?�서 �?거래???�태, ?�기, ?�음 조치, 최근 ?�데?�트, 진행률을 ?�인 가??n- `?�세 보기`�??�르�?기존 거래 진행 ?�세 ?�면?�로 ?�동 - ?�세 ?�면?� ?�택??거래???�체 거래 ?�름, ?�업 ?�데?�트, ?�품/검???�일, 거래 ?�세 ?�보�??�시 - ?�스?�로 결제 ?�료 ???�동??`/transactions/txn-2026-018` ?�세�?변�?n 검�? `pnpm build` ?�과 `/transactions`, `/transactions/txn-2026-018` ?�답 `200 ok` ?�인.",
-        "first_seen_at": "2026-05-28T10:45:38.534Z",
-        "last_seen_at": "2026-05-28T10:45:38.534Z",
+        "fingerprint": "ordinary|공용 `견적 ?�청 게시????추�??�습?�다. ?�제 ?�내 견적 ?�청 ?�역?�과 별개�? 모든 ?�사가 ?�린 견적 모집글?????�면?�서 검???�터링해??�????�습?�다. 변�??�용: - ???�이지 추�?: [quoterequestboardview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/quoterequestboardview.vue) - ???�우??추�?: `/quote-requests` - ?�이?�바 메뉴 추�?: `견적 ?�청 게시?? - 게시글 카드?�서 `?�세 보기`�??�르�?기존 공장 견적 검???�안 ?�면(`/factory/requests/:id`)?�로 ?�동 검�? - `pnpm build` ?�과 - `/quote-requests` ?�답 `200` ?�인 ?�료",
+        "first_seen_at": "2026-05-28T11:02:20.276Z",
+        "last_seen_at": "2026-05-28T11:02:20.276Z",
         "repeat_count": 1,
-        "last_turn_id": "019e6e2c-3248-7f81-9ae2-3d7a0590911b",
+        "last_turn_id": "019e6e3d-f4f0-7241-9f3d-aab9a35d06be",
         "last_thread_id": null
       }
     }

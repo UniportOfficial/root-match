@@ -29,10 +29,10 @@ const navItems = [
     path: '/factory/requests'
   },
   {
-    name: 'dispute-mediation',
-    label: '분쟁 중재',
+    name: 'disputes',
+    label: '분쟁 중재 현황',
     icon: 'shield',
-    path: '/disputes/mediation'
+    path: '/disputes'
   },
   {
     name: 'transaction-progress',

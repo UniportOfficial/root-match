@@ -88,10 +88,22 @@ const router = createRouter({
       meta: { title: '거래 완료 및 리뷰' }
     },
     {
+      path: '/disputes',
+      name: 'disputes',
+      component: () => import('@/views/dispute/DisputeListView.vue'),
+      meta: { title: '분쟁 중재 현황' }
+    },
+    {
       path: '/disputes/mediation',
       name: 'dispute-mediation',
       component: () => import('@/views/dispute/DisputeMediationView.vue'),
       meta: { title: '분쟁 중재 신청' }
+    },
+    {
+      path: '/disputes/:id',
+      name: 'dispute-detail',
+      component: () => import('@/views/dispute/DisputeDetailView.vue'),
+      meta: { title: '분쟁 중재 상세' }
     },
     {
       path: '/companies',

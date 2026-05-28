@@ -127,7 +127,7 @@ function handleSubmit() {
     }))
   })
 
-  router.push('/transaction/review')
+  router.push('/disputes')
 }
 </script>
 

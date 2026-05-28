@@ -11,6 +11,7 @@ const selectedMessage = ref<Message | null>(null)
 const filter = ref<'all' | 'unread'>('all')
 const chatDraft = ref('')
 const chatInput = ref<HTMLTextAreaElement | null>(null)
+const chatScroll = ref<HTMLElement | null>(null)
 const chatReplies = ref<Array<{ id: string; messageId: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
 
 const filteredMessages = computed(() => {
@@ -65,6 +66,7 @@ function selectMessage(message: Message) {
   if (!message.isRead) {
     messageStore.markAsRead(message.id)
   }
+  scrollChatToBottom('auto')
 }
 
 watch(
@@ -99,7 +101,10 @@ function sendChatReply() {
     createdAt: new Date().toISOString()
   })
   chatDraft.value = ''
-  nextTick(resizeChatInput)
+  nextTick(() => {
+    resizeChatInput()
+    scrollChatToBottom()
+  })
 }
 
 function resizeChatInput() {
@@ -108,6 +113,18 @@ function resizeChatInput() {
 
   input.style.height = 'auto'
   input.style.height = `${Math.min(input.scrollHeight, 144)}px`
+}
+
+function scrollChatToBottom(behavior: ScrollBehavior = 'smooth') {
+  nextTick(() => {
+    const container = chatScroll.value
+    if (!container) return
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior
+    })
+  })
 }
 
 function handleComposerKeydown(event: KeyboardEvent) {
@@ -207,7 +224,7 @@ function handleComposerKeydown(event: KeyboardEvent) {
             </div>
           </div>
 
-          <div class="detail-body chat-body">
+          <div ref="chatScroll" class="detail-body chat-body">
             <h2 class="detail-subject">{{ selectedMessage.subject }}</h2>
             <span class="detail-date">{{ formatFullDate(selectedMessage.createdAt) }}</span>
             <div class="quote-chat">
@@ -292,12 +309,15 @@ function handleComposerKeydown(event: KeyboardEvent) {
   grid-template-columns: 380px 1fr;
   overflow: hidden;
   padding: 0;
+  min-height: 0;
 }
 
 .message-list {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .list-header {
@@ -426,6 +446,8 @@ function handleComposerKeydown(event: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .detail-header {
@@ -434,12 +456,15 @@ function handleComposerKeydown(event: KeyboardEvent) {
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border);
+  gap: 16px;
+  min-width: 0;
 }
 
 .detail-sender {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .detail-avatar {
@@ -459,11 +484,18 @@ function handleComposerKeydown(event: KeyboardEvent) {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-info span {
   font-size: 14px;
   color: var(--text-muted);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-actions {
@@ -480,6 +512,7 @@ function handleComposerKeydown(event: KeyboardEvent) {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .detail-subject {
@@ -577,6 +610,8 @@ function handleComposerKeydown(event: KeyboardEvent) {
 .detail-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .detail-footer .btn svg {
@@ -586,7 +621,7 @@ function handleComposerKeydown(event: KeyboardEvent) {
 
 .chat-composer {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: end;
   gap: 10px;
   width: 100%;
@@ -653,6 +688,27 @@ function handleComposerKeydown(event: KeyboardEvent) {
 
   .message-detail.active {
     display: flex;
+  }
+
+  .detail-header,
+  .detail-body,
+  .detail-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .chat-composer {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .chat-composer .btn {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chat-composer a.btn {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 }
 </style>

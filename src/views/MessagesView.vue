@@ -10,7 +10,7 @@ const route = useRoute()
 const selectedMessage = ref<Message | null>(null)
 const filter = ref<'all' | 'unread'>('all')
 const chatDraft = ref('')
-const quoteReplies = ref<Array<{ id: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
+const chatReplies = ref<Array<{ id: string; messageId: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
 
 const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
@@ -21,7 +21,7 @@ const filteredMessages = computed(() => {
 
 const isQuoteNegotiation = computed(() => selectedMessage.value?.subject.includes('견적') ?? false)
 
-const quoteChatMessages = computed(() => {
+const chatMessages = computed(() => {
   if (!selectedMessage.value) return []
 
   return [
@@ -31,7 +31,7 @@ const quoteChatMessages = computed(() => {
       content: selectedMessage.value.content,
       createdAt: selectedMessage.value.createdAt
     },
-    ...quoteReplies.value
+    ...chatReplies.value.filter((reply) => reply.messageId === selectedMessage.value?.id)
   ]
 })
 
@@ -88,10 +88,11 @@ function deleteMessage(id: string) {
 
 function sendChatReply() {
   const content = chatDraft.value.trim()
-  if (!content) return
+  if (!content || !selectedMessage.value) return
 
-  quoteReplies.value.push({
+  chatReplies.value.push({
     id: `reply-${Date.now()}`,
+    messageId: selectedMessage.value.id,
     sender: 'me',
     content,
     createdAt: new Date().toISOString()
@@ -189,15 +190,15 @@ function sendChatReply() {
             </div>
           </div>
 
-          <div class="detail-body" :class="{ 'chat-body': isQuoteNegotiation }">
+          <div class="detail-body chat-body">
             <h2 class="detail-subject">{{ selectedMessage.subject }}</h2>
             <span class="detail-date">{{ formatFullDate(selectedMessage.createdAt) }}</span>
-            <div v-if="isQuoteNegotiation" class="quote-chat">
-              <div class="quote-notice">
+            <div class="quote-chat">
+              <div v-if="isQuoteNegotiation" class="quote-notice">
                 견적 금액, 납기, 결제 조건을 이 채팅에서 조정한 뒤 계약으로 진행하세요.
               </div>
               <div
-                v-for="chat in quoteChatMessages"
+                v-for="chat in chatMessages"
                 :key="chat.id"
                 class="chat-row"
                 :class="{ mine: chat.sender === 'me' }"
@@ -210,32 +211,20 @@ function sendChatReply() {
                 </div>
               </div>
             </div>
-            <div v-else class="detail-content">
-              <p v-for="(line, index) in selectedMessage.content.split('\n')" :key="index">
-                {{ line }}
-              </p>
-            </div>
           </div>
 
           <div class="detail-footer">
-            <form v-if="isQuoteNegotiation" class="chat-composer" @submit.prevent="sendChatReply">
+            <form class="chat-composer" @submit.prevent="sendChatReply">
               <input
                 v-model="chatDraft"
                 type="text"
-                placeholder="견적 조건을 조정할 내용을 입력하세요"
+                :placeholder="isQuoteNegotiation ? '견적 조건을 조정할 내용을 입력하세요' : '메시지를 입력하세요'"
               />
               <button type="submit" class="btn btn-primary">전송</button>
-              <RouterLink to="/contract" class="btn btn-primary">
+              <RouterLink v-if="isQuoteNegotiation" to="/contract" class="btn btn-primary">
                 계약 진행
               </RouterLink>
             </form>
-            <button v-else class="btn btn-primary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 17 4 12 9 7"/>
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-              </svg>
-              답장하기
-            </button>
           </div>
         </template>
 

@@ -1,7 +1,20 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Upload, X, FileText, CheckCircle, Sparkles, Clock, Star, RefreshCw, DollarSign } from 'lucide-vue-next'
+import {
+  Upload,
+  X,
+  FileText,
+  CheckCircle,
+  Sparkles,
+  Clock,
+  Star,
+  RefreshCw,
+  DollarSign,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-vue-next'
 import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
@@ -25,6 +38,23 @@ const uploadedFiles = ref<File[]>([
   ...workflowStore.requestFiles.map((file) => new File(['mock file data'], file.name, { type: file.type }))
 ])
 const isDragging = ref(false)
+const isDeadlineCalendarOpen = ref(false)
+
+const initialDeadlineDate = parseDateString(form.desiredDeadline) ?? new Date()
+const viewedDeadlineYear = ref(initialDeadlineDate.getFullYear())
+const viewedDeadlineMonth = ref(initialDeadlineDate.getMonth())
+
+const deadlineWeekHeaders = ['1', '2', '3', '4', '5', '6', '7']
+const deadlineMonthLabel = computed(() => `${viewedDeadlineYear.value}.${padDatePart(viewedDeadlineMonth.value + 1)}`)
+const formattedDesiredDeadline = computed(() => formatDateLabel(form.desiredDeadline))
+const deadlineCalendarDays = computed(() => {
+  const firstDay = new Date(viewedDeadlineYear.value, viewedDeadlineMonth.value, 1).getDay()
+  const daysInMonth = new Date(viewedDeadlineYear.value, viewedDeadlineMonth.value + 1, 0).getDate()
+  const leadingDays = Array.from({ length: firstDay }, () => null)
+  const monthDays = Array.from({ length: daysInMonth }, (_, index) => index + 1)
+
+  return [...leadingDays, ...monthDays]
+})
 
 const processTypes = [
   { value: 'casting', label: '주조' },
@@ -42,6 +72,70 @@ const aiCriteria = [
   { icon: RefreshCw, label: '재거래율', description: '기존 고객과의 재거래 비율' },
   { icon: DollarSign, label: '견적 경쟁력', description: '예산 범위 내 합리적 견적' }
 ]
+
+function padDatePart(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+function parseDateString(value: string): Date | null {
+  const [year, month, day] = value.split('-').map(Number)
+
+  if (!year || !month || !day) {
+    return null
+  }
+
+  return new Date(year, month - 1, day)
+}
+
+function formatDateLabel(value: string): string {
+  const date = parseDateString(value)
+
+  if (!date) {
+    return ''
+  }
+
+  return `${date.getFullYear()}.${padDatePart(date.getMonth() + 1)}.${padDatePart(date.getDate())}`
+}
+
+function changeDeadlineMonth(offset: number) {
+  const nextMonth = new Date(viewedDeadlineYear.value, viewedDeadlineMonth.value + offset, 1)
+  viewedDeadlineYear.value = nextMonth.getFullYear()
+  viewedDeadlineMonth.value = nextMonth.getMonth()
+}
+
+function selectDeadlineDay(day: number | null) {
+  if (!day) {
+    return
+  }
+
+  form.desiredDeadline = `${viewedDeadlineYear.value}-${padDatePart(viewedDeadlineMonth.value + 1)}-${padDatePart(day)}`
+  isDeadlineCalendarOpen.value = false
+}
+
+function isSelectedDeadlineDay(day: number | null): boolean {
+  const selectedDate = parseDateString(form.desiredDeadline)
+
+  if (!day || !selectedDate) {
+    return false
+  }
+
+  return (
+    selectedDate.getFullYear() === viewedDeadlineYear.value &&
+    selectedDate.getMonth() === viewedDeadlineMonth.value &&
+    selectedDate.getDate() === day
+  )
+}
+
+function handleDeadlineFocus() {
+  const selectedDate = parseDateString(form.desiredDeadline)
+
+  if (selectedDate) {
+    viewedDeadlineYear.value = selectedDate.getFullYear()
+    viewedDeadlineMonth.value = selectedDate.getMonth()
+  }
+
+  isDeadlineCalendarOpen.value = true
+}
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault()
@@ -85,6 +179,11 @@ function formatFileSize(bytes: number): string {
 }
 
 function handleSubmit() {
+  if (!form.desiredDeadline) {
+    isDeadlineCalendarOpen.value = true
+    return
+  }
+
   workflowStore.submitRequest(
     { ...form },
     uploadedFiles.value.map((file) => ({ name: file.name, size: file.size, type: file.type }))
@@ -177,13 +276,67 @@ function handleSubmit() {
                   <label for="desiredDeadline" class="block text-sm font-medium text-slate-700 mb-2">
                     희망 납기 <span class="text-red-500">*</span>
                   </label>
-                  <input
-                    id="desiredDeadline"
-                    v-model="form.desiredDeadline"
-                    type="date"
-                    required
-                    class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
+                  <div class="relative">
+                    <button
+                      id="desiredDeadline"
+                      type="button"
+                      @click="handleDeadlineFocus"
+                      class="flex w-full items-center justify-between rounded-lg border border-slate-300 px-4 py-3 text-left transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      :class="formattedDesiredDeadline ? 'text-slate-900' : 'text-slate-400'"
+                    >
+                      <span>{{ formattedDesiredDeadline || 'YYYY.MM.DD' }}</span>
+                      <CalendarDays class="h-5 w-5 text-slate-400" />
+                    </button>
+
+                    <div
+                      v-if="isDeadlineCalendarOpen"
+                      class="absolute z-20 mt-2 w-full min-w-[18rem] rounded-lg border border-slate-200 bg-white p-3 shadow-xl"
+                    >
+                      <div class="mb-3 flex items-center justify-between">
+                        <button
+                          type="button"
+                          @click="changeDeadlineMonth(-1)"
+                          class="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                          aria-label="previous month"
+                        >
+                          <ChevronLeft class="h-4 w-4" />
+                        </button>
+                        <span class="text-sm font-semibold tabular-nums text-slate-900">{{ deadlineMonthLabel }}</span>
+                        <button
+                          type="button"
+                          @click="changeDeadlineMonth(1)"
+                          class="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                          aria-label="next month"
+                        >
+                          <ChevronRight class="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold tabular-nums text-slate-500">
+                        <span v-for="header in deadlineWeekHeaders" :key="header" class="py-1">
+                          {{ header }}
+                        </span>
+                      </div>
+
+                      <div class="mt-1 grid grid-cols-7 gap-1">
+                        <button
+                          v-for="(day, index) in deadlineCalendarDays"
+                          :key="`${deadlineMonthLabel}-${index}`"
+                          type="button"
+                          :disabled="!day"
+                          @click="selectDeadlineDay(day)"
+                          class="aspect-square rounded-md text-sm font-medium tabular-nums transition-colors disabled:pointer-events-none disabled:opacity-0"
+                          :class="
+                            isSelectedDeadlineDay(day)
+                              ? 'bg-blue-600 text-white'
+                              : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
+                          "
+                        >
+                          {{ day }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

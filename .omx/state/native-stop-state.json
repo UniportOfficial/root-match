@@ -19,6 +19,16 @@
         "last_turn_id": "019e63b2-0203-7de0-b1cc-d442a8dc7d6a",
         "last_thread_id": null
       }
+    },
+    "019e6e01-c823-7712-a652-b98515ddcd39": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|?�망 ?�기 ?�택??브라?��? 기본 ?�어 ?�력?�서 ?�자??커스?� ?�력?�로 바꿨?�니?? 변�??�일: [clientrequestview.vue](</c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/client/clientrequestview.vue:41>) ?�제 ?�력?�서 ?��? `yyyy.mm`, ?�짜???�자�??�시?�고, ?�택값�? 기존처럼 `yyyy-mm-dd`�??�?�됩?�다. 검증도 ?�료?�습?�다: `pnpm build` ?�과.",
+        "first_seen_at": "2026-05-28T09:58:26.001Z",
+        "last_seen_at": "2026-05-28T09:58:26.001Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e6e03-44f6-7ec1-b2f5-dbbffcbab30b",
+        "last_thread_id": null
+      }
     }
   }
 }

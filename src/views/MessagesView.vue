@@ -1,18 +1,38 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useMessageStore } from '@/stores/messages'
 import type { Message } from '@/types'
 
 const messageStore = useMessageStore()
+const route = useRoute()
 
 const selectedMessage = ref<Message | null>(null)
 const filter = ref<'all' | 'unread'>('all')
+const chatDraft = ref('')
+const quoteReplies = ref<Array<{ id: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
 
 const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
     return messageStore.sortedMessages.filter(m => !m.isRead)
   }
   return messageStore.sortedMessages
+})
+
+const isQuoteNegotiation = computed(() => selectedMessage.value?.subject.includes('견적') ?? false)
+
+const quoteChatMessages = computed(() => {
+  if (!selectedMessage.value) return []
+
+  return [
+    {
+      id: selectedMessage.value.id,
+      sender: 'partner' as const,
+      content: selectedMessage.value.content,
+      createdAt: selectedMessage.value.createdAt
+    },
+    ...quoteReplies.value
+  ]
 })
 
 const formatDate = (dateString: string) => {
@@ -46,11 +66,37 @@ function selectMessage(message: Message) {
   }
 }
 
+watch(
+  () => route.query.message,
+  (messageId) => {
+    if (typeof messageId !== 'string') return
+
+    const message = messageStore.messages.find((item) => item.id === messageId)
+    if (message) {
+      selectMessage(message)
+    }
+  },
+  { immediate: true }
+)
+
 function deleteMessage(id: string) {
   messageStore.deleteMessage(id)
   if (selectedMessage.value?.id === id) {
     selectedMessage.value = null
   }
+}
+
+function sendChatReply() {
+  const content = chatDraft.value.trim()
+  if (!content) return
+
+  quoteReplies.value.push({
+    id: `reply-${Date.now()}`,
+    sender: 'me',
+    content,
+    createdAt: new Date().toISOString()
+  })
+  chatDraft.value = ''
 }
 </script>
 
@@ -143,10 +189,28 @@ function deleteMessage(id: string) {
             </div>
           </div>
 
-          <div class="detail-body">
+          <div class="detail-body" :class="{ 'chat-body': isQuoteNegotiation }">
             <h2 class="detail-subject">{{ selectedMessage.subject }}</h2>
             <span class="detail-date">{{ formatFullDate(selectedMessage.createdAt) }}</span>
-            <div class="detail-content">
+            <div v-if="isQuoteNegotiation" class="quote-chat">
+              <div class="quote-notice">
+                견적 금액, 납기, 결제 조건을 이 채팅에서 조정한 뒤 계약으로 진행하세요.
+              </div>
+              <div
+                v-for="chat in quoteChatMessages"
+                :key="chat.id"
+                class="chat-row"
+                :class="{ mine: chat.sender === 'me' }"
+              >
+                <div class="chat-bubble">
+                  <p v-for="(line, index) in chat.content.split('\n')" :key="index">
+                    {{ line }}
+                  </p>
+                  <span>{{ formatDate(chat.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="detail-content">
               <p v-for="(line, index) in selectedMessage.content.split('\n')" :key="index">
                 {{ line }}
               </p>
@@ -154,7 +218,18 @@ function deleteMessage(id: string) {
           </div>
 
           <div class="detail-footer">
-            <button class="btn btn-primary">
+            <form v-if="isQuoteNegotiation" class="chat-composer" @submit.prevent="sendChatReply">
+              <input
+                v-model="chatDraft"
+                type="text"
+                placeholder="견적 조건을 조정할 내용을 입력하세요"
+              />
+              <button type="submit" class="btn btn-primary">전송</button>
+              <RouterLink to="/contract" class="btn btn-primary">
+                계약 진행
+              </RouterLink>
+            </form>
+            <button v-else class="btn btn-primary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 17 4 12 9 7"/>
                 <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
@@ -426,6 +501,67 @@ function deleteMessage(id: string) {
   margin-bottom: 0;
 }
 
+.chat-body {
+  background: #f8fafc;
+}
+
+.quote-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quote-notice {
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: var(--radius-md);
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.chat-row.mine {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: min(560px, 82%);
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-row.mine .chat-bubble {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.chat-bubble p {
+  margin-bottom: 8px;
+}
+
+.chat-bubble p:last-of-type {
+  margin-bottom: 0;
+}
+
+.chat-bubble span {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
 .detail-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
@@ -434,6 +570,26 @@ function deleteMessage(id: string) {
 .detail-footer .btn svg {
   width: 18px;
   height: 18px;
+}
+
+.chat-composer {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  width: 100%;
+}
+
+.chat-composer input {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+  outline: none;
+}
+
+.chat-composer input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
 }
 
 .no-selection,

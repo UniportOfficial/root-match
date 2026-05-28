@@ -6,9 +6,11 @@ import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import ProcessStepper from '@/components/common/ProcessStepper.vue'
 import { mockReceivedQuoteRequests } from '@/data/requestData'
+import { useMessageStore } from '@/stores/messages'
 
 const route = useRoute()
 const router = useRouter()
+const messageStore = useMessageStore()
 
 const request = computed(() => {
   return mockReceivedQuoteRequests.find((item) => item.id === route.params.id) || mockReceivedQuoteRequests[0]
@@ -27,18 +29,36 @@ const steps = [
   { title: '요청 수신', description: '발주처 요청 접수' },
   { title: '요청 검토', description: '도면과 조건 확인' },
   { title: '견적 제출', description: '금액과 납기 제안' },
-  { title: '발주처 승인', description: '견적 비교 및 확정' },
+  { title: '채팅 협의', description: '견적 조건 조정' },
   { title: '계약 진행', description: '표준 계약과 에스크로' }
 ]
 
 function submitQuote() {
-  console.log('Factory Quote Submitted:', {
-    requestId: request.value.id,
-    projectName: request.value.projectName,
-    quote: { ...quoteForm }
+  const message = messageStore.sendMessage({
+    senderId: 'factory-mock',
+    senderName: '공장 담당자',
+    senderCompany: '문래정밀가공',
+    receiverId: 'client-mock',
+    receiverName: request.value.clientName,
+    receiverCompany: request.value.clientName,
+    subject: `[견적 협의] ${request.value.projectName}`,
+    content: [
+      `${request.value.projectName} 요청에 대한 견적을 제출했습니다.`,
+      '',
+      `견적 금액: ${quoteForm.estimateAmount}`,
+      `제작 기간: ${quoteForm.productionPeriod}`,
+      `가능 납기: ${quoteForm.availableDeliveryDate}`,
+      `결제 조건: ${quoteForm.paymentCondition}`,
+      '',
+      quoteForm.message,
+      '',
+      '세부 조건은 이 채팅에서 조정한 뒤 계약으로 진행하면 됩니다.'
+    ].join('\n'),
+    isRead: false,
+    attachments: request.value.attachments
   })
 
-  router.push('/contract')
+  router.push({ path: '/messages', query: { message: message.id, context: 'quote' } })
 }
 </script>
 
@@ -168,7 +188,7 @@ function submitQuote() {
 
             <AppButton type="submit" size="lg" full-width class="mt-6">
               <CheckCircle class="h-6 w-6" />
-              견적 제출하고 계약으로 이동
+              견적 제출하고 채팅으로 이동
             </AppButton>
           </form>
         </main>
@@ -183,7 +203,7 @@ function submitQuote() {
             <div class="flex items-start gap-3">
               <ShieldCheck class="h-6 w-6 text-blue-600" />
               <p class="text-base leading-7 text-slate-700">
-                견적 제출 후 발주처가 승인하면 표준 계약서, 전자서명, 에스크로 결제로 이어집니다.
+                견적 제출 후 바로 계약하지 않고, 발주처와 채팅에서 금액·납기·조건을 조정한 뒤 계약으로 이어집니다.
               </p>
             </div>
           </div>

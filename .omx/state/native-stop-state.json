@@ -42,11 +42,11 @@
     },
     "019e6f2b-b2f4-7313-8847-76567cc031a0": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|qa 진행?�고, ?�패 ?�인 ?�정까�? ?�료?�습?�다. `src/views/messagesview.vue`?�서 채팅 ?�크�?컨테?�너??`ref`�??�고, 메시지 ?�택/?�송 ??`scrollto({ top: scrollheight })`�?최신 메시지 ?�치까�? ?�동?�도�?처리?�습?�다. ?�력�??�이 리셋???��??�습?�다. qa verdict: pass 검�? - `pnpm build` ?�과 - ?�동 브라?��? qa�??�스?�톱 `1280x800`, 모바??`390x844` ?�인 - ?�용?��? 채팅???�로 ?�린 ?�태?�서 ??메시지 ?�송 ?? - ?�스?�톱 `distancefrombottom: 0` - 모바??`distancefrombottom: 0` - 최신 메시지 ?�단???�면 ?�에 ?�시??n 개발 ?�버??계속 켜져 ?�습?�다: `http://127.0.0.1:5173` 참고: `.omx/state/*`??기존 ?��????�태 변경으�??�아 ?�고, 기능 ?�정 ?�일?� `src/views/messagesview.vue`?�니??",
-        "first_seen_at": "2026-05-28T16:02:10.422Z",
-        "last_seen_at": "2026-05-28T16:02:10.422Z",
+        "fingerprint": "ordinary|마이?�이지 ?�로??꾸�?�?기능??추�??�습?�다. 변�??�용: - [profileview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/mypage/profileview.vue)�?공개 ?�사 ?�로???�집 ?�면?�로 ?�장 - ??�??�개, ?�심 강점, ?�증/?�격, ?�???�로?�트, ?�로??컬러, 매출/직원 ???�립?�도 ?�집 추�? - ?�?�하�?`userstore`?� ?�사 목록 `companystore`�?같이 갱신?�서 ?�른 ?�사가 보는 ?�사 목록/?�세?�도 반영 - [companycard.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/components/companies/companycard.vue)????�??�개?� ?�로??컬러 반영 - [companydetailview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/companydetailview.vue)??강점/?�???�로?�트/?�로??컬러 ?�시 추�? - [types/index.ts](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/types/index.ts)??공개 ?�로???�드 ?�??추�? 검�? `pnpm build` ?�과?�습?�다. ?�버??계속 켜져 ?�습?�다: `http://127.0.0.1:5173`",
+        "first_seen_at": "2026-05-28T16:30:31.817Z",
+        "last_seen_at": "2026-05-28T16:30:31.817Z",
         "repeat_count": 1,
-        "last_turn_id": "019e6f4f-7100-77b2-8d85-67a39c4b5fd4",
+        "last_turn_id": "019e6f68-f279-7702-b092-2eef69c4de46",
         "last_thread_id": null
       }
     }

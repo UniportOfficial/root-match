@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { X } from 'lucide-vue-next'
 import { useMessageStore } from '@/stores/messages'
 import type { Message } from '@/types'
 
@@ -82,11 +83,8 @@ watch(
   { immediate: true }
 )
 
-function deleteMessage(id: string) {
-  messageStore.deleteMessage(id)
-  if (selectedMessage.value?.id === id) {
-    selectedMessage.value = null
-  }
+function closeMessageDetail() {
+  selectedMessage.value = null
 }
 
 function sendChatReply() {
@@ -213,13 +211,8 @@ function handleComposerKeydown(event: KeyboardEvent) {
               </div>
             </div>
             <div class="detail-actions">
-              <button class="btn btn-ghost" @click="deleteMessage(selectedMessage.id)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" x2="10" y1="11" y2="17"/>
-                  <line x1="14" x2="14" y1="11" y2="17"/>
-                </svg>
+              <button class="btn btn-ghost" type="button" aria-label="채팅창 닫기" title="채팅창 닫기" @click="closeMessageDetail">
+                <X :size="20" aria-hidden="true" />
               </button>
             </div>
           </div>

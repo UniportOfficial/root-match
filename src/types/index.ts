@@ -6,6 +6,10 @@ export interface Company {
   region: string
   size: string
   description: string
+  headline?: string
+  profileColor?: string
+  strengths?: string[]
+  portfolio?: CompanyPortfolioItem[]
   logo?: string
   tags: string[]
   contactEmail: string
@@ -16,6 +20,11 @@ export interface Company {
   revenue?: string
   certifications: string[]
   createdAt: string
+}
+
+export interface CompanyPortfolioItem {
+  title: string
+  description: string
 }
 
 // User Types

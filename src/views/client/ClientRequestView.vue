@@ -39,6 +39,9 @@ const uploadedFiles = ref<File[]>([
 ])
 const isDragging = ref(false)
 const isDeadlineCalendarOpen = ref(false)
+const initialBudgetRange = parseBudgetRange(form.budgetRange)
+const budgetMin = ref(initialBudgetRange.min)
+const budgetMax = ref(initialBudgetRange.max)
 
 const initialDeadlineDate = parseDateString(form.desiredDeadline) ?? new Date()
 const viewedDeadlineYear = ref(initialDeadlineDate.getFullYear())
@@ -95,6 +98,44 @@ function formatDateLabel(value: string): string {
   }
 
   return `${date.getFullYear()}.${padDatePart(date.getMonth() + 1)}.${padDatePart(date.getDate())}`
+}
+
+function parseBudgetRange(value: string): { min: string; max: string } {
+  const values = value.match(/\d[\d,]*/g) ?? []
+
+  return {
+    min: values[0] ?? '',
+    max: values[1] ?? ''
+  }
+}
+
+function formatBudgetValue(value: string): string {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  return /원$/.test(trimmedValue) ? trimmedValue : `${trimmedValue}만원`
+}
+
+function buildBudgetRange(): string {
+  const min = formatBudgetValue(budgetMin.value)
+  const max = formatBudgetValue(budgetMax.value)
+
+  if (min && max) {
+    return `${min} ~ ${max}`
+  }
+
+  if (min) {
+    return `${min} 이상`
+  }
+
+  if (max) {
+    return `${max} 이하`
+  }
+
+  return ''
 }
 
 function changeDeadlineMonth(offset: number) {
@@ -183,6 +224,8 @@ function handleSubmit() {
     isDeadlineCalendarOpen.value = true
     return
   }
+
+  form.budgetRange = buildBudgetRange()
 
   workflowStore.submitRequest(
     { ...form },
@@ -342,16 +385,34 @@ function handleSubmit() {
 
               <!-- Budget Range -->
               <div>
-                <label for="budgetRange" class="block text-sm font-medium text-slate-700 mb-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
                   예산 범위
                 </label>
-                <input
-                  id="budgetRange"
-                  v-model="form.budgetRange"
-                  type="text"
-                  placeholder="예: 5,000만원 ~ 1억원"
-                  class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                  <div class="relative">
+                    <input
+                      id="budgetMin"
+                      v-model="budgetMin"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="하한"
+                      class="w-full rounded-lg border border-slate-300 px-4 py-3 pr-12 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-500">만원</span>
+                  </div>
+                  <span class="hidden text-center text-slate-400 sm:block">~</span>
+                  <div class="relative">
+                    <input
+                      id="budgetMax"
+                      v-model="budgetMax"
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="상한"
+                      class="w-full rounded-lg border border-slate-300 px-4 py-3 pr-12 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-500">만원</span>
+                  </div>
+                </div>
               </div>
 
               <!-- File Upload -->

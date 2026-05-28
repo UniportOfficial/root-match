@@ -22,11 +22,11 @@
     },
     "019e6e01-c823-7712-a652-b98515ddcd39": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|?�망 ?�기 ?�택??브라?��? 기본 ?�어 ?�력?�서 ?�자??커스?� ?�력?�로 바꿨?�니?? 변�??�일: [clientrequestview.vue](</c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/client/clientrequestview.vue:41>) ?�제 ?�력?�서 ?��? `yyyy.mm`, ?�짜???�자�??�시?�고, ?�택값�? 기존처럼 `yyyy-mm-dd`�??�?�됩?�다. 검증도 ?�료?�습?�다: `pnpm build` ?�과.",
-        "first_seen_at": "2026-05-28T09:58:26.001Z",
-        "last_seen_at": "2026-05-28T09:58:26.001Z",
+        "fingerprint": "ordinary|?�산 범위�??�한/?�한 ?�력?�로 ?�눴?�니?? ?�력칸�? 각각 `?�한`, `?�한`?�고 ?�위???�른쪽에 `만원`?�로 붙어 보입?�다. ?�출 ?�에??기존 ?�이???�름???��??�려�??�시 `3,000만원 ~ 4,500만원` 같�? 문자?�로 조립?�서 ?�?�합?�다. ?�쪽�??�력?�면 `?�상` ?�는 `?�하`�??�?�됩?�다. 검�? `pnpm build` ?�과.",
+        "first_seen_at": "2026-05-28T10:01:14.390Z",
+        "last_seen_at": "2026-05-28T10:01:14.390Z",
         "repeat_count": 1,
-        "last_turn_id": "019e6e03-44f6-7ec1-b2f5-dbbffcbab30b",
+        "last_turn_id": "019e6e06-e19f-7703-bf95-a17368b809ba",
         "last_thread_id": null
       }
     }

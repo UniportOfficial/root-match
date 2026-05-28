@@ -11,6 +11,12 @@ const navItems = [
     path: '/dashboard'
   },
   {
+    name: 'client-request',
+    label: '견적 요청 등록',
+    icon: 'request',
+    path: '/client/request'
+  },
+  {
     name: 'quote-request-board',
     label: '견적 요청 게시판',
     icon: 'request',
@@ -69,6 +75,9 @@ const navItems = [
 const isActive = (item: typeof navItems[0]) => {
   if (item.path === '/dashboard') {
     return route.path === '/dashboard'
+  }
+  if (item.path === '/client/request') {
+    return route.path === '/client/request'
   }
   return route.path.startsWith(item.path)
 }

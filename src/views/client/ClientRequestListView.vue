@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ArrowRight, Clock, FileText, Plus, Search, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
+import { ArrowRight, Clock, FileText, Search, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
 import AppBadge from '@/components/common/AppBadge.vue'
 import { mockReceivedQuoteRequests } from '@/data/requestData'
 
@@ -46,13 +46,6 @@ function getStatusVariant(status: string): 'blue' | 'green' | 'amber' | 'slate' 
             </p>
           </div>
 
-          <RouterLink
-            to="/client/request"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
-          >
-            <Plus class="h-5 w-5" />
-            새 견적 요청
-          </RouterLink>
         </div>
       </header>
 

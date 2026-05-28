@@ -63,7 +63,7 @@ function getStatusVariant(status: string): 'blue' | 'green' | 'amber' | 'slate' 
   <div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
       <header class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
           <div>
             <AppBadge variant="blue">
               <Factory class="h-4 w-4" />
@@ -76,14 +76,6 @@ function getStatusVariant(status: string): 'blue' | 'green' | 'amber' | 'slate' 
               여러 회사가 등록한 견적 모집글을 한눈에 확인하고, 조건에 맞는 요청에 견적을 제안할 수 있습니다.
             </p>
           </div>
-
-          <RouterLink
-            to="/client/request"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
-          >
-            내 견적 요청 올리기
-            <ArrowRight class="h-4 w-4" />
-          </RouterLink>
         </div>
       </header>
 

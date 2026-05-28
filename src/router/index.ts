@@ -76,6 +76,18 @@ const router = createRouter({
       meta: { title: '계약 및 에스크로 결제' }
     },
     {
+      path: '/transactions',
+      name: 'transactions',
+      component: () => import('@/views/transaction/TransactionListView.vue'),
+      meta: { title: '거래 진행 현황' }
+    },
+    {
+      path: '/transactions/:id',
+      name: 'transaction-detail',
+      component: () => import('@/views/transaction/TransactionProgressView.vue'),
+      meta: { title: '거래 진행 상세' }
+    },
+    {
       path: '/transaction/progress',
       name: 'transaction-progress',
       component: () => import('@/views/transaction/TransactionProgressView.vue'),

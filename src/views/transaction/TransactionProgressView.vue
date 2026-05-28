@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   AlertTriangle,
+  ArrowLeft,
   CheckCircle,
   ClipboardCheck,
   Factory,
@@ -15,28 +16,14 @@ import {
 import AppBadge from '@/components/common/AppBadge.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import ProcessStepper from '@/components/common/ProcessStepper.vue'
+import { transactionCases, transactionSteps } from '@/data/transactionData'
 import { useWorkflowStore } from '@/stores/workflow'
 
 const router = useRouter()
+const route = useRoute()
 const workflowStore = useWorkflowStore()
 
-const transaction = computed(() => workflowStore.transaction)
-
-const steps = [
-  { title: '표준 계약서 생성', description: '계약 조건 확정' },
-  { title: '전자서명', description: '양측 서명 완료' },
-  { title: '에스크로 결제', description: '대금 보호 적용' },
-  { title: '작업 진행', description: '제작 및 상태 업데이트' },
-  { title: '납품 검수', description: '납품 자료 확인' },
-  { title: '거래 완료 및 리뷰', description: '정산과 후기 작성' }
-]
-
-const statusUpdates = [
-  { title: '소재 입고 완료', date: '2026.05.03', description: '6061 알루미늄 소재 입고 및 수량 확인 완료' },
-  { title: 'CNC 1차 가공 완료', date: '2026.05.09', description: '하우징 외형 가공 및 주요 공차 측정 완료' },
-  { title: '표면처리 완료', date: '2026.05.15', description: '블랙 아노다이징 처리 및 외관 검사 완료' },
-  { title: '납품 등록 완료', date: '2026.05.18', description: '납품 사진과 검사 결과서가 등록되었습니다.' }
-]
+const transaction = computed(() => transactionCases.find((item) => item.id === route.params.id) ?? transactionCases[0])
 
 function approveInspection() {
   workflowStore.approveInspection()
@@ -51,6 +38,14 @@ function reportIssue() {
 <template>
   <div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
+      <RouterLink
+        to="/transactions"
+        class="mb-5 inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-700"
+      >
+        <ArrowLeft class="h-4 w-4" />
+        거래 진행 현황으로 돌아가기
+      </RouterLink>
+
       <header class="mb-8 rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
         <AppBadge variant="blue">
           <ShieldCheck class="h-4 w-4" />
@@ -58,10 +53,11 @@ function reportIssue() {
         </AppBadge>
         <div class="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 class="text-3xl font-bold text-slate-950 sm:text-4xl">작업 진행 대시보드</h1>
-            <p class="mt-3 text-lg text-slate-600">결제 이후 작업 상태, 납품 자료, 검수 결과를 한 화면에서 관리합니다.</p>
+            <p class="text-sm font-bold text-slate-500">{{ transaction.id }}</p>
+            <h1 class="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">{{ transaction.projectName }}</h1>
+            <p class="mt-3 text-lg text-slate-600">{{ transaction.nextAction }}</p>
           </div>
-          <AppBadge variant="green">
+          <AppBadge :variant="transaction.statusKey === 'completed' ? 'green' : 'blue'">
             <CheckCircle class="h-4 w-4" />
             {{ transaction.status }}
           </AppBadge>
@@ -72,7 +68,7 @@ function reportIssue() {
         <main class="space-y-8">
           <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <h2 class="mb-5 text-2xl font-bold text-slate-950">전체 거래 흐름</h2>
-            <ProcessStepper :steps="steps" :current-step="5" />
+            <ProcessStepper :steps="transactionSteps" :current-step="transaction.currentStep" />
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
@@ -90,7 +86,7 @@ function reportIssue() {
               </div>
             </div>
             <ol class="space-y-4">
-              <li v-for="item in statusUpdates" :key="item.title" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <li v-for="item in transaction.updates" :key="item.title" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <h3 class="text-lg font-bold text-slate-950">{{ item.title }}</h3>
@@ -138,7 +134,7 @@ function reportIssue() {
 
         <aside class="space-y-5 xl:sticky xl:top-8 xl:self-start">
           <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 class="text-xl font-bold text-slate-950">{{ transaction.projectName }}</h2>
+            <h2 class="text-xl font-bold text-slate-950">거래 상세 정보</h2>
             <dl class="mt-5 space-y-4">
               <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">발주처</dt>
@@ -155,6 +151,10 @@ function reportIssue() {
               <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">납기</dt>
                 <dd class="font-semibold text-slate-950">{{ transaction.dueDate }}</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">최근 업데이트</dt>
+                <dd class="font-semibold text-slate-950">{{ transaction.updatedAt }}</dd>
               </div>
             </dl>
           </div>

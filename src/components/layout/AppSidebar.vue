@@ -35,10 +35,10 @@ const navItems = [
     path: '/disputes'
   },
   {
-    name: 'transaction-progress',
-    label: '거래 진행',
+    name: 'transactions',
+    label: '거래 진행 현황',
     icon: 'progress',
-    path: '/transaction/progress'
+    path: '/transactions'
   },
   {
     name: 'companies',

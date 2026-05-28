@@ -16,7 +16,14 @@ const roles = [
       '계약 및 결제 관리'
     ],
     buttonText: '발주 요청 시작하기',
-    route: '/client/request'
+    route: {
+      path: '/login',
+      query: {
+        mode: 'signup',
+        role: 'client',
+        redirect: '/client/request'
+      }
+    }
   },
   {
     id: 'factory',
@@ -29,11 +36,18 @@ const roles = [
       '견적 제출 및 정산'
     ],
     buttonText: '공장 등록 시작하기',
-    route: '/factory/onboarding'
+    route: {
+      path: '/login',
+      query: {
+        mode: 'signup',
+        role: 'factory',
+        redirect: '/factory/onboarding'
+      }
+    }
   }
 ]
 
-function selectRole(route: string) {
+function selectRole(route: (typeof roles)[number]['route']) {
   router.push(route)
 }
 </script>

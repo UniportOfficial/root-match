@@ -18,7 +18,7 @@ const navItems = [
   },
   {
     name: 'factory-onboarding',
-    label: '공장 등록',
+    label: '공장 프로필 수정',
     icon: 'factory',
     path: '/factory/onboarding'
   },

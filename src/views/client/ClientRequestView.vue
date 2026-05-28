@@ -39,6 +39,23 @@ const uploadedFiles = ref<File[]>([
 ])
 const isDragging = ref(false)
 const isDeadlineCalendarOpen = ref(false)
+
+const quantityCadenceOptions = [
+  { value: '월', label: '월' },
+  { value: '분기', label: '분기' },
+  { value: '연', label: '연' },
+  { value: '일회성', label: '일회성' }
+]
+
+const customQuantityUnitValue = 'custom'
+const quantityUnitOptions = ['개', '세트', 'EA', '대', 'kg']
+
+const initialQuantity = parseQuantityDetails(form.estimatedQuantity)
+const firstRunQuantity = ref(initialQuantity.firstRun)
+const productionQuantity = ref(initialQuantity.production)
+const quantityCadence = ref(initialQuantity.cadence)
+const quantityUnit = ref(initialQuantity.unit)
+const customQuantityUnit = ref(initialQuantity.customUnit)
 const initialBudgetRange = parseBudgetRange(form.budgetRange)
 const budgetMin = ref(initialBudgetRange.min)
 const budgetMax = ref(initialBudgetRange.max)
@@ -50,6 +67,13 @@ const viewedDeadlineMonth = ref(initialDeadlineDate.getMonth())
 const deadlineWeekHeaders = ['1', '2', '3', '4', '5', '6', '7']
 const deadlineMonthLabel = computed(() => `${viewedDeadlineYear.value}.${padDatePart(viewedDeadlineMonth.value + 1)}`)
 const formattedDesiredDeadline = computed(() => formatDateLabel(form.desiredDeadline))
+const selectedQuantityUnit = computed(() => {
+  if (quantityUnit.value === customQuantityUnitValue) {
+    return customQuantityUnit.value.trim()
+  }
+
+  return quantityUnit.value
+})
 const deadlineCalendarDays = computed(() => {
   const firstDay = new Date(viewedDeadlineYear.value, viewedDeadlineMonth.value, 1).getDay()
   const daysInMonth = new Date(viewedDeadlineYear.value, viewedDeadlineMonth.value + 1, 0).getDate()
@@ -98,6 +122,56 @@ function formatDateLabel(value: string): string {
   }
 
   return `${date.getFullYear()}.${padDatePart(date.getMonth() + 1)}.${padDatePart(date.getDate())}`
+}
+
+function parseQuantityDetails(value: string): { firstRun: string; production: string; cadence: string; unit: string; customUnit: string } {
+  const numbers = value.match(/\d[\d,]*/g) ?? []
+  const cadence = quantityCadenceOptions.find((option) => value.includes(option.value))?.value ?? '월'
+  const unitMatches = [...value.matchAll(/\d[\d,]*\s*([^\s,]+)/g)]
+  const parsedUnit = unitMatches[unitMatches.length - 1]?.[1] ?? ''
+  const unit = quantityUnitOptions.find((nextUnit) => nextUnit === parsedUnit || value.includes(nextUnit))
+  const customUnit = unit ? '' : parsedUnit
+
+  return {
+    firstRun: numbers[0] ?? '',
+    production: numbers[1] ?? '',
+    cadence,
+    unit: unit ?? (customUnit ? customQuantityUnitValue : '개'),
+    customUnit
+  }
+}
+
+function formatQuantityValue(value: string, unit: string): string {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  return `${trimmedValue}${unit}`
+}
+
+function buildEstimatedQuantity(): string {
+  const firstRun = formatQuantityValue(firstRunQuantity.value, selectedQuantityUnit.value)
+  const production = formatQuantityValue(productionQuantity.value, selectedQuantityUnit.value)
+
+  if (firstRun && production && quantityCadence.value !== '일회성') {
+    return `초도 ${firstRun}, 양산 ${quantityCadence.value} ${production}`
+  }
+
+  if (firstRun && production) {
+    return `초도 ${firstRun}, 추가 ${production}`
+  }
+
+  if (firstRun) {
+    return `초도 ${firstRun}`
+  }
+
+  if (production && quantityCadence.value !== '일회성') {
+    return `양산 ${quantityCadence.value} ${production}`
+  }
+
+  return production
 }
 
 function parseBudgetRange(value: string): { min: string; max: string } {
@@ -225,6 +299,7 @@ function handleSubmit() {
     return
   }
 
+  form.estimatedQuantity = buildEstimatedQuantity()
   form.budgetRange = buildBudgetRange()
 
   workflowStore.submitRequest(
@@ -297,24 +372,65 @@ function handleSubmit() {
                 />
               </div>
 
-              <!-- Two Column Row -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Estimated Quantity -->
-                <div>
-                  <label for="estimatedQuantity" class="block text-sm font-medium text-slate-700 mb-2">
-                    예상 수량 <span class="text-red-500">*</span>
-                  </label>
+              <!-- Estimated Quantity -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  예상 수량 <span class="text-red-500">*</span>
+                </label>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
                   <input
-                    id="estimatedQuantity"
-                    v-model="form.estimatedQuantity"
+                    id="firstRunQuantity"
+                    v-model="firstRunQuantity"
                     type="text"
+                    inputmode="numeric"
                     required
-                    placeholder="예: 1,000개"
-                    class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="초도 수량"
+                    class="w-full rounded-lg border border-slate-300 px-4 py-3 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
+                  <input
+                    id="productionQuantity"
+                    v-model="productionQuantity"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="양산 수량"
+                    class="w-full rounded-lg border border-slate-300 px-4 py-3 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <select
+                    id="quantityCadence"
+                    v-model="quantityCadence"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    aria-label="양산 주기"
+                  >
+                    <option v-for="option in quantityCadenceOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <div class="grid gap-2">
+                    <select
+                      id="quantityUnit"
+                      v-model="quantityUnit"
+                      class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                      aria-label="단위"
+                    >
+                      <option v-for="unit in quantityUnitOptions" :key="unit" :value="unit">
+                        {{ unit }}
+                      </option>
+                      <option :value="customQuantityUnitValue">직접 입력</option>
+                    </select>
+                    <input
+                      v-if="quantityUnit === customQuantityUnitValue"
+                      v-model="customQuantityUnit"
+                      type="text"
+                      placeholder="단위 입력"
+                      class="w-full rounded-lg border border-slate-300 px-4 py-3 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                      aria-label="사용자 지정 단위"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <!-- Desired Deadline -->
+              <!-- Desired Deadline -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label for="desiredDeadline" class="block text-sm font-medium text-slate-700 mb-2">
                     희망 납기 <span class="text-red-500">*</span>

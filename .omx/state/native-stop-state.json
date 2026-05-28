@@ -29,6 +29,26 @@
         "last_turn_id": "019e6e5c-6bd8-7122-8d60-36f6ede68161",
         "last_thread_id": null
       }
+    },
+    "019e6f2c-20ef-7b81-935d-bfbacde95259": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|{\"title\":\"채팅�??�버?�로???�정\"}",
+        "first_seen_at": "2026-05-28T15:20:29.666Z",
+        "last_seen_at": "2026-05-28T15:20:29.666Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e6f2c-2126-7322-86bc-51288ace8eef",
+        "last_thread_id": null
+      }
+    },
+    "019e6f2b-b2f4-7313-8847-76567cc031a0": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|채팅 ?�력창을 고쳤?�니?? [messagesview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/messagesview.vue)???�용?�고, ??�?`input`???�동 ?�이 조절?�는 `textarea`�?바꿔??�?문장???�력?�도 채팅�?밖으�?밀?�나지 ?�게 ?�습?�다. 말풍?�도 �??�어/url???��??�서 줄바꿈되?�록 보강?�습?�다. 검�? `pnpm build` ?�과?�습?�다. 개발 ?�버??켜�??�니?? `http://127.0.0.1:5173` 참고�?`.omx/state/*` 변경�? ?�업 ?��????�던 변경이??건드리�? ?�았?�니??",
+        "first_seen_at": "2026-05-28T15:23:23.348Z",
+        "last_seen_at": "2026-05-28T15:23:23.348Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e6f2c-20f3-7f20-ae1f-f322b8c2185d",
+        "last_thread_id": null
+      }
     }
   }
 }

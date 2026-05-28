@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { nextTick, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMessageStore } from '@/stores/messages'
 import type { Message } from '@/types'
@@ -10,6 +10,7 @@ const route = useRoute()
 const selectedMessage = ref<Message | null>(null)
 const filter = ref<'all' | 'unread'>('all')
 const chatDraft = ref('')
+const chatInput = ref<HTMLTextAreaElement | null>(null)
 const chatReplies = ref<Array<{ id: string; messageId: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
 
 const filteredMessages = computed(() => {
@@ -98,6 +99,22 @@ function sendChatReply() {
     createdAt: new Date().toISOString()
   })
   chatDraft.value = ''
+  nextTick(resizeChatInput)
+}
+
+function resizeChatInput() {
+  const input = chatInput.value
+  if (!input) return
+
+  input.style.height = 'auto'
+  input.style.height = `${Math.min(input.scrollHeight, 144)}px`
+}
+
+function handleComposerKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
+
+  event.preventDefault()
+  sendChatReply()
 }
 </script>
 
@@ -215,12 +232,15 @@ function sendChatReply() {
 
           <div class="detail-footer">
             <form class="chat-composer" @submit.prevent="sendChatReply">
-              <input
+              <textarea
+                ref="chatInput"
                 v-model="chatDraft"
-                type="text"
+                rows="1"
                 :placeholder="isQuoteNegotiation ? '견적 조건을 조정할 내용을 입력하세요' : '메시지를 입력하세요'"
-              />
-              <button type="submit" class="btn btn-primary">전송</button>
+                @input="resizeChatInput"
+                @keydown="handleComposerKeydown"
+              ></textarea>
+              <button type="submit" class="btn btn-primary" :disabled="!chatDraft.trim()">전송</button>
               <RouterLink v-if="isQuoteNegotiation" to="/contract" class="btn btn-primary">
                 계약 진행
               </RouterLink>
@@ -521,6 +541,7 @@ function sendChatReply() {
 
 .chat-bubble {
   max-width: min(560px, 82%);
+  min-width: 0;
   padding: 14px 16px;
   border-radius: 16px;
   background: white;
@@ -528,6 +549,8 @@ function sendChatReply() {
   color: var(--text-secondary);
   line-height: 1.6;
   box-shadow: var(--shadow-sm);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .chat-row.mine .chat-bubble {
@@ -564,21 +587,35 @@ function sendChatReply() {
 .chat-composer {
   display: grid;
   grid-template-columns: 1fr auto auto;
+  align-items: end;
   gap: 10px;
   width: 100%;
+  min-width: 0;
 }
 
-.chat-composer input {
+.chat-composer textarea {
+  width: 100%;
+  min-width: 0;
   min-height: 44px;
+  max-height: 144px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 0 14px;
+  padding: 11px 14px;
   outline: none;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.chat-composer input:focus {
+.chat-composer textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.chat-composer .btn {
+  min-height: 44px;
+  white-space: nowrap;
 }
 
 .no-selection,

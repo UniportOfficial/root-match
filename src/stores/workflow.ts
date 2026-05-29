@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { mockFactoryRecommendations } from '@/data/factoryData'
 import type { FactoryRecommendation } from '@/types'
+import { matchFactories } from '@/services/aiMatching'
 
 export interface QuoteRequestDraft {
   projectName: string
@@ -70,6 +71,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       '납기와 품질 모두 만족스러웠습니다. 작업 상태 공유가 빠르고 검사 결과서도 상세해서 다음 양산 건도 논의하고 싶습니다.',
     nextAction: 'reorder'
   })
+  const isMatching = ref(false)
+  const matchingError = ref<string | null>(null)
 
   const contract = computed(() => ({
     projectName: currentRequest.value.projectName,
@@ -121,6 +124,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
     review.value = { ...nextReview }
   }
 
+  async function runAIMatching() {
+    isMatching.value = true
+    matchingError.value = null
+    try {
+      const results = await matchFactories(currentRequest.value)
+      recommendations.value = results
+      selectedFactory.value = results[0] ?? null
+    } catch (error) {
+      console.error('AI 매칭 오류:', error)
+      matchingError.value =
+        error instanceof Error ? error.message : 'AI 매칭 중 오류가 발생했습니다.'
+      recommendations.value = mockFactoryRecommendations
+      selectedFactory.value = mockFactoryRecommendations[0] ?? null
+    } finally {
+      isMatching.value = false
+    }
+  }
+
   return {
     currentRequest,
     requestFiles,
@@ -139,6 +160,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     selectFactory,
     completePayment,
     approveInspection,
-    submitReview
+    submitReview,
+    isMatching,
+    matchingError,
+    runAIMatching
   }
 })

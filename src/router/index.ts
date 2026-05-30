@@ -34,6 +34,24 @@ const router = createRouter({
       meta: { title: '대시보드' }
     },
     {
+      path: '/quote-requests',
+      name: 'quote-request-board',
+      component: () => import('@/views/QuoteRequestBoardView.vue'),
+      meta: { title: '견적 요청 게시판' }
+    },
+    {
+      path: '/client/requests',
+      name: 'client-requests',
+      component: () => import('@/views/client/ClientRequestListView.vue'),
+      meta: { title: '내 견적 요청 내역' }
+    },
+    {
+      path: '/client/requests/:id',
+      name: 'client-request-detail',
+      component: () => import('@/views/client/ClientRequestDetailView.vue'),
+      meta: { title: '견적 요청 상세' }
+    },
+    {
       path: '/client/request',
       name: 'client-request',
       component: () => import('@/views/client/ClientRequestView.vue'),
@@ -76,6 +94,18 @@ const router = createRouter({
       meta: { title: '계약 및 에스크로 결제' }
     },
     {
+      path: '/transactions',
+      name: 'transactions',
+      component: () => import('@/views/transaction/TransactionListView.vue'),
+      meta: { title: '거래 진행 현황' }
+    },
+    {
+      path: '/transactions/:id',
+      name: 'transaction-detail',
+      component: () => import('@/views/transaction/TransactionProgressView.vue'),
+      meta: { title: '거래 진행 상세' }
+    },
+    {
       path: '/transaction/progress',
       name: 'transaction-progress',
       component: () => import('@/views/transaction/TransactionProgressView.vue'),
@@ -88,10 +118,22 @@ const router = createRouter({
       meta: { title: '거래 완료 및 리뷰' }
     },
     {
+      path: '/disputes',
+      name: 'disputes',
+      component: () => import('@/views/dispute/DisputeListView.vue'),
+      meta: { title: '분쟁 중재 현황' }
+    },
+    {
       path: '/disputes/mediation',
       name: 'dispute-mediation',
       component: () => import('@/views/dispute/DisputeMediationView.vue'),
       meta: { title: '분쟁 중재 신청' }
+    },
+    {
+      path: '/disputes/:id',
+      name: 'dispute-detail',
+      component: () => import('@/views/dispute/DisputeDetailView.vue'),
+      meta: { title: '분쟁 중재 상세' }
     },
     {
       path: '/companies',

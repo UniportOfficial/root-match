@@ -216,7 +216,7 @@ const solutions = [
             <ArrowRight class="w-5 h-5" />
           </RouterLink>
           <RouterLink
-            to="/factory/onboarding"
+            :to="{ path: '/login', query: { mode: 'signup', role: 'factory', redirect: '/factory/onboarding' } }"
             class="w-full sm:w-auto px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-xl hover:bg-blue-50 transition-colors font-semibold text-lg flex items-center justify-center gap-2"
           >
             <Factory class="w-5 h-5" />
@@ -370,7 +370,7 @@ const solutions = [
             <ArrowRight class="w-5 h-5" />
           </RouterLink>
           <RouterLink
-            to="/factory/onboarding"
+            :to="{ path: '/login', query: { mode: 'signup', role: 'factory', redirect: '/factory/onboarding' } }"
             class="w-full sm:w-auto px-8 py-4 bg-blue-700 text-white border-2 border-white/30 rounded-xl hover:bg-blue-800 transition-colors font-semibold text-lg flex items-center justify-center gap-2"
           >
             공장 등록하기

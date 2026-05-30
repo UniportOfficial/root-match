@@ -22,11 +22,31 @@
     },
     "019e6e01-c823-7712-a652-b98515ddcd39": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|?�망 ?�기 ?�택??브라?��? 기본 ?�어 ?�력?�서 ?�자??커스?� ?�력?�로 바꿨?�니?? 변�??�일: [clientrequestview.vue](</c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/client/clientrequestview.vue:41>) ?�제 ?�력?�서 ?��? `yyyy.mm`, ?�짜???�자�??�시?�고, ?�택값�? 기존처럼 `yyyy-mm-dd`�??�?�됩?�다. 검증도 ?�료?�습?�다: `pnpm build` ?�과.",
-        "first_seen_at": "2026-05-28T09:58:26.001Z",
-        "last_seen_at": "2026-05-28T09:58:26.001Z",
+        "fingerprint": "ordinary|맞습?�다. ?�인?� ?��? `견적 ?�의` 메시지�?채팅?�으�?보이�??�두�? ?�반 메시지??기존 메일 ?�세 ui�?그�?�??�겨??거�??�니?? ?�제 ?�정?�서 `메시지` ?�면?�서 ?�떤 ?�?��? ?�어??기본??채팅?�입?�다. - 말풍???�태�?메시지 ?�시 - ?�단 ?�력창에??바로 ?�장 가??n- 견적 관???�?�일 ?�만 `계약 진행` 버튼 추�? ?�시 검�? - `pnpm build` ?�과 - `/messages` ?�답 `200` ?�인 ?�료",
+        "first_seen_at": "2026-05-28T11:34:21.742Z",
+        "last_seen_at": "2026-05-28T11:34:21.742Z",
         "repeat_count": 1,
-        "last_turn_id": "019e6e03-44f6-7ec1-b2f5-dbbffcbab30b",
+        "last_turn_id": "019e6e5c-6bd8-7122-8d60-36f6ede68161",
+        "last_thread_id": null
+      }
+    },
+    "019e6f2c-20ef-7b81-935d-bfbacde95259": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|{\"title\":\"채팅�??�버?�로???�정\"}",
+        "first_seen_at": "2026-05-28T15:20:29.666Z",
+        "last_seen_at": "2026-05-28T15:20:29.666Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e6f2c-2126-7322-86bc-51288ace8eef",
+        "last_thread_id": null
+      }
+    },
+    "019e6f2b-b2f4-7313-8847-76567cc031a0": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|공장 ?�로???�록/?�정 ?�면???�청??방향?�로 바꿨?�니?? 변�??�일: [factoryonboardingview.vue](c:/users/qhtm0/desktop/project/dgu-technology-start-up-capstone/src/views/factory/factoryonboardingview.vue) 반영???�용: - `???�산 가?�량` ?�일 ?�력???�거?�고 `?�품�????�산 가?�량` 반복 ?�력?�로 변�?n- ?�목�? ???�산?? 조건/메모�??�목마다 ?�로 ?�력 가??n- ?�목 추�?/??�� 버튼 추�? - 공정 ?�택?� 기존 6�?공정 ?��? ?��? - `기�? 공정 ?�력` ?�드�?추�??�서 `cnc 가�?, `?�출`, `?�장`, `조립` 같�? 공정??직접 추�? 가??n- ?�택??공정?� �??�태�?보여주고, ?�릭?�서 ?�거 가??n- ?�면 문구??공장 ?�로???�등�??�정??맥락?�로 ?�리 검�? `pnpm build` ?�과?�습?�다.",
+        "first_seen_at": "2026-05-28T16:34:20.233Z",
+        "last_seen_at": "2026-05-28T16:34:20.233Z",
+        "repeat_count": 1,
+        "last_turn_id": "019e6f6d-9651-7253-ae88-e6e4d37b8736",
         "last_thread_id": null
       }
     }

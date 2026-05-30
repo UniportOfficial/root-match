@@ -47,6 +47,13 @@ export const useCompanyStore = defineStore('companies', () => {
     return companies.value.find(c => c.id === id)
   }
 
+  function updateCompany(companyId: string, updates: Partial<Company>) {
+    const index = companies.value.findIndex(c => c.id === companyId)
+    if (index > -1) {
+      companies.value[index] = { ...companies.value[index], ...updates }
+    }
+  }
+
   function toggleFavorite(companyId: string) {
     const index = favorites.value.indexOf(companyId)
     if (index > -1) {
@@ -73,6 +80,7 @@ export const useCompanyStore = defineStore('companies', () => {
     setFilter,
     clearFilter,
     getCompanyById,
+    updateCompany,
     toggleFavorite,
     isFavorite
   }

@@ -30,7 +30,7 @@ function toggleFavorite(e: Event) {
     :class="{ compact }"
   >
     <div class="card-header">
-      <div class="company-avatar">
+      <div class="company-avatar" :style="{ '--profile-color': company.profileColor || '#4f66e5' }">
         {{ initials }}
       </div>
       <div class="company-info">
@@ -56,6 +56,10 @@ function toggleFavorite(e: Event) {
         </svg>
       </button>
     </div>
+
+    <p v-if="!compact && company.headline" class="company-headline">
+      {{ company.headline }}
+    </p>
 
     <p v-if="!compact" class="company-description">
       {{ company.description }}
@@ -92,11 +96,12 @@ function toggleFavorite(e: Event) {
 }
 
 .company-avatar {
+  --profile-color: var(--primary);
   width: 48px;
   height: 48px;
   border-radius: var(--radius-md);
-  background-color: var(--primary-light);
-  color: var(--primary);
+  background-color: color-mix(in srgb, var(--profile-color) 14%, white);
+  color: var(--profile-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -153,6 +158,18 @@ function toggleFavorite(e: Event) {
 .favorite-btn svg {
   width: 20px;
   height: 20px;
+}
+
+.company-headline {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .company-description {

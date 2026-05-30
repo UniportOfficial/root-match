@@ -91,11 +91,12 @@ async function sendMessage() {
     <!-- Company Header -->
     <header class="company-header card">
       <div class="header-content">
-        <div class="company-avatar">
+        <div class="company-avatar" :style="{ '--profile-color': company.profileColor || '#4f66e5' }">
           {{ initials }}
         </div>
         <div class="company-info">
           <h1>{{ company.name }}</h1>
+          <p v-if="company.headline" class="company-headline">{{ company.headline }}</p>
           <div class="company-meta">
             <span class="badge">{{ company.industry }}</span>
             <span class="meta-item">
@@ -157,6 +158,11 @@ async function sendMessage() {
         <section class="card section">
           <h2>기업 소개</h2>
           <p class="description">{{ company.description }}</p>
+          <div v-if="company.strengths?.length" class="strengths">
+            <span v-for="strength in company.strengths" :key="strength" class="strength-badge">
+              {{ strength }}
+            </span>
+          </div>
           <div class="tags">
             <span v-for="tag in company.tags" :key="tag" class="tag">
               {{ tag }}
@@ -206,6 +212,16 @@ async function sendMessage() {
               </svg>
               {{ cert }}
             </span>
+          </div>
+        </section>
+
+        <section v-if="company.portfolio?.length" class="card section">
+          <h2>대표 프로젝트</h2>
+          <div class="portfolio-list">
+            <article v-for="item in company.portfolio" :key="item.title || item.description" class="portfolio-item">
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+            </article>
           </div>
         </section>
       </div>
@@ -335,11 +351,12 @@ async function sendMessage() {
 }
 
 .company-avatar {
+  --profile-color: var(--primary);
   width: 80px;
   height: 80px;
   border-radius: var(--radius-lg);
-  background-color: var(--primary-light);
-  color: var(--primary);
+  background-color: color-mix(in srgb, var(--profile-color) 14%, white);
+  color: var(--profile-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -353,6 +370,14 @@ async function sendMessage() {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 10px;
+}
+
+.company-headline {
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .company-meta {
@@ -420,6 +445,22 @@ async function sendMessage() {
   margin-bottom: 16px;
 }
 
+.strengths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.strength-badge {
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -479,6 +520,30 @@ async function sendMessage() {
 .certification-badge svg {
   width: 16px;
   height: 16px;
+}
+
+.portfolio-list {
+  display: grid;
+  gap: 12px;
+}
+
+.portfolio-item {
+  padding: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--background);
+}
+
+.portfolio-item h3 {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.portfolio-item p {
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .contact-card {

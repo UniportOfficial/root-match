@@ -12,13 +12,25 @@ const navItems = [
   },
   {
     name: 'client-request',
-    label: '견적 요청',
+    label: '견적 요청 등록',
     icon: 'request',
     path: '/client/request'
   },
   {
+    name: 'quote-request-board',
+    label: '견적 요청 게시판',
+    icon: 'request',
+    path: '/quote-requests'
+  },
+  {
+    name: 'client-requests',
+    label: '견적 요청 내역',
+    icon: 'request',
+    path: '/client/requests'
+  },
+  {
     name: 'factory-onboarding',
-    label: '공장 등록',
+    label: '공장 프로필 수정',
     icon: 'factory',
     path: '/factory/onboarding'
   },
@@ -29,16 +41,16 @@ const navItems = [
     path: '/factory/requests'
   },
   {
-    name: 'dispute-mediation',
-    label: '분쟁 중재',
+    name: 'disputes',
+    label: '분쟁 중재 현황',
     icon: 'shield',
-    path: '/disputes/mediation'
+    path: '/disputes'
   },
   {
-    name: 'transaction-progress',
-    label: '거래 진행',
+    name: 'transactions',
+    label: '거래 진행 현황',
     icon: 'progress',
-    path: '/transaction/progress'
+    path: '/transactions'
   },
   {
     name: 'companies',
@@ -63,6 +75,9 @@ const navItems = [
 const isActive = (item: typeof navItems[0]) => {
   if (item.path === '/dashboard') {
     return route.path === '/dashboard'
+  }
+  if (item.path === '/client/request') {
+    return route.path === '/client/request'
   }
   return route.path.startsWith(item.path)
 }

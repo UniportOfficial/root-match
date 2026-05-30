@@ -27,7 +27,7 @@ const steps = [
 
 function completePayment() {
   workflowStore.completePayment()
-  router.push('/transaction/progress')
+  router.push('/transactions/TXN-2026-018')
 }
 </script>
 

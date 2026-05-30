@@ -1,18 +1,41 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { nextTick, ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { X } from 'lucide-vue-next'
 import { useMessageStore } from '@/stores/messages'
 import type { Message } from '@/types'
 
 const messageStore = useMessageStore()
+const route = useRoute()
 
 const selectedMessage = ref<Message | null>(null)
 const filter = ref<'all' | 'unread'>('all')
+const chatDraft = ref('')
+const chatInput = ref<HTMLTextAreaElement | null>(null)
+const chatScroll = ref<HTMLElement | null>(null)
+const chatReplies = ref<Array<{ id: string; messageId: string; sender: 'me' | 'partner'; content: string; createdAt: string }>>([])
 
 const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
     return messageStore.sortedMessages.filter(m => !m.isRead)
   }
   return messageStore.sortedMessages
+})
+
+const isQuoteNegotiation = computed(() => selectedMessage.value?.subject.includes('견적') ?? false)
+
+const chatMessages = computed(() => {
+  if (!selectedMessage.value) return []
+
+  return [
+    {
+      id: selectedMessage.value.id,
+      sender: 'partner' as const,
+      content: selectedMessage.value.content,
+      createdAt: selectedMessage.value.createdAt
+    },
+    ...chatReplies.value.filter((reply) => reply.messageId === selectedMessage.value?.id)
+  ]
 })
 
 const formatDate = (dateString: string) => {
@@ -44,13 +67,69 @@ function selectMessage(message: Message) {
   if (!message.isRead) {
     messageStore.markAsRead(message.id)
   }
+  scrollChatToBottom('auto')
 }
 
-function deleteMessage(id: string) {
-  messageStore.deleteMessage(id)
-  if (selectedMessage.value?.id === id) {
-    selectedMessage.value = null
-  }
+watch(
+  () => route.query.message,
+  (messageId) => {
+    if (typeof messageId !== 'string') return
+
+    const message = messageStore.messages.find((item) => item.id === messageId)
+    if (message) {
+      selectMessage(message)
+    }
+  },
+  { immediate: true }
+)
+
+function closeMessageDetail() {
+  selectedMessage.value = null
+}
+
+function sendChatReply() {
+  const content = chatDraft.value.trim()
+  if (!content || !selectedMessage.value) return
+
+  chatReplies.value.push({
+    id: `reply-${Date.now()}`,
+    messageId: selectedMessage.value.id,
+    sender: 'me',
+    content,
+    createdAt: new Date().toISOString()
+  })
+  chatDraft.value = ''
+  nextTick(() => {
+    resizeChatInput()
+    scrollChatToBottom()
+  })
+}
+
+function resizeChatInput() {
+  const input = chatInput.value
+  if (!input) return
+
+  input.style.height = 'auto'
+  input.style.height = `${Math.min(input.scrollHeight, 144)}px`
+}
+
+function scrollChatToBottom(behavior: ScrollBehavior = 'smooth') {
+  nextTick(() => {
+    const container = chatScroll.value
+    if (!container) return
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior
+    })
+  })
+}
+
+function handleComposerKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
+
+  event.preventDefault()
+  sendChatReply()
 }
 </script>
 
@@ -132,35 +211,50 @@ function deleteMessage(id: string) {
               </div>
             </div>
             <div class="detail-actions">
-              <button class="btn btn-ghost" @click="deleteMessage(selectedMessage.id)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" x2="10" y1="11" y2="17"/>
-                  <line x1="14" x2="14" y1="11" y2="17"/>
-                </svg>
+              <button class="btn btn-ghost" type="button" aria-label="채팅창 닫기" title="채팅창 닫기" @click="closeMessageDetail">
+                <X :size="20" aria-hidden="true" />
               </button>
             </div>
           </div>
 
-          <div class="detail-body">
+          <div ref="chatScroll" class="detail-body chat-body">
             <h2 class="detail-subject">{{ selectedMessage.subject }}</h2>
             <span class="detail-date">{{ formatFullDate(selectedMessage.createdAt) }}</span>
-            <div class="detail-content">
-              <p v-for="(line, index) in selectedMessage.content.split('\n')" :key="index">
-                {{ line }}
-              </p>
+            <div class="quote-chat">
+              <div v-if="isQuoteNegotiation" class="quote-notice">
+                견적 금액, 납기, 결제 조건을 이 채팅에서 조정한 뒤 계약으로 진행하세요.
+              </div>
+              <div
+                v-for="chat in chatMessages"
+                :key="chat.id"
+                class="chat-row"
+                :class="{ mine: chat.sender === 'me' }"
+              >
+                <div class="chat-bubble">
+                  <p v-for="(line, index) in chat.content.split('\n')" :key="index">
+                    {{ line }}
+                  </p>
+                  <span>{{ formatDate(chat.createdAt) }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="detail-footer">
-            <button class="btn btn-primary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 17 4 12 9 7"/>
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-              </svg>
-              답장하기
-            </button>
+            <form class="chat-composer" @submit.prevent="sendChatReply">
+              <textarea
+                ref="chatInput"
+                v-model="chatDraft"
+                rows="1"
+                :placeholder="isQuoteNegotiation ? '견적 조건을 조정할 내용을 입력하세요' : '메시지를 입력하세요'"
+                @input="resizeChatInput"
+                @keydown="handleComposerKeydown"
+              ></textarea>
+              <button type="submit" class="btn btn-primary" :disabled="!chatDraft.trim()">전송</button>
+              <RouterLink v-if="isQuoteNegotiation" to="/contract" class="btn btn-primary">
+                계약 진행
+              </RouterLink>
+            </form>
           </div>
         </template>
 
@@ -208,12 +302,15 @@ function deleteMessage(id: string) {
   grid-template-columns: 380px 1fr;
   overflow: hidden;
   padding: 0;
+  min-height: 0;
 }
 
 .message-list {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .list-header {
@@ -342,6 +439,8 @@ function deleteMessage(id: string) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .detail-header {
@@ -350,12 +449,15 @@ function deleteMessage(id: string) {
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border);
+  gap: 16px;
+  min-width: 0;
 }
 
 .detail-sender {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .detail-avatar {
@@ -375,11 +477,18 @@ function deleteMessage(id: string) {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-info span {
   font-size: 14px;
   color: var(--text-muted);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-actions {
@@ -396,6 +505,7 @@ function deleteMessage(id: string) {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .detail-subject {
@@ -426,14 +536,114 @@ function deleteMessage(id: string) {
   margin-bottom: 0;
 }
 
+.chat-body {
+  background: #f8fafc;
+}
+
+.quote-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quote-notice {
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: var(--radius-md);
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.chat-row.mine {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: min(560px, 82%);
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  box-shadow: var(--shadow-sm);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chat-row.mine .chat-bubble {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.chat-bubble p {
+  margin-bottom: 8px;
+}
+
+.chat-bubble p:last-of-type {
+  margin-bottom: 0;
+}
+
+.chat-bubble span {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
 .detail-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .detail-footer .btn svg {
   width: 18px;
   height: 18px;
+}
+
+.chat-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chat-composer textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 144px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.chat-composer textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.chat-composer .btn {
+  min-height: 44px;
+  white-space: nowrap;
 }
 
 .no-selection,
@@ -471,6 +681,27 @@ function deleteMessage(id: string) {
 
   .message-detail.active {
     display: flex;
+  }
+
+  .detail-header,
+  .detail-body,
+  .detail-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .chat-composer {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .chat-composer .btn {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chat-composer a.btn {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 }
 </style>

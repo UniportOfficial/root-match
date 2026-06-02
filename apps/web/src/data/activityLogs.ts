@@ -1,4 +1,4 @@
-import type { ActivityLog, DashboardStats } from '@rootmatching/shared'
+import type { ActivityLog } from '@rootmatching/shared'
 
 export const mockActivityLogs: ActivityLog[] = [
   {
@@ -42,10 +42,3 @@ export const mockActivityLogs: ActivityLog[] = [
     createdAt: '2024-04-16T15:20:00',
   },
 ]
-
-export const mockDashboardStats: DashboardStats = {
-  totalViews: 127,
-  totalInquiries: 23,
-  totalMatches: 45,
-  recentMessages: 4,
-}

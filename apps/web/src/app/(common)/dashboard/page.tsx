@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { Building2, Eye, Mail, MessageCircle, Sparkles, type LucideIcon } from 'lucide-react'
 import { AppBadge } from '@/components/ui/AppBadge'
-import { mockActivityLogs, mockDashboardStats } from '@/data/activityLogs'
+import { mockActivityLogs } from '@/data/activityLogs'
 import { mockCompanies } from '@/data/companies'
+import { mockDashboardStats } from '@/data/dashboardStats'
 import { useUserState } from '@/state/UserContext'
 
 type ActivityType = (typeof mockActivityLogs)[number]['type']

@@ -44,6 +44,15 @@ const inputClassName =
 const isMockAccount = (email: string, password: string) =>
   email === 'hong@techsolution.co.kr' && password === '123456'
 
+function resolveRedirectTarget(fallback: string): string {
+  if (typeof window === 'undefined') return fallback
+  const target = new URLSearchParams(window.location.search).get('redirectTo')
+  if (!target) return fallback
+  if (!target.startsWith('/')) return fallback
+  if (target.startsWith('//')) return fallback
+  return target
+}
+
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<AuthTab>('login')
   const [submitError, setSubmitError] = useState('')
@@ -74,7 +83,7 @@ export default function LoginPage() {
     }
 
     dispatch({ type: 'user/login', payload: mockCurrentUser })
-    router.push('/dashboard')
+    router.push(resolveRedirectTarget('/dashboard'))
   }
 
   function submitRegister(values: RegisterFormValues) {

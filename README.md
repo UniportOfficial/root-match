@@ -84,11 +84,25 @@ pnpm --filter @rootmatching/shared run build
 # 5. 환경변수 설정
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
-# OPENAI_API_KEY 채우기
+# OPENAI_API_KEY 채우기 (선택 — 미설정 시 dev/test에서는 mock 추천 자동 반환)
 
 # 6. 개발 서버 (web :3000 + api :3001 병렬)
 pnpm dev
 ```
+
+### AI 매칭 mock fallback 정책
+
+`POST /matching/recommend` 동작은 `OPENAI_API_KEY`와 `NODE_ENV`에 따라 분기됩니다.
+
+| 환경       | `OPENAI_API_KEY` | `MATCHING_MOCK_FALLBACK` | 동작                                                     |
+| ---------- | ---------------- | ------------------------ | -------------------------------------------------------- |
+| dev/test   | 설정             | (무관)                   | 실제 OpenAI 호출 (text-embedding-3-small + GPT-4o)       |
+| dev/test   | 미설정           | (무관)                   | **deterministic mock 추천 자동 반환** (Logger.warn 출력) |
+| production | 설정             | (무관)                   | 실제 OpenAI 호출                                         |
+| production | 미설정           | 미설정 또는 `false`      | **500 throw** (silent mock 금지)                         |
+| production | 미설정           | `"true"`                 | mock 추천 반환 (명시적 opt-in)                           |
+
+근거: [`docs/specs/rootmatching-backend-checklist.md`](./docs/specs/rootmatching-backend-checklist.md) AIM-004 정책과 정렬.
 
 ## 워크스페이스 명령
 
@@ -133,9 +147,11 @@ pnpm dev
 
 ## API 엔드포인트
 
-| 메서드 | 경로                  | 동작                                      |
-| ------ | --------------------- | ----------------------------------------- |
-| POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 |
+| 메서드 | 경로                  | 동작                                                                    |
+| ------ | --------------------- | ----------------------------------------------------------------------- |
+| POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 (key 미설정 시 mock fallback) |
+
+> 1-step vs 2-step 엔드포인트 설계 결정은 [`docs/specs/matching-endpoint-design-decision.md`](./docs/specs/matching-endpoint-design-decision.md) 참고.
 
 ## 다음 작업 (Phase 1.Week 2)
 

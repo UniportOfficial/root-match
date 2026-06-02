@@ -2,31 +2,50 @@
 
 import { useMemo, useState, type ReactNode } from 'react'
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import type { Company, CompanyPortfolioItem } from '@rootmatching/shared'
 import { Loader2, PencilLine, RotateCcw, Save } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useCompaniesDispatch, useCompaniesState } from '@/state/CompaniesContext'
+import { useUserDispatch, useUserState } from '@/state/UserContext'
 
-interface ProfileFormValues {
-  name: string
-  industry: string
-  region: string
-  size: string
-  headline: string
-  description: string
-  contactEmail: string
-  contactPhone: string
-  website: string
-  tags: string
-  strengths: string
-  certifications: string
-  establishedYear: string
-  employeeCount: string
-  revenue: string
-  profileColor: string
-  portfolioTitle1: string
-  portfolioDescription1: string
-  portfolioTitle2: string
-  portfolioDescription2: string
-}
+const profileSchema = z.object({
+  name: z.string().min(1, '회사명을 입력해주세요.'),
+  industry: z.string().min(1, '업종을 선택해주세요.'),
+  region: z.string().min(1, '지역을 선택해주세요.'),
+  size: z.string().min(1, '기업 규모를 선택해주세요.'),
+  headline: z
+    .string()
+    .max(120, '한 줄 소개는 120자 이내로 입력해주세요.')
+    .optional()
+    .or(z.literal('')),
+  description: z
+    .string()
+    .max(1000, '회사 소개는 1000자 이내로 입력해주세요.')
+    .optional()
+    .or(z.literal('')),
+  contactEmail: z.string().email('올바른 이메일 형식이 아닙니다.').or(z.literal('')),
+  contactPhone: z.string().optional().or(z.literal('')),
+  website: z.string().url('올바른 URL을 입력해주세요.').or(z.literal('')),
+  tags: z.string().optional().or(z.literal('')),
+  strengths: z.string().optional().or(z.literal('')),
+  certifications: z.string().optional().or(z.literal('')),
+  establishedYear: z
+    .string()
+    .regex(/^\d{0,4}$/, '연도는 숫자로 입력해주세요.')
+    .optional()
+    .or(z.literal('')),
+  employeeCount: z.string().regex(/^\d+$/, '직원 수는 숫자로 입력해주세요.').or(z.literal('')),
+  revenue: z.string().optional().or(z.literal('')),
+  profileColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, '컬러 코드를 선택해주세요.'),
+  portfolioTitle1: z.string().optional().or(z.literal('')),
+  portfolioDescription1: z.string().optional().or(z.literal('')),
+  portfolioTitle2: z.string().optional().or(z.literal('')),
+  portfolioDescription2: z.string().optional().or(z.literal('')),
+})
+
+type ProfileFormValues = z.infer<typeof profileSchema>
 
 interface ProfileColor {
   label: string
@@ -87,17 +106,64 @@ function splitList(value: string): string[] {
 function buildPortfolio(values: ProfileFormValues) {
   return [
     {
-      title: values.portfolioTitle1.trim(),
-      description: values.portfolioDescription1.trim(),
+      title: (values.portfolioTitle1 ?? '').trim(),
+      description: (values.portfolioDescription1 ?? '').trim(),
     },
     {
-      title: values.portfolioTitle2.trim(),
-      description: values.portfolioDescription2.trim(),
+      title: (values.portfolioTitle2 ?? '').trim(),
+      description: (values.portfolioDescription2 ?? '').trim(),
     },
   ].filter((item) => item.title || item.description)
 }
 
+function buildCompanyPayload(
+  baseCompany: Company,
+  values: ProfileFormValues,
+): { company: Company; portfolio: CompanyPortfolioItem[] } {
+  const portfolio: CompanyPortfolioItem[] = [
+    {
+      title: (values.portfolioTitle1 ?? '').trim(),
+      description: (values.portfolioDescription1 ?? '').trim(),
+    },
+    {
+      title: (values.portfolioTitle2 ?? '').trim(),
+      description: (values.portfolioDescription2 ?? '').trim(),
+    },
+  ].filter((item) => item.title || item.description)
+
+  const employeeCount = Number(values.employeeCount ?? '0') || baseCompany.employeeCount
+  const establishedYear = Number(values.establishedYear ?? '0') || baseCompany.establishedYear
+
+  return {
+    portfolio,
+    company: {
+      ...baseCompany,
+      name: values.name.trim() || baseCompany.name,
+      industry: values.industry,
+      region: values.region,
+      size: values.size,
+      description: values.description?.trim() || baseCompany.description,
+      headline: values.headline?.trim() || baseCompany.headline,
+      profileColor: values.profileColor,
+      tags: splitList(values.tags ?? ''),
+      strengths: splitList(values.strengths ?? ''),
+      certifications: splitList(values.certifications ?? ''),
+      contactEmail: values.contactEmail || baseCompany.contactEmail,
+      contactPhone: values.contactPhone || baseCompany.contactPhone,
+      website: values.website || baseCompany.website,
+      establishedYear,
+      employeeCount,
+      revenue: values.revenue || baseCompany.revenue,
+      portfolio,
+    },
+  }
+}
+
 export default function MyPageProfilePage() {
+  const userState = useUserState()
+  const userDispatch = useUserDispatch()
+  const companiesDispatch = useCompaniesDispatch()
+  const { companies } = useCompaniesState()
   const [isEditing, setIsEditing] = useState(false)
   const [savedProfile, setSavedProfile] = useState<ProfileFormValues>(initialProfile)
   const {
@@ -107,17 +173,20 @@ export default function MyPageProfilePage() {
     setValue,
     watch,
     formState: { isSubmitting },
-  } = useForm<ProfileFormValues>({ defaultValues: initialProfile })
+  } = useForm<ProfileFormValues>({
+    defaultValues: initialProfile,
+    resolver: zodResolver(profileSchema),
+  })
   const formData = watch()
 
   const initials = useMemo(() => formData.name.slice(0, 2) || '회사', [formData.name])
-  const previewTags = useMemo(() => splitList(formData.tags).slice(0, 4), [formData.tags])
+  const previewTags = useMemo(() => splitList(formData.tags ?? '').slice(0, 4), [formData.tags])
   const previewStrengths = useMemo(
-    () => splitList(formData.strengths).slice(0, 4),
+    () => splitList(formData.strengths ?? '').slice(0, 4),
     [formData.strengths],
   )
   const previewCertifications = useMemo(
-    () => splitList(formData.certifications),
+    () => splitList(formData.certifications ?? ''),
     [formData.certifications],
   )
   const previewPortfolio = useMemo(() => buildPortfolio(formData), [formData])
@@ -132,7 +201,13 @@ export default function MyPageProfilePage() {
   }
 
   async function saveProfile(values: ProfileFormValues) {
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    const baseCompany = userState.currentUser?.company ?? companies[0] ?? null
+    if (baseCompany) {
+      const { company } = buildCompanyPayload(baseCompany, values)
+      userDispatch({ type: 'user/updateCompany', payload: company })
+      companiesDispatch({ type: 'companies/updateCompany', payload: company })
+    }
     setSavedProfile(values)
     reset(values)
     setIsEditing(false)

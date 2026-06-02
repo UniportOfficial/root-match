@@ -4,9 +4,22 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Factory, Sparkles } from 'lucide-react'
 import { AppButton } from '@/components/ui/AppButton'
+import { mockCurrentUser, mockFactoryUser } from '@/data/users'
+import { useUserDispatch } from '@/state/UserContext'
 
 export default function RoleSelectPage() {
   const router = useRouter()
+  const dispatch = useUserDispatch()
+
+  function startAsClient() {
+    dispatch({ type: 'user/login', payload: mockCurrentUser })
+    router.push('/request')
+  }
+
+  function startAsFactory() {
+    dispatch({ type: 'user/login', payload: mockFactoryUser })
+    router.push('/factory/onboarding')
+  }
 
   return (
     <main className="min-h-screen bg-surface-muted px-4 py-16 sm:px-6 lg:px-8">
@@ -31,13 +44,7 @@ export default function RoleSelectPage() {
             <p className="mt-3 min-h-16 text-base leading-7 text-ink-700">
               제작 의뢰를 등록하고 AI 추천 공장과 매칭하세요.
             </p>
-            <AppButton
-              type="button"
-              size="lg"
-              fullWidth
-              className="mt-8"
-              onClick={() => router.push('/request')}
-            >
+            <AppButton type="button" size="lg" fullWidth className="mt-8" onClick={startAsClient}>
               견적 요청 등록하기
             </AppButton>
           </article>
@@ -48,13 +55,7 @@ export default function RoleSelectPage() {
             <p className="mt-3 min-h-16 text-base leading-7 text-ink-700">
               공장 프로필을 등록하고 견적 기회를 받아보세요.
             </p>
-            <AppButton
-              type="button"
-              size="lg"
-              fullWidth
-              className="mt-8"
-              onClick={() => router.push('/factory/onboarding')}
-            >
+            <AppButton type="button" size="lg" fullWidth className="mt-8" onClick={startAsFactory}>
               공장 프로필 등록하기
             </AppButton>
           </article>

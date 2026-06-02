@@ -1,7 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import {
   ArrowRight,
   Building2,
@@ -17,15 +20,17 @@ import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { cn } from '@/lib/cn'
 
-interface BasicInfo {
-  factoryName: string
-  ownerName: string
-  location: string
-  contactPhone: string
-  contactEmail: string
-  website: string
-  description: string
-}
+const basicInfoSchema = z.object({
+  factoryName: z.string().min(1, '공장명을 입력해주세요.'),
+  ownerName: z.string().min(1, '담당자 이름을 입력해주세요.'),
+  location: z.string().min(1, '위치를 입력해주세요.'),
+  contactPhone: z.string().min(1, '연락처를 입력해주세요.'),
+  contactEmail: z.string().email('올바른 이메일 형식이 아닙니다.').or(z.literal('')),
+  website: z.string().url('올바른 URL을 입력해주세요.').or(z.literal('')),
+  description: z.string().max(1000, '소개는 1000자 이내로 입력해주세요.').or(z.literal('')),
+})
+
+type BasicInfo = z.infer<typeof basicInfoSchema>
 
 interface ProductionItem {
   id: string
@@ -81,7 +86,14 @@ function RequiredMark() {
 }
 
 export default function FactoryOnboardingPage() {
-  const [basicInfo, setBasicInfo] = useState<BasicInfo>(initialBasicInfo)
+  const {
+    register: registerBasic,
+    handleSubmit: handleSubmitBasic,
+    formState: { errors: basicErrors },
+  } = useForm<BasicInfo>({
+    defaultValues: initialBasicInfo,
+    resolver: zodResolver(basicInfoSchema),
+  })
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([])
   const [customProcesses, setCustomProcesses] = useState<string[]>([])
   const [customProcessInput, setCustomProcessInput] = useState('')
@@ -92,10 +104,6 @@ export default function FactoryOnboardingPage() {
   const [equipment, setEquipment] = useState('')
   const [certifications, setCertifications] = useState('')
   const [savedAt, setSavedAt] = useState<string | null>(null)
-
-  function updateBasicInfo(field: keyof BasicInfo, value: string) {
-    setBasicInfo((current) => ({ ...current, [field]: value }))
-  }
 
   function toggleProcess(process: string) {
     setSelectedProcesses((current) =>
@@ -181,18 +189,8 @@ export default function FactoryOnboardingPage() {
     })
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (
-      !basicInfo.factoryName.trim() ||
-      !basicInfo.ownerName.trim() ||
-      !basicInfo.location.trim() ||
-      !basicInfo.contactPhone.trim()
-    ) {
-      return
-    }
-
+  function submitOnboarding(values: BasicInfo) {
+    void values
     setSavedAt(new Date().toISOString())
   }
 
@@ -230,7 +228,7 @@ export default function FactoryOnboardingPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmitBasic(submitOnboarding)}>
           <section className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
             <div className="mb-6 flex items-start gap-3">
               <div className="rounded-xl bg-brand-light p-3 text-brand">
@@ -250,12 +248,10 @@ export default function FactoryOnboardingPage() {
                   공장명
                   <RequiredMark />
                 </span>
-                <input
-                  required
-                  value={basicInfo.factoryName}
-                  onChange={(event) => updateBasicInfo('factoryName', event.target.value)}
-                  className={inputClassName}
-                />
+                <input {...registerBasic('factoryName')} className={inputClassName} />
+                {basicErrors.factoryName ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.factoryName.message}</p>
+                ) : null}
               </label>
 
               <label>
@@ -263,12 +259,10 @@ export default function FactoryOnboardingPage() {
                   담당자
                   <RequiredMark />
                 </span>
-                <input
-                  required
-                  value={basicInfo.ownerName}
-                  onChange={(event) => updateBasicInfo('ownerName', event.target.value)}
-                  className={inputClassName}
-                />
+                <input {...registerBasic('ownerName')} className={inputClassName} />
+                {basicErrors.ownerName ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.ownerName.message}</p>
+                ) : null}
               </label>
 
               <label>
@@ -276,12 +270,10 @@ export default function FactoryOnboardingPage() {
                   위치
                   <RequiredMark />
                 </span>
-                <input
-                  required
-                  value={basicInfo.location}
-                  onChange={(event) => updateBasicInfo('location', event.target.value)}
-                  className={inputClassName}
-                />
+                <input {...registerBasic('location')} className={inputClassName} />
+                {basicErrors.location ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.location.message}</p>
+                ) : null}
               </label>
 
               <label>
@@ -289,40 +281,33 @@ export default function FactoryOnboardingPage() {
                   연락처
                   <RequiredMark />
                 </span>
-                <input
-                  required
-                  value={basicInfo.contactPhone}
-                  onChange={(event) => updateBasicInfo('contactPhone', event.target.value)}
-                  className={inputClassName}
-                />
+                <input {...registerBasic('contactPhone')} className={inputClassName} />
+                {basicErrors.contactPhone ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.contactPhone.message}</p>
+                ) : null}
               </label>
 
               <label>
                 <span className={labelClassName}>이메일</span>
-                <input
-                  type="email"
-                  value={basicInfo.contactEmail}
-                  onChange={(event) => updateBasicInfo('contactEmail', event.target.value)}
-                  className={inputClassName}
-                />
+                <input type="email" {...registerBasic('contactEmail')} className={inputClassName} />
+                {basicErrors.contactEmail ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.contactEmail.message}</p>
+                ) : null}
               </label>
 
               <label>
                 <span className={labelClassName}>웹사이트</span>
-                <input
-                  type="url"
-                  value={basicInfo.website}
-                  onChange={(event) => updateBasicInfo('website', event.target.value)}
-                  className={inputClassName}
-                />
+                <input type="url" {...registerBasic('website')} className={inputClassName} />
+                {basicErrors.website ? (
+                  <p className="mt-1 text-sm text-danger">{basicErrors.website.message}</p>
+                ) : null}
               </label>
 
               <label className="sm:col-span-2">
                 <span className={labelClassName}>공장 소개</span>
                 <textarea
                   rows={4}
-                  value={basicInfo.description}
-                  onChange={(event) => updateBasicInfo('description', event.target.value)}
+                  {...registerBasic('description')}
                   className={textareaClassName}
                 />
               </label>

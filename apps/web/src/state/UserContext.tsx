@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from 'react'
 import type { Company, User } from '@rootmatching/shared'
-import { mockCurrentUser } from '@/data/users'
 import { clearAuthCookie, setAuthCookie } from '@/lib/auth-cookie'
 
 interface UserState {
@@ -41,8 +40,8 @@ type UserAction =
   | { type: 'user/logout' }
 
 const initialState: UserState = {
-  currentUser: mockCurrentUser,
-  isAuthenticated: true,
+  currentUser: null,
+  isAuthenticated: false,
 }
 
 function reducer(state: UserState, action: UserAction): UserState {
@@ -81,12 +80,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
   useEffect(() => {
-    if (state.isAuthenticated) {
-      setAuthCookie()
+    if (state.isAuthenticated && state.currentUser) {
+      setAuthCookie(state.currentUser.accountType)
     } else {
       clearAuthCookie()
     }
-  }, [state.isAuthenticated])
+  }, [state.isAuthenticated, state.currentUser])
 
   return (
     <StateContext.Provider value={state}>

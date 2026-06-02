@@ -55,6 +55,7 @@ function reducer(state: UserState, action: UserAction): UserState {
         name: action.payload.name,
         company: action.payload.company,
         role: action.payload.role ?? 'admin',
+        accountType: 'client',
         ...(action.payload.position ? { position: action.payload.position } : {}),
         ...(action.payload.phone ? { phone: action.payload.phone } : {}),
       }

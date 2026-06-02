@@ -37,11 +37,20 @@ export function middleware(req: NextRequest): NextResponse {
   }
 
   const role = req.cookies.get(ROLE_COOKIE_NAME)?.value
-  if (role === 'client' && startsWithAny(pathname, FACTORY_ONLY_PREFIXES)) {
-    return redirectTo(req, '/dashboard')
-  }
-  if (role === 'factory' && startsWithAny(pathname, CLIENT_ONLY_PREFIXES)) {
-    return redirectTo(req, '/dashboard')
+  const isFactoryOnly = startsWithAny(pathname, FACTORY_ONLY_PREFIXES)
+  const isClientOnly = startsWithAny(pathname, CLIENT_ONLY_PREFIXES)
+
+  if (isFactoryOnly || isClientOnly) {
+    if (role !== 'client' && role !== 'factory') {
+      // Role-scoped route reached without a role cookie — force role selection.
+      return redirectTo(req, '/role-select')
+    }
+    if (role === 'client' && isFactoryOnly) {
+      return redirectTo(req, '/dashboard')
+    }
+    if (role === 'factory' && isClientOnly) {
+      return redirectTo(req, '/dashboard')
+    }
   }
 
   return NextResponse.next()

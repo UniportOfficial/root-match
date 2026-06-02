@@ -10,7 +10,7 @@
     ".": "./src/index.ts",
     "./schemas": "./src/schemas/index.ts",
     "./constants": "./src/constants/index.ts",
-    "./fixtures": "./src/fixtures/index.ts"
+    "./fixtures/factory-data": "./src/fixtures/factory-data.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

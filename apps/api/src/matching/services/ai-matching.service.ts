@@ -6,7 +6,7 @@ import type {
 import {
   mockFactoryDetails,
   mockFactoryRecommendations,
-} from '@rootmatching/shared/fixtures';
+} from '@rootmatching/shared/fixtures/factory-data';
 import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;

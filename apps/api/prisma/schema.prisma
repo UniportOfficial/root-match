@@ -1,0 +1,28 @@
+// Rootmatching Phase 1.W2 — Prisma schema (PLACEHOLDER for Pre-Flight)
+//
+// The full model graph (User, Session, Account, Verification, Company,
+// QuoteRequest, MatchRecommendation, FactoryEmbedding with pgvector) is
+// authored in W2-1 per .sisyphus/plans/phase-1-w2.md §7.1.3.
+//
+// Pre-Flight goal: this file must compile via `prisma generate` so
+// PrismaService scaffold typechecks. _Placeholder model is removed in W2-1.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// W2-1에서 제거 — Pre-Flight typecheck를 위한 minimal model
+model PreFlightPlaceholder {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("pre_flight_placeholder")
+}

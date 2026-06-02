@@ -10,6 +10,10 @@ onlyBuiltDependencies:
   - '@nestjs/core'
   - esbuild
   - '@swc/core'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma
+  - better-sqlite3
 
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.60.0'
@@ -26,5 +30,11 @@ minimumReleaseAgeExclude:
 
 allowBuilds:
   '@nestjs/core': set this to true or false
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  '@scarf/scarf': set this to true or false
+  better-sqlite3: set this to true or false
+  esbuild: set this to true or false
+  prisma: set this to true or false
   sharp: set this to true or false
   unrs-resolver: set this to true or false

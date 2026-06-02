@@ -1,0 +1,67 @@
+export interface QuoteRequestDraft {
+  projectName: string
+  processType: string
+  productItem: string
+  estimatedQuantity: string
+  desiredDeadline: string
+  budgetRange: string
+  detailRequirements: string
+}
+
+export interface FactoryRecommendation {
+  id: string
+  name: string
+  location: string
+  processes: string[]
+  trustScore: number
+  deliveryRate: number
+  reorderRate: number
+  estimateMin: number
+  estimateMax: number
+  aiReason: string
+  qualityScore: number
+  deliveryScore: number
+  priceCompetitiveness: number
+}
+
+export interface FactoryPortfolioItem {
+  id: number
+  image: string
+  title: string
+  process: string
+  period: string
+}
+
+export interface FactoryReview {
+  id: number
+  author: string
+  company: string
+  rating: number
+  content: string
+  product: string
+  date: string
+}
+
+export interface FactoryKpi {
+  deliveryRate: number
+  qualitySatisfaction: number
+  reorderRate: number
+  avgResponseTime: string
+}
+
+export interface FactoryDetail {
+  id: string
+  name: string
+  location: string
+  image: string
+  verified: boolean
+  trustScore: number
+  specialty: string[]
+  equipment: string[]
+  products: string[]
+  monthlyCapacity: string
+  clients: string[]
+  kpi: FactoryKpi
+  portfolio: FactoryPortfolioItem[]
+  reviews: FactoryReview[]
+}

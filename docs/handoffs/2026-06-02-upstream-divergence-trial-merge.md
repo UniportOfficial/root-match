@@ -251,8 +251,92 @@ git push origin --delete trial/merge-main-into-monorepo  # 원격 삭제
 
 ---
 
-## 8. 변경 이력
+## 8. 통합 진행 — Chunk 1 완료 (v1.1, 2026-06-02)
+
+`trial/merge-main-into-monorepo`를 "분석용 카탈로그"에서 "빌드 가능한 통합본"으로 발전시키는 첫 단계를 완료했습니다.
+
+### 적용한 변경
+
+| 항목 | 결정 | 결과 |
+|---|---|---|
+| `backend/` (Spring Boot 4.0.6 + Java 17) | **폐기** | 디렉토리 제거. NestJS + Prisma + Neon (PRD v0.4) 라인 고수. |
+| `frontend/src/services/aiMatching.ts` (209줄) | **NestJS service로 이식** | `apps/api/src/matching/services/ai-matching.service.ts` |
+| `frontend/src/services/vectorSearch.ts` (87줄) | **NestJS service로 이식** | `apps/api/src/matching/services/vector-search.service.ts` |
+| `frontend/src/data/factoryData.ts` (mock data) | **fixture로 이식** | `apps/api/src/matching/fixtures/factory-data.ts` (Phase 1.Week 2에서 Prisma seed로 정규화) |
+| `frontend/src/types/index.ts` (도메인 타입) | **shared 패키지로 이식** | `packages/shared/src/types/matching.ts` (FactoryRecommendation, QuoteRequestDraft 등 7개 인터페이스) |
+| Vue 컴포넌트 (`frontend/src/views/*.vue`, 3,030줄) | **삭제** (Phase 2에서 Next.js로 재구현) | `frontend/` 디렉토리 통째로 제거 |
+| 환경변수 문서화 | **신규** | `apps/api/.env.example` (OPENAI_API_KEY + Phase 1.Week 2 예정 변수) |
+
+### 변경된 NestJS 인프라
+
+```
+apps/api/src/
+├── app.module.ts                 # MatchingModule 등록
+├── main.ts
+└── matching/                     # 🆕
+    ├── matching.module.ts        #   @Module(providers, exports)
+    ├── fixtures/
+    │   └── factory-data.ts       #   Mock 공장 4건 + 상세 2건 (text-embedding-3-small 입력용)
+    └── services/
+        ├── vector-search.service.ts   #   OpenAI Embeddings + cosine similarity + rankByEmbedding
+        └── ai-matching.service.ts     #   벡터 검색 top-K → GPT-4o → FactoryRecommendation[]
+```
+
+### 포팅 시 적용한 변경점
+
+| 영역 | 원본 (Vue 프론트) | 포팅 후 (NestJS 서버) |
+|---|---|---|
+| API 키 | `import.meta.env.VITE_OPENAI_API_KEY` (브라우저 노출) | `process.env.OPENAI_API_KEY` (서버 사이드) |
+| 모듈 단위 | 함수 export | `@Injectable()` class + DI |
+| 캐시 위치 | 모듈 스코프 Map | 서비스 인스턴스 멤버 |
+| 타입 import | `@/types`, `@/data/factoryData` | `@rootmatching/shared`, `../fixtures/factory-data` |
+| Optional chaining | (없음) | `noUncheckedIndexedAccess` tsconfig에 맞춰 `?? 0`, `data.choices[0]?.message` 등 |
+
+### 검증 상태
+
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| TypeScript 코드 작성 | ✅ 완료 | 4개 신규 파일 + 2개 수정 |
+| LSP 진단 (실 코드 오류) | ✅ Pass | 9건 잔여 진단은 전부 module/global 미해결 (pnpm install 미실행) |
+| `pnpm install` | ⏸️ 보류 | Node 20.20.2 → pnpm 11.3.0 ERR_UNKNOWN_BUILTIN_MODULE. Node 22.13+ 필요 |
+| `pnpm -r run typecheck` | ⏸️ 보류 | 동일 사유 |
+| `pnpm -r run build` | ⏸️ 보류 | 동일 사유 |
+
+### Phase 1.Week 2 시작 전 외부 작업 (사용자)
+
+1. **Node 22 활성화**: `nvm install 22 && nvm use 22`
+2. **Verification**: 새 머신에서
+   ```bash
+   pnpm install
+   pnpm --filter @rootmatching/shared run build
+   pnpm -r run typecheck
+   pnpm lint
+   pnpm -r run build
+   ```
+3. 통과 시 trial → dev-monorepo로 fast-forward 머지
+4. trial 브랜치 폐기 (선택)
+
+### 남은 Phase 2 작업 (Chunk 2~4)
+
+`frontend/`에서 삭제된 Vue 컴포넌트들을 Next.js + React로 재구현:
+
+| Chunk | Vue 원본 (총 줄수) | 대상 경로 |
+|---|---|---|
+| 2 | QuoteRequestBoardView (202) + ClientRequestView (811) + MatchingResultView (505) | `apps/web/app/(client)/quotes/`, `requests/`, `matching/` |
+| 3 | TransactionListView (178) + TransactionProgressView (371) + ClientRequest{Detail,List}View | `apps/web/app/(client)/transactions/`, `requests/` |
+| 4 | DisputeListView (147) + DisputeDetailView (178) + ProfileView (609) | `apps/web/app/(client)/disputes/`, `apps/web/app/(common)/mypage/` |
+
+각 Chunk는 다음을 포함:
+- Vue SFC → React Server/Client Component 분리
+- Pinia store → React Hook Form + zod (form) / TanStack Query 또는 Server Components (data)
+- `vue-router` → Next.js App Router 파일 컨벤션
+- Tailwind 클래스는 대부분 그대로 (소수 Vue 전용 directive만 React 등가물로)
+
+---
+
+## 9. 변경 이력
 
 | 버전 | 날짜 | 변경 |
 |---|---|---|
 | v1.0 | 2026-06-02 | upstream PR #1, PR #2 분석 + trial merge + remote 재구성 + Phase 2 로드맵 |
+| v1.1 | 2026-06-02 | Chunk 1 통합 완료 — Spring 폐기 / AI 매칭 NestJS 이식 / Vue UI 삭제 / Node 22 verification 대기 |

@@ -5,11 +5,18 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   type Dispatch,
   type ReactNode,
 } from 'react'
 import type { Company, User } from '@rootmatching/shared'
-import { clearAuthCookie, setAuthCookie } from '@/lib/auth-cookie'
+import {
+  AUTH_COOKIE_NAME,
+  ROLE_COOKIE_NAME,
+  clearAuthCookie,
+  setAuthCookie,
+} from '@/lib/auth-cookie'
+import { mockCurrentUser, mockFactoryUser } from '@/data/users'
 
 interface UserState {
   currentUser: User | null
@@ -77,10 +84,29 @@ function reducer(state: UserState, action: UserAction): UserState {
 const StateContext = createContext<UserState | undefined>(undefined)
 const DispatchContext = createContext<Dispatch<UserAction> | undefined>(undefined)
 
+function readCookieValue(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  const raw = match?.[1]
+  return raw === undefined ? undefined : decodeURIComponent(raw)
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const hydratedRef = useRef(false)
 
   useEffect(() => {
+    if (hydratedRef.current) return
+    hydratedRef.current = true
+    const hasAuth = readCookieValue(AUTH_COOKIE_NAME) === '1'
+    if (!hasAuth) return
+    const role = readCookieValue(ROLE_COOKIE_NAME)
+    const restored = role === 'factory' ? mockFactoryUser : mockCurrentUser
+    dispatch({ type: 'user/login', payload: restored })
+  }, [])
+
+  useEffect(() => {
+    if (!hydratedRef.current) return
     if (state.isAuthenticated && state.currentUser) {
       setAuthCookie(state.currentUser.accountType)
     } else {

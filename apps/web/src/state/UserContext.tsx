@@ -1,8 +1,16 @@
 'use client'
 
-import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  type Dispatch,
+  type ReactNode,
+} from 'react'
 import type { Company, User } from '@rootmatching/shared'
 import { mockCurrentUser } from '@/data/users'
+import { clearAuthCookie, setAuthCookie } from '@/lib/auth-cookie'
 
 interface UserState {
   currentUser: User | null
@@ -71,6 +79,15 @@ const DispatchContext = createContext<Dispatch<UserAction> | undefined>(undefine
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    if (state.isAuthenticated) {
+      setAuthCookie()
+    } else {
+      clearAuthCookie()
+    }
+  }, [state.isAuthenticated])
+
   return (
     <StateContext.Provider value={state}>
       <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>

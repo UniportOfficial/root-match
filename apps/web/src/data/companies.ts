@@ -1,4 +1,4 @@
-import type { Company, User, Message, Notification, ActivityLog, DashboardStats } from '@/types'
+import type { Company } from '@rootmatching/shared'
 
 export const mockCompanies: Company[] = [
   {
@@ -143,165 +143,7 @@ export const mockCompanies: Company[] = [
   },
 ]
 
-export const mockCurrentUser: User = {
-  id: 'user1',
-  email: 'hong@techsolution.co.kr',
-  name: '홍길동',
-  company: mockCompanies[0],
-  role: 'admin',
-  position: '사업개발팀장',
-  phone: '010-1234-5678',
-}
-
-export const mockMessages: Message[] = [
-  {
-    id: 'msg1',
-    senderId: '2',
-    senderName: '김영희',
-    senderCompany: '그린에너지 코리아',
-    receiverId: 'user1',
-    receiverName: '홍길동',
-    receiverCompany: '테크솔루션 주식회사',
-    subject: '협력 제안 문의드립니다',
-    content:
-      '안녕하세요. 그린에너지 코리아의 김영희입니다.\n\n귀사의 AI 솔루션에 대해 관심이 있어 연락드립니다. ESG 데이터 분석 관련하여 협력 가능성을 논의하고 싶습니다.\n\n편하신 시간에 미팅 가능하실까요?',
-    isRead: false,
-    createdAt: '2024-04-20T10:30:00',
-  },
-  {
-    id: 'msg2',
-    senderId: '3',
-    senderName: '박철수',
-    senderCompany: '스마트팩토리 주식회사',
-    receiverId: 'user1',
-    receiverName: '홍길동',
-    receiverCompany: '테크솔루션 주식회사',
-    subject: 'AI 기반 품질검사 시스템 문의',
-    content:
-      '안녕하세요. 스마트팩토리의 박철수입니다.\n\n제조 공정 내 AI 기반 품질검사 시스템 도입을 검토 중입니다. 귀사의 솔루션에 대한 상세 자료와 견적을 요청드립니다.',
-    isRead: true,
-    createdAt: '2024-04-19T14:20:00',
-  },
-  {
-    id: 'msg3',
-    senderId: '5',
-    senderName: '이미영',
-    senderCompany: '메디헬스 솔루션',
-    receiverId: 'user1',
-    receiverName: '홍길동',
-    receiverCompany: '테크솔루션 주식회사',
-    subject: '헬스케어 AI 솔루션 파트너십 제안',
-    content:
-      '안녕하세요. 메디헬스 솔루션의 이미영입니다.\n\n의료 AI 분야에서 귀사와의 기술 파트너십을 제안드립니다. 상호 보완적인 기술력을 바탕으로 시너지를 낼 수 있을 것으로 기대합니다.',
-    isRead: true,
-    createdAt: '2024-04-18T09:15:00',
-  },
-  {
-    id: 'msg4',
-    senderId: '7',
-    senderName: '최진우',
-    senderCompany: '핀테크랩 코리아',
-    receiverId: 'user1',
-    receiverName: '홍길동',
-    receiverCompany: '테크솔루션 주식회사',
-    subject: 'API 연동 기술 협력 문의',
-    content:
-      '안녕하세요. 핀테크랩 코리아의 최진우입니다.\n\n결제 API와 귀사의 비즈니스 솔루션 연동에 대해 논의하고 싶습니다. 기술 미팅 일정을 잡을 수 있을까요?',
-    isRead: false,
-    createdAt: '2024-04-17T16:45:00',
-  },
-]
-
-export const mockNotifications: Notification[] = [
-  {
-    id: 'noti1',
-    type: 'message',
-    title: '새 메시지 도착',
-    content: '그린에너지 코리아에서 메시지가 도착했습니다.',
-    isRead: false,
-    createdAt: '2024-04-20T10:30:00',
-    link: '/messages/msg1',
-  },
-  {
-    id: 'noti2',
-    type: 'match',
-    title: '새로운 매칭 기업',
-    content: '귀사와 관심 분야가 일치하는 3개 기업이 있습니다.',
-    isRead: false,
-    createdAt: '2024-04-19T15:00:00',
-    link: '/companies',
-  },
-  {
-    id: 'noti3',
-    type: 'inquiry',
-    title: '기업 프로필 조회',
-    content: '5개 기업에서 귀사의 프로필을 조회했습니다.',
-    isRead: true,
-    createdAt: '2024-04-18T11:20:00',
-    link: '/mypage/analytics',
-  },
-  {
-    id: 'noti4',
-    type: 'system',
-    title: '프로필 업데이트 권장',
-    content: '기업 프로필을 업데이트하여 매칭률을 높여보세요.',
-    isRead: true,
-    createdAt: '2024-04-17T09:00:00',
-    link: '/mypage/profile',
-  },
-]
-
-export const mockActivityLogs: ActivityLog[] = [
-  {
-    id: 'act1',
-    type: 'view',
-    description: '기업 프로필이 조회되었습니다.',
-    targetCompanyId: '2',
-    targetCompanyName: '그린에너지 코리아',
-    createdAt: '2024-04-20T09:15:00',
-  },
-  {
-    id: 'act2',
-    type: 'inquiry',
-    description: '협력 문의가 접수되었습니다.',
-    targetCompanyId: '3',
-    targetCompanyName: '스마트팩토리 주식회사',
-    createdAt: '2024-04-19T14:30:00',
-  },
-  {
-    id: 'act3',
-    type: 'match',
-    description: '새로운 매칭 기업이 발견되었습니다.',
-    targetCompanyId: '5',
-    targetCompanyName: '메디헬스 솔루션',
-    createdAt: '2024-04-18T16:45:00',
-  },
-  {
-    id: 'act4',
-    type: 'message',
-    description: '메시지가 발송되었습니다.',
-    targetCompanyId: '7',
-    targetCompanyName: '핀테크랩 코리아',
-    createdAt: '2024-04-17T11:00:00',
-  },
-  {
-    id: 'act5',
-    type: 'view',
-    description: '기업 프로필이 조회되었습니다.',
-    targetCompanyId: '8',
-    targetCompanyName: '건설테크 주식회사',
-    createdAt: '2024-04-16T15:20:00',
-  },
-]
-
-export const mockDashboardStats: DashboardStats = {
-  totalViews: 127,
-  totalInquiries: 23,
-  totalMatches: 45,
-  recentMessages: 4,
-}
-
-export const industries = [
+export const industries: string[] = [
   'IT/소프트웨어',
   '에너지/환경',
   '제조/생산',
@@ -312,7 +154,7 @@ export const industries = [
   '건설/부동산',
 ]
 
-export const regions = [
+export const regions: string[] = [
   '서울',
   '경기',
   '인천',
@@ -332,4 +174,4 @@ export const regions = [
   '제주',
 ]
 
-export const companySizes = ['스타트업', '중소기업', '중견기업', '대기업']
+export const companySizes: string[] = ['스타트업', '중소기업', '중견기업', '대기업']

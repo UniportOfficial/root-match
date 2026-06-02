@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_KR } from 'next/font/google'
+import { AppProviders } from '@/state/AppProviders'
 import './globals.css'
 
 const notoSansKr = Noto_Sans_KR({
@@ -20,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={notoSansKr.variable}>
-      <body>{children}</body>
+      <body>
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   )
 }

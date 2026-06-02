@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import type { TransactionUpdate } from '@rootmatching/shared'
 import { AppBadge } from '@/components/ui/AppBadge'
+import { ProcessStepper } from '@/components/ui/ProcessStepper'
 import { transactionCases, transactionSteps } from '@/data/transactionData'
 import { cn } from '@/lib/cn'
 
@@ -218,7 +219,7 @@ export default function TransactionProgressPage() {
 
             <section className="rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-7">
               <h2 className="mb-5 text-2xl font-bold text-ink-950">전체 거래 흐름</h2>
-              <ProcessStepper currentStep={transaction.currentStep} />
+              <ProcessStepper steps={transactionSteps} currentStep={transaction.currentStep} />
             </section>
 
             <section className="rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-7">
@@ -409,37 +410,6 @@ function RoleButton({
     >
       {children}
     </button>
-  )
-}
-
-function ProcessStepper({ currentStep }: { currentStep: number }) {
-  return (
-    <ol className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-6">
-      {transactionSteps.map((step, index) => {
-        const stepNumber = index + 1
-        const isCurrent = stepNumber === currentStep
-        const isDone = stepNumber < currentStep
-
-        return (
-          <li key={step.title} className="rounded-xl border border-border bg-surface-muted p-4">
-            <div
-              className={cn(
-                'mb-3 flex h-9 w-9 items-center justify-center rounded-full text-sm font-black',
-                isCurrent
-                  ? 'bg-brand text-white'
-                  : isDone
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white text-ink-400',
-              )}
-            >
-              {isDone ? <CheckCircle className="h-5 w-5" /> : stepNumber}
-            </div>
-            <p className="text-sm font-bold text-ink-950">{step.title}</p>
-            <p className="mt-1 text-xs leading-5 text-ink-400">{step.description}</p>
-          </li>
-        )
-      })}
-    </ol>
   )
 }
 

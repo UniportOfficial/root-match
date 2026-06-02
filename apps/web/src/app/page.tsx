@@ -1,77 +1,38 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+import Link from 'next/link'
+import { ArrowRight, Factory, Sparkles } from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="min-h-screen bg-surface-muted px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl text-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-brand-light px-4 py-1.5 text-sm font-semibold text-brand">
+          <Sparkles className="h-4 w-4" />
+          Rootmatching
+        </span>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight text-ink-950 sm:text-5xl">
+          뿌리산업 B2B 수주를 한곳에서 매칭합니다
+        </h1>
+        <p className="mt-4 text-lg leading-8 text-ink-700">
+          6대 뿌리공정(금형, 소성가공, 주조, 용접, 표면처리, 열처리)을 다루는 공장과 발주처를
+          연결하는 플랫폼입니다.
+        </p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/quotes"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-base font-semibold text-white transition hover:bg-brand-hover"
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+            <Factory className="h-5 w-5" />
+            견적 모집 게시판 보기
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/client/request"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-6 py-3 text-base font-semibold text-ink-700 transition hover:border-brand hover:text-brand"
           >
-            Read our docs
-          </a>
+            견적 요청하기
+          </Link>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/window.svg" alt="Window icon" width={16} height={16} />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </main>
   )
 }

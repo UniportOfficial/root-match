@@ -100,5 +100,13 @@ export default [
     },
   },
 
+  {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+  },
+
   eslintConfigPrettier,
 ]

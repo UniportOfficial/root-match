@@ -6,6 +6,24 @@ const EMBEDDING_MODEL = 'text-embedding-3-small';
 export class VectorSearchService {
   private readonly embeddingCache = new Map<string, number[]>();
 
+  /** Returns true when `OPENAI_API_KEY` is set and non-blank. */
+  hasApiKey(): boolean {
+    return Boolean(process.env.OPENAI_API_KEY?.trim());
+  }
+
+  /**
+   * Gates the deterministic mock fallback (AIM-004 in `docs/specs/`).
+   * Never silently mocks in production — prod must either have an API key or
+   * opt-in explicitly via `MATCHING_MOCK_FALLBACK=true`.
+   */
+  shouldUseMockFallback(): boolean {
+    if (this.hasApiKey()) return false;
+    if (process.env.NODE_ENV === 'production') {
+      return process.env.MATCHING_MOCK_FALLBACK === 'true';
+    }
+    return true;
+  }
+
   private get apiKey(): string {
     const key = process.env.OPENAI_API_KEY;
     if (!key) {
@@ -77,6 +95,17 @@ export class VectorSearchService {
     items: T[],
     getDescription: (item: T) => string,
   ): Promise<Array<{ item: T; similarity: number }>> {
+    if (this.shouldUseMockFallback()) {
+      // Deterministic mock fallback (Jaccard, no network) — see AIM-004 in docs/specs/.
+      const queryTokens = this.tokenize(queryText);
+      const ranked = items.map((item) => {
+        const itemTokens = this.tokenize(getDescription(item));
+        const similarity = this.jaccardSimilarity(queryTokens, itemTokens);
+        return { item, similarity };
+      });
+      return ranked.sort((a, b) => b.similarity - a.similarity);
+    }
+
     const [queryEmbedding, ...itemEmbeddings] = await Promise.all([
       this.getEmbedding(queryText),
       ...items.map((item) => this.getEmbedding(getDescription(item))),
@@ -84,9 +113,33 @@ export class VectorSearchService {
 
     const ranked = items.map((item, i) => ({
       item,
-      similarity: this.cosineSimilarity(queryEmbedding, itemEmbeddings[i] ?? []),
+      similarity: this.cosineSimilarity(
+        queryEmbedding,
+        itemEmbeddings[i] ?? [],
+      ),
     }));
 
     return ranked.sort((a, b) => b.similarity - a.similarity);
+  }
+
+  private tokenize(text: string): Set<string> {
+    return new Set(
+      text
+        .toLowerCase()
+        .split(/[\s,.\n:/]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2),
+    );
+  }
+
+  /** Jaccard similarity in [0, 1]. Returns 0 when both sets are empty. */
+  private jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+    if (a.size === 0 && b.size === 0) return 0;
+    let intersection = 0;
+    for (const token of a) {
+      if (b.has(token)) intersection += 1;
+    }
+    const union = a.size + b.size - intersection;
+    return union === 0 ? 0 : intersection / union;
   }
 }

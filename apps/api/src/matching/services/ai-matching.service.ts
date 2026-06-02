@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type {
   FactoryRecommendation,
   QuoteRequestDraft,
@@ -11,6 +11,15 @@ import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;
 const GPT_MODEL = 'gpt-4o';
+
+const PROCESS_TYPE_LABELS: Record<string, string> = {
+  mold: '금형',
+  casting: '주조',
+  forming: '소성가공',
+  welding: '용접',
+  surface: '표면처리',
+  heat: '열처리',
+};
 
 interface GPTMatchResult {
   id: string;
@@ -25,6 +34,8 @@ interface GPTMatchResult {
 
 @Injectable()
 export class AiMatchingService {
+  private readonly logger = new Logger(AiMatchingService.name);
+
   constructor(private readonly vectorSearch: VectorSearchService) {}
 
   private get apiKey(): string {
@@ -49,6 +60,13 @@ export class AiMatchingService {
     );
     const topIds = ranked.slice(0, TOP_K).map((r) => r.item);
 
+    if (this.vectorSearch.shouldUseMockFallback()) {
+      this.logger.warn(
+        `Returning ${topIds.length} mock recommendations (OPENAI_API_KEY missing, NODE_ENV=${process.env.NODE_ENV ?? 'undefined'})`,
+      );
+      return this.buildMockRecommendations(topIds, request);
+    }
+
     const gptResults = await this.callGPT4o(request, topIds);
 
     return gptResults.map((gpt) => {
@@ -71,6 +89,30 @@ export class AiMatchingService {
         priceCompetitiveness: gpt.priceCompetitiveness,
       } satisfies FactoryRecommendation;
     });
+  }
+
+  private buildMockRecommendations(
+    ids: string[],
+    request: QuoteRequestDraft,
+  ): FactoryRecommendation[] {
+    const processLabel =
+      PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
+
+    return ids
+      .map((id) => mockFactoryRecommendations.find((r) => r.id === id))
+      .filter((r): r is FactoryRecommendation => r !== undefined)
+      .map((rec) => {
+        const matchesProcess = rec.processes.some((p) =>
+          p.includes(processLabel),
+        );
+        const reasonPrefix = matchesProcess
+          ? `[Mock · ${processLabel} 공정 매칭]`
+          : '[Mock · API key 미설정]';
+        return {
+          ...rec,
+          aiReason: `${reasonPrefix} ${rec.aiReason}`,
+        };
+      });
   }
 
   private describeFactory(id: string): string {
@@ -110,9 +152,11 @@ export class AiMatchingService {
   }
 
   private describeRequest(request: QuoteRequestDraft): string {
+    const processLabel =
+      PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
     return [
       `프로젝트명: ${request.projectName}`,
-      `공정 유형: ${request.processType}`,
+      `공정 유형: ${request.processType} (${processLabel})`,
       `제작 품목: ${request.productItem}`,
       `예상 수량: ${request.estimatedQuantity}`,
       `희망 납기: ${request.desiredDeadline}`,

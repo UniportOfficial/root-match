@@ -1,4 +1,4 @@
-import type { FactoryDetail, FactoryRecommendation } from '@rootmatching/shared';
+import type { FactoryDetail, FactoryRecommendation } from '../types/matching.js'
 
 export const mockFactoryRecommendations: FactoryRecommendation[] = [
   {
@@ -61,7 +61,7 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     deliveryScore: 89,
     priceCompetitiveness: 88,
   },
-];
+]
 
 export const mockFactoryDetails: Record<string, FactoryDetail> = {
   '1': {
@@ -179,7 +179,7 @@ export const mockFactoryDetails: Record<string, FactoryDetail> = {
       },
     ],
   },
-};
+}
 
 export const mockDefaultFactoryDetail: FactoryDetail = {
   id: '0',
@@ -226,4 +226,4 @@ export const mockDefaultFactoryDetail: FactoryDetail = {
       date: '2026.03.01',
     },
   ],
-};
+}

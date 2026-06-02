@@ -6,7 +6,7 @@ import type {
 import {
   mockFactoryDetails,
   mockFactoryRecommendations,
-} from '../fixtures/factory-data';
+} from '@rootmatching/shared/fixtures';
 import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;
@@ -126,10 +126,7 @@ export class AiMatchingService {
     factoryIds: string[],
   ): Promise<GPTMatchResult[]> {
     const factoryList = factoryIds
-      .map(
-        (id, i) =>
-          `[공장 ${i + 1}]\nID: ${id}\n${this.describeFactory(id)}`,
-      )
+      .map((id, i) => `[공장 ${i + 1}]\nID: ${id}\n${this.describeFactory(id)}`)
       .join('\n\n');
 
     const prompt = `당신은 뿌리산업 B2B 수주 매칭 전문가입니다.
@@ -164,22 +161,19 @@ ${factoryList}
 - trustScore: 거래 이력, 재거래율, 응답성을 반영한 종합 신뢰도 (0~100)
 - estimateMin / estimateMax: 이 요청에 대한 예상 견적 범위 (만원 단위 정수, 예산 범위 참고)`;
 
-    const response = await fetch(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: GPT_MODEL,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.3,
-          response_format: { type: 'json_object' },
-        }),
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: GPT_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+    });
 
     if (!response.ok) {
       const error = (await response.json().catch(() => ({}))) as {

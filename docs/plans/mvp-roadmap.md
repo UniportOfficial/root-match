@@ -195,13 +195,56 @@ PRD §6.1을 코드 기준으로 풀어쓰면:
 
 ## 6. 빠르게 정리 가능한 housekeeping (각 1-2시간)
 
-| 작업                                                                                              | 가치        |
-| ------------------------------------------------------------------------------------------------- | ----------- |
-| `apps/web/src/app/client/*` 5개 redirect stub 제거 (이미 `(client)` 그룹으로 통합됨)              | 라우트 정리 |
-| 사용 안 된 shared types 10개 정리 (단, nested 용도면 유지)                                        | 코드 청결   |
-| middleware `CLIENT_ONLY_PREFIXES`에 `/quotes`, `/companies`, `/messages`, `/mypage` 추가 검토     | 가드 완성   |
-| `apps/api/src/app.controller.ts` Hello World 제거 → `/health` 엔드포인트로 교체                   | 운영 준비   |
-| `docs/specs/backend-design-mapping.md` 26개 TODO 중 우리에게 해당 안 되는 것 정리 (Java/JPA 관련) | 문서 청결   |
+| 작업                                                                                              | 가치        | 2026-06-03 상태   |
+| ------------------------------------------------------------------------------------------------- | ----------- | ----------------- |
+| `apps/web/src/app/client/*` redirect stub 제거 (이미 `(client)` 그룹으로 통합됨)                  | 라우트 정리 | ✅ 완료 (§6.1.1)  |
+| 사용 안 된 shared types 정리 (단, nested 용도면 유지)                                             | 코드 청결   | ⏸ 미적용 (§6.1.2) |
+| middleware `CLIENT_ONLY_PREFIXES`에 `/quotes`, `/companies`, `/messages`, `/mypage` 추가 검토     | 가드 완성   | ⏸ 미적용 (§6.1.3) |
+| `apps/api/src/app.controller.ts` Hello World 제거 → `/health` 엔드포인트로 교체                   | 운영 준비   | ✅ 완료 (§6.1.4)  |
+| `docs/specs/backend-design-mapping.md` 26개 TODO 중 우리에게 해당 안 되는 것 정리 (Java/JPA 관련) | 문서 청결   | ✅ 완료 (§6.1.5)  |
+
+### 6.1 2026-06-03 housekeeping 검토 결과
+
+본 5개 항목에 대해 실측 후 처리한 결과는 다음과 같습니다.
+
+#### 6.1.1 redirect stub 제거 — ✅ 완료
+
+- **실제 stub 수**: 4개 (`apps/web/src/app/client/{request,matching,requests,requests/[id]}/page.tsx`). 본 §6 표의 "5개"는 오기.
+- **functional-spec §4 alias** (`apps/web/src/app/quote-requests/page.tsx`, commit `6a5cf81`)는 의도된 alias로 **유지**.
+- **참조 grep**: `/client/(request|matching|requests)` 패턴으로 검색 — 모노레포 전체에서 link 0건 확인.
+- **조치**: stub 4개 파일 + 빈 디렉토리 5개 (`request/`, `matching/`, `requests/[id]/`, `requests/`, `client/`) 제거.
+
+#### 6.1.2 미사용 shared types 정리 — ⏸ 미적용 (변경 없음)
+
+- **검증 결과**: `packages/shared/src/types/*.ts`의 **30개 export 중 미사용 0개**. 본 §6 표의 "10개"는 nested(파일 내 다른 type의 일부로만 참조)를 미사용으로 오해한 수치.
+- **nested 유지 항목**: `FactoryPortfolioItem`, `FactoryReview`, `FactoryKpi`, `FactoryDetail` (matching.ts) / `DisputeStep`, `DisputeTimelineItem` (disputes.ts) / `Attachment` (requests.ts) / `TransactionFile` (transactions.ts) / `UserPermission` (users.ts) / `ActivityLogType` (notifications.ts) — 총 10개. 모두 자기 파일 내 다른 type의 nested 필드 또는 packages/shared 내부 다른 모듈에서 참조됨.
+- **조치**: 코드 변경 없음. 본 항목은 본 housekeeping에서 종결(추가 검토 불필요).
+
+#### 6.1.3 middleware `CLIENT_ONLY_PREFIXES` 확장 — ⏸ 미적용 (변경 없음)
+
+- 후보 4개에 대한 실측:
+  - **`/quotes`**: `(client)` 그룹 안에 있으나 페이지 내용은 factory 대상 (`Link href={`/factory/requests/${id}`}`). 라우트 그룹 vs 페이지 의도 **모순**. CLIENT_ONLY로 넣으면 factory가 차단됨. **별도 design-fix PR로 그룹 이동**이 선행되어야 함.
+  - **`/companies`**: `(common)` 그룹. client/factory 모두 회사 디렉토리 조회 필요 → CLIENT_ONLY 부적합.
+  - **`/messages`**: `(common)` 그룹. 양측 메시지함 → CLIENT_ONLY 부적합.
+  - **`/mypage`**: `(common)` 그룹. 양측 프로필 → CLIENT_ONLY 부적합.
+- **조치**: middleware 코드 변경 없음. 본 항목 종결. `/quotes` 라우트-디자인 모순은 별도 issue로 추적 권장.
+
+#### 6.1.4 Hello World → `/health` — ✅ 완료
+
+- 변경 파일: `apps/api/src/app.controller.ts`, `apps/api/src/app.service.ts`, `apps/api/src/app.controller.spec.ts`, `apps/api/test/app.e2e-spec.ts`.
+- **`GET /`** Hello World 제거 → **`GET /health`** readiness payload (`{ status, service, uptime, timestamp }`).
+- **추후 확장**: Phase 1.W2-1 (Prisma + Neon)에서 DB ping (`db: 'ok' | 'down'`), Phase 1.W2-6에서 `@nestjs/terminus` 도입 (구조화된 `HealthCheckResult`).
+
+#### 6.1.5 backend-design-mapping.md TODO 정리 — ✅ 완료
+
+상단 "정책 정렬 차이" 표와 정합하도록 본문 4개 위치에 인라인 라벨/매핑 추가:
+
+- **§2.2 MySQL DDL 예시** — "**[dev-monorepo: 채택 보류]** Postgres + Prisma로 Phase 1.W2-1에서 재작성" 라벨.
+- **§4 JPA package 구조 제안** — "**[dev-monorepo: 채택 보류]** NestJS module 구조 사용, §4.4 13단계 흐름만 stack-무관 reference로 채택" 라벨.
+- **§3.10 currentUser 운영 대안** — "Spring Security context/JWT/session ⇒ **dev-monorepo: Better Auth session middleware**" 인라인 매핑.
+- **§3.12.3 enum 저장 방식** — "JPA `@Enumerated(EnumType.STRING)` ⇒ **dev-monorepo: Prisma `enum` + TS union**" 인라인 매핑.
+
+26개 TODO 자체는 stack-무관 흐름(§3.x mock→DB 매핑, §5 확인 사항 등)이 다수이므로 일괄 삭제하지 않고, **dev-monorepo 정책과 충돌하는 핵심 4지점만 라벨링**하는 방식으로 처리.
 
 ---
 
@@ -216,7 +259,9 @@ PRD §6.1을 코드 기준으로 풀어쓰면:
 | **C. Housekeeping**           | redirect stub 제거 + middleware 보강 + Hello World → `/health` | 없음                                            | 1-2시간       |
 | **D. Phase 1.W2 상세 계획서** | `.sisyphus/plans/phase-1-w2.md` 작성 + Momus plan review       | 없음                                            | 1-2시간       |
 
-**권장 순서**: C (housekeeping) → D (상세 계획) → 사용자 Neon 셋업 → A (W2-1부터 본격 시작)
+**권장 순서**: ~~C (housekeeping)~~ ✅ → **D (상세 계획) → 사용자 Neon 셋업 → A (W2-1부터 본격 시작)**
+
+2026-06-03 update: C는 §6.1에서 적용 결과 정리 완료. 다음은 D부터.
 
 ---
 
@@ -242,6 +287,7 @@ PRD §6.1을 코드 기준으로 풀어쓰면:
 
 ## 9. 변경 이력
 
-| 버전 | 날짜       | 변경                                                                                                                              |
-| ---- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| v1.0 | 2026-06-02 | 초기 작성. dev-monorepo HEAD `5f98508` 기준 MVP 백로그 + Critical Path + 1주 실행 가이드. explore + librarian 에이전트 검증 완료. |
+| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                           |
+| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v1.1 | 2026-06-03 | §6 housekeeping 5개 항목 중 3개 적용(① redirect stubs 제거 / ④ Hello World → `/health` / ⑤ backend-design-mapping.md 라벨 보강), 2개는 검토 결과 변경 불필요로 종결(② shared types 미사용 0개, ③ middleware 확장 후보 모두 부적합). 자세한 결과는 §6.1. §7 권장 순서 D로 진입. |
+| v1.0 | 2026-06-02 | 초기 작성. dev-monorepo HEAD `5f98508` 기준 MVP 백로그 + Critical Path + 1주 실행 가이드. explore + librarian 에이전트 검증 완료.                                                                                                                                              |

@@ -410,6 +410,8 @@ PROPOSAL
 
 ### 2.2 MySQL DDL 예시
 
+> **[dev-monorepo: 채택 보류]** 본 절은 MySQL 기준입니다. dev-monorepo는 Postgres + Prisma 스택이므로 `@@index` / `@@unique` / `tsvector + GIN`로 Phase 1.W2-1에서 재작성합니다 (상단 "정책 정렬 차이" 표 참고).
+>
 > 실제 migration 파일이 아니라 설계 예시입니다. 컬럼 타입/길이는 실제 요구사항 확정 후 조정합니다.
 
 ```sql
@@ -751,18 +753,18 @@ ALTER TABLE attachments
 
 ### 3.10 mock에는 있지만 운영 DB에는 없애거나 계산할 필드
 
-| Mock 필드                                                                                     | 이유                        | 운영 대안                                |
-| --------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------- |
-| `currentUser`                                                                                 | 서버 메모리 session 상태    | Spring Security context/JWT/session      |
-| `clientName`, `factoryName`, `senderName`, `receiverName`, `senderCompany`, `receiverCompany` | 정규화 데이터 중복          | FK join 후 DTO에서 생성                  |
-| `quantity`                                                                                    | `estimatedQuantity`와 중복  | `estimated_quantity` 하나로 통일         |
-| `description`                                                                                 | `detailRequirements`와 중복 | `detail_requirements` 하나로 통일        |
-| `isFavorite`                                                                                  | 조회자별 계산값             | `company_favorites` 존재 여부로 DTO 계산 |
-| `transactions.myRole`                                                                         | 요청자에 따라 달라지는 값   | auth user와 transaction 관계로 계산      |
-| `transactions.status` 한글 문자열                                                             | enum label 중복 저장        | `status_key` 저장 후 label 변환          |
-| `disputes.typeLabel`, `disputes.statusLabel`                                                  | enum label 중복 저장        | DTO/i18n layer에서 생성                  |
-| nested `company` object in user                                                               | 중복 snapshot               | `company_id` FK                          |
-| nested `attachments`, `updates`, `review`, `replies`                                          | document-style 구조         | 별도 table 관계                          |
+| Mock 필드                                                                                     | 이유                        | 운영 대안                                                                                               |
+| --------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `currentUser`                                                                                 | 서버 메모리 session 상태    | (원본 Java 기준) Spring Security context/JWT/session ⇒ **dev-monorepo: Better Auth session middleware** |
+| `clientName`, `factoryName`, `senderName`, `receiverName`, `senderCompany`, `receiverCompany` | 정규화 데이터 중복          | FK join 후 DTO에서 생성                                                                                 |
+| `quantity`                                                                                    | `estimatedQuantity`와 중복  | `estimated_quantity` 하나로 통일                                                                        |
+| `description`                                                                                 | `detailRequirements`와 중복 | `detail_requirements` 하나로 통일                                                                       |
+| `isFavorite`                                                                                  | 조회자별 계산값             | `company_favorites` 존재 여부로 DTO 계산                                                                |
+| `transactions.myRole`                                                                         | 요청자에 따라 달라지는 값   | auth user와 transaction 관계로 계산                                                                     |
+| `transactions.status` 한글 문자열                                                             | enum label 중복 저장        | `status_key` 저장 후 label 변환                                                                         |
+| `disputes.typeLabel`, `disputes.statusLabel`                                                  | enum label 중복 저장        | DTO/i18n layer에서 생성                                                                                 |
+| nested `company` object in user                                                               | 중복 snapshot               | `company_id` FK                                                                                         |
+| nested `attachments`, `updates`, `review`, `replies`                                          | document-style 구조         | 별도 table 관계                                                                                         |
 
 ---
 
@@ -795,8 +797,9 @@ ALTER TABLE attachments
    - 프론트 연동 전까지 기존 mock field alias를 DTO에서 유지할지 결정해야 합니다.
    - 내부 entity는 정규화하고, API DTO에서 `estimatedQuantity`, `detailRequirements` 등 기존 명세 필드를 유지하는 방식이 안전합니다.
 3. **enum 저장 방식**
-   - JPA `@Enumerated(EnumType.STRING)` 사용 권장.
-   - DB 저장값은 대문자 enum constant로 통일하고, API serialization alias는 필요 시 DTO/JsonCreator에서 처리합니다.
+   - (원본 Java 기준) JPA `@Enumerated(EnumType.STRING)` 사용 권장.
+   - **dev-monorepo**: Prisma `enum` + `@rootmatching/shared` TS union으로 매핑 (상단 "정책 정렬 차이" 참고).
+   - DB 저장값은 대문자 enum constant로 통일하고, API serialization alias는 필요 시 DTO/zod transform에서 처리합니다.
 4. **파일 처리**
    - 현재는 metadata만 저장합니다.
    - 실제 저장소 도입 시에도 `Attachment` entity와 `FileStorageAdapter`를 분리해야 합니다.
@@ -811,6 +814,8 @@ ALTER TABLE attachments
 ---
 
 ## 4. 추후 JPA package 구조 제안
+
+> **[dev-monorepo: 채택 보류]** §4.1~§4.3은 Spring Boot + JPA 패키지 트리 제안입니다. dev-monorepo는 NestJS module(`apps/api/src/<domain>/{controller,service,module}.ts` + `prisma/schema.prisma`) 구조이므로 그대로 적용되지 않습니다. **도메인 단위 분리**라는 원칙(§4.1 추천)만 reference로 채택하고, 본문 tree 자체는 NestJS module 매핑 작업 시 별도 작성합니다. §4.4 13단계는 stack 무관 흐름이므로 유효.
 
 ### 4.1 패키지 방식 판단
 

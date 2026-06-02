@@ -3,6 +3,9 @@ node_modules/
 .pnpm-store/
 frontend/node_modules/
 
+# Playwright MCP scratch output (browser automation transcripts, scripts)
+.playwright-mcp/
+
 # Build output (per-workspace)
 dist/
 build/

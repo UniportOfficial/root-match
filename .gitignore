@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+frontend/node_modules/
 
 # Build output (per-workspace)
 dist/
@@ -9,6 +10,14 @@ build/
 out/
 .turbo/
 *.tsbuildinfo
+frontend/dist/
+
+# Backend / Spring Boot (upstream reference under backend/)
+backend/build/
+backend/.gradle/
+backend/out/
+backend/target/
+*.class
 
 # Logs
 *.log

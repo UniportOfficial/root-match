@@ -1,6 +1,6 @@
 # Rootmatching
 
-> 뿌리산업 B2B 수주 매칭 플랫폼 — Next.js + NestJS 모노레포
+> 뿌리산업 B2B 수주 매칭 플랫폼 — Next.js 15 + NestJS 11 모노레포
 
 ## 개요
 
@@ -10,36 +10,53 @@
 - **PRD**: [`docs/prd/rootmatching-prd.md`](./docs/prd/rootmatching-prd.md) (v0.4)
 - **디자인 시스템**: [`docs/design-system.md`](./docs/design-system.md)
 
-## 브랜치 현황 (2026-06-02)
+## 브랜치 현황
 
-| 브랜치 | 용도 |
-|---|---|
-| **`trial/merge-main-into-monorepo`** | 🔧 **현재 브랜치** — upstream/main과의 통합 진행 중 (Chunk 1 완료: Spring 폐기 + AI 매칭 NestJS 이식) |
-| `dev-monorepo` | Phase 1.Week 1 모노레포 정식 (verification 통과 후 trial로 fast-forward 예정) |
-| `main` | 팀의 Vue3 + Spring Boot (별도 진행 중, PRD v0.4 협상 필요) |
-| `archive/vue3-phase0` | Phase 0 Vue3 프로토타입 아카이브 |
-| `backup/dev-monorepo-20260602` | 2026-06-02 스냅샷 |
-
-자세한 분기 배경: [`docs/handoffs/2026-06-02-upstream-divergence-trial-merge.md`](./docs/handoffs/2026-06-02-upstream-divergence-trial-merge.md)
+| 브랜치                         | 용도                                                 |
+| ------------------------------ | ---------------------------------------------------- |
+| **`dev-monorepo`**             | 🟢 활성 개발 — Phase 1.Week 1 완료 + Chunks 1~4 통합 |
+| `main`                         | 팀의 Vue3 + Spring Boot (별도, PRD v0.4 협상 필요)   |
+| `archive/vue3-phase0`          | Phase 0 Vue3 프로토타입 아카이브                     |
+| `backup/dev-monorepo-20260602` | 2026-06-02 스냅샷                                    |
 
 ## 구조
 
 ```
 rootmatching/
 ├── apps/
-│   ├── web/        # Next.js 15 (App Router, React 19) + Tailwind
-│   └── api/        # NestJS 11
+│   ├── web/                        # Next.js 15 + React 19 + Tailwind 3.4
+│   │   └── src/
+│   │       ├── app/
+│   │       │   ├── page.tsx        # 랜딩
+│   │       │   ├── layout.tsx      # Noto Sans KR + Korean locale
+│   │       │   ├── (client)/       # 발주처 라우트 그룹
+│   │       │   │   ├── quotes/             # 공개 견적 모집 게시판
+│   │       │   │   ├── request/            # 새 견적 요청 (RHF + zod)
+│   │       │   │   ├── matching/           # AI 매칭 결과
+│   │       │   │   └── requests/[id]?/     # 내 요청 목록 + 상세
+│   │       │   └── (common)/       # 공통 라우트 그룹
+│   │       │       ├── transactions/[id]?/ # 거래 목록 + 진행
+│   │       │       ├── disputes/[id]?/     # 분쟁 목록 + 상세
+│   │       │       └── mypage/             # 프로필 편집
+│   │       ├── components/ui/      # AppBadge 등
+│   │       ├── data/               # mock data (Phase 1.Week 2에 Prisma seed로 이전)
+│   │       └── lib/cn.ts           # clsx + tailwind-merge
+│   └── api/                        # NestJS 11
 │       └── src/
-│           ├── app.module.ts
-│           └── matching/        # 🆕 AI 매칭 모듈 (upstream PR #1에서 이식)
-│               ├── services/    #   VectorSearchService + AiMatchingService
-│               └── fixtures/    #   Phase 1.Week 2에서 Prisma seed로 이전
+│           ├── app.module.ts       # MatchingModule 등록
+│           ├── main.ts             # CORS + port 3001
+│           └── matching/           # AI 매칭 모듈
+│               ├── matching.controller.ts   # POST /matching/recommend
+│               ├── matching.module.ts
+│               ├── services/                # VectorSearch + AiMatching
+│               └── fixtures/                # mock 공장 데이터
 ├── packages/
-│   └── shared/     # zod schemas + 도메인 타입 (FactoryRecommendation 등)
+│   └── shared/                     # 공용 zod schemas + 도메인 타입
+│       └── src/types/              #   matching, requests, transactions, disputes
 ├── docs/
-│   ├── prd/        # PRD v0.4 (Better Auth + Prisma + Neon)
-│   ├── handoffs/   # 세션 인계 문서
-│   └── design-system.md
+│   ├── prd/                        # PRD v0.4
+│   ├── handoffs/                   # 세션 인계 문서
+│   └── design-system.md            # Toss-style 토큰
 └── .github/workflows/ci.yml
 ```
 
@@ -52,8 +69,7 @@ rootmatching/
 
 ```bash
 # 1. Node 22 활성화 (nvm 사용 시)
-nvm install 22
-nvm use 22
+nvm install 22 && nvm use 22
 
 # 2. pnpm 활성화
 corepack enable
@@ -62,35 +78,73 @@ corepack prepare pnpm@11.3.0 --activate
 # 3. 의존성 설치
 pnpm install
 
-# 4. shared 패키지 빌드
+# 4. shared 패키지 빌드 (web/api가 의존)
 pnpm --filter @rootmatching/shared run build
 
 # 5. 환경변수 설정
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 # OPENAI_API_KEY 채우기
 
-# 6. 개발 서버 (web + api 병렬)
+# 6. 개발 서버 (web :3000 + api :3001 병렬)
 pnpm dev
 ```
 
 ## 워크스페이스 명령
 
-| 명령 | 동작 |
-|---|---|
-| `pnpm dev` | apps/web + apps/api 병렬 개발 서버 |
-| `pnpm build` | 모든 워크스페이스 빌드 |
-| `pnpm typecheck` | TypeScript 타입 체크 |
-| `pnpm lint` | 루트 ESLint 9 flat config 검사 |
-| `pnpm lint:fix` | ESLint 자동 수정 |
-| `pnpm format` | Prettier 적용 |
-| `pnpm format:check` | Prettier 검증 (CI용) |
-| `pnpm test` | 단위 테스트 |
+| 명령                | 동작                               |
+| ------------------- | ---------------------------------- |
+| `pnpm dev`          | apps/web + apps/api 병렬 개발 서버 |
+| `pnpm build`        | 모든 워크스페이스 빌드             |
+| `pnpm typecheck`    | TypeScript 타입 체크               |
+| `pnpm lint`         | 루트 ESLint 9 flat config 검사     |
+| `pnpm lint:fix`     | ESLint 자동 수정                   |
+| `pnpm format`       | Prettier 적용                      |
+| `pnpm format:check` | Prettier 검증 (CI용)               |
+| `pnpm test`         | 단위 테스트                        |
 
 ## 기술 스택
 
 - **Frontend**: Next.js 15.5 (App Router) + React 19 + TypeScript 5.7 + Tailwind 3.4
-- **Backend**: NestJS 11 + Prisma 6 (예정) + PostgreSQL (Neon) + Better Auth (예정)
+  - 폼: React Hook Form + zod
+  - 아이콘: Lucide React
+  - 클래스 합성: clsx + tailwind-merge
+- **Backend**: NestJS 11 + Prisma 6 (Phase 1.Week 2) + PostgreSQL (Neon) + Better Auth (Phase 1.Week 2)
 - **AI**: OpenAI text-embedding-3-small + GPT-4o (apps/api/src/matching)
 - **Shared**: zod schemas + 도메인 타입 (`@rootmatching/shared`)
 - **Tooling**: pnpm workspaces · ESLint 9 (flat) · Prettier 3 · Husky 9 · lint-staged 15
 - **Deploy**: Vercel (web) · Railway/Fly.io (api)
+
+## 라우트
+
+| URL                  | 페이지                             | 비고                                                        |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| `/`                  | 랜딩                               |                                                             |
+| `/quotes`            | 공개 견적 모집 게시판              | 공장이 발주처 요청을 본다                                   |
+| `/request`           | 새 견적 요청 폼                    | 발주처. RHF + zod, 인라인 캘린더, 파일 업로드, AI 매칭 호출 |
+| `/matching`          | AI 매칭 결과                       | 발주처. `/request` 결과를 sessionStorage로 받아 표시        |
+| `/requests`          | 내 견적 요청 목록                  | 발주처                                                      |
+| `/requests/[id]`     | 내 견적 요청 상세                  | 발주처                                                      |
+| `/transactions`      | 거래 목록                          | 공통                                                        |
+| `/transactions/[id]` | 거래 진행 (스텝퍼 + 타임라인)      | 공통                                                        |
+| `/disputes`          | 분쟁 목록                          | 공통                                                        |
+| `/disputes/[id]`     | 분쟁 상세 (스텝 + 타임라인 + 증빙) | 공통                                                        |
+| `/mypage`            | 프로필 편집                        | 공통                                                        |
+
+## API 엔드포인트
+
+| 메서드 | 경로                  | 동작                                      |
+| ------ | --------------------- | ----------------------------------------- |
+| POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 |
+
+## 다음 작업 (Phase 1.Week 2)
+
+`docs/handoffs/2026-05-26-phase-1-week-1-complete.md` v1.1 참고:
+
+1. Prisma 6 + Neon PostgreSQL 연결
+2. Better Auth 통합 (`better-auth` + Prisma adapter, NestJS 안에 내장)
+3. 비즈니스 모듈 (Users, Companies)
+4. Mock fixtures → Prisma seed 마이그레이션
+5. nestjs-zod DTO 검증
+6. Swagger + ThrottlerGuard + helmet + nestjs-pino
+7. E2E 테스트

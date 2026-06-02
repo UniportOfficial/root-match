@@ -26,7 +26,7 @@ export default function Home() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/client/request"
+            href="/request"
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-6 py-3 text-base font-semibold text-ink-700 transition hover:border-brand hover:text-brand"
           >
             견적 요청하기

@@ -350,3 +350,108 @@ W2-5 (Users + Companies modules, plan §7.5) 완료 시:
 | 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                            |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v0.1 | 2026-06-03 | 초기 작성. W2-2 (`f484ad5`) 완료 시점 mock 계정 2개 인벤토리 + dev/CI signup 절차 + 비밀번호 정책 (TempPass!2026 per Q7) + prod placeholder (Phase 6 베타 진입 시 구체화) + W2-4 seed 관계 의존 순서. W2-2.5 backlog §3.1.1 (Tier 1 MUST) 적용. plan v0.8 §A.2 Gap C 후속 처리. |
+| v0.2 | 2026-06-03 | §8 신설 — Zod v3 → v4 + better-call@1.3.5 pin ADR (Wave 3a W2-3 commit `b5558a3` deviation 공식 documentation). backlog §3.4.4 (Tier 2 SHOULD) closure.                                                                                                                         |
+
+---
+
+## 8. Zod v3 → v4 + better-call@1.3.5 ADR (W2-3 deviation)
+
+### 8.1 Status
+
+**ACCEPTED** — Wave 3a W2-3, commit `b5558a3`, 2026-06-03
+
+### 8.2 Context
+
+W2-3 (nestjs-zod global validation pipe 도입) 구현 과정에서 다음 호환성 충돌이 발생했다.
+
+- `nestjs-zod 5.4.0`은 zod v4를 요구한다. 기존 `packages/shared`의 zod v3.25 기반 schemas와 직접 호환 불가.
+- `.meta({ id: "..." })` syntax는 zod v4 전용이며, W2-6 Swagger generation에서 OpenAPI component ID를 자동 생성하기 위한 필수 요구사항이다.
+- Better Auth 1.6.x는 `better-call` 1.x를 peerDependency로 따라가는데, 일부 minor 버전에서 zod v4 이동 이후 런타임 호환이 깨지는 사례가 확인되어 명시 pin이 필요했다.
+
+이 결정은 W2-3 원본 spec 범위를 벗어난 deviation으로, handoff §1.1에 "zod v3 → v4 bump + better-call@1.3.5 명시 pin"으로 기록되었다.
+
+### 8.3 Decision
+
+실제 파일에 적용된 값은 다음과 같다.
+
+**`packages/shared/package.json`**
+
+```json
+"peerDependencies": { "zod": "^4.0.0" },
+"devDependencies": { "zod": "^4.4.3" }
+```
+
+**`apps/api/package.json`**
+
+```json
+"zod": "^4.4.3",
+"nestjs-zod": "5.4.0",
+"better-call": "1.3.5",
+"better-auth": "1.6.13"
+```
+
+모든 신규 shared schemas는 `.meta({ id: "..." })` 채택. W2-6 OpenAPI generation 시 component ID 자동 생성에 활용된다.
+
+W2-3 commit body R1 mitigation 인용:
+
+> "shared declares zod as a peerDependency and API resolves the same zod v4 instance; better-call is pinned to satisfy Better Auth runtime peers after the zod v4 move required by .meta({ id })"
+
+### 8.4 Alternatives 검토
+
+**(a) `nestjs-zod 3.x` downgrade (zod v3 호환)** — **거부**
+
+`.meta({ id })` 미지원으로 W2-6 Swagger component ID 자동 생성 불가능. W2-6 acceptance criteria를 만족할 수 없다.
+
+**(b) zod v3 유지 + 별도 validation library (`class-validator`)** — **거부**
+
+plan §4 validation strategy의 단일 검증 layer 원칙을 위반한다. 추가로 shared schemas 전면 재작성 비용이 발생한다.
+
+**(c) zod v4 + `better-call` peer pin (선택)** — **채택**
+
+Better Auth 1.6.x 호환 boundary를 확보하면서 `.meta()` syntax를 활용할 수 있다. shared peerDep를 `^4.0.0`으로 선언해 consumer(web, api) 각자의 zod v4 minor 버전에 유연성을 부여한다.
+
+### 8.5 Consequences
+
+**Positive**
+
+- 단일 zod source of truth. `packages/shared`가 peerDep로 선언하여 workspace 전반에서 동일 zod v4 인스턴스를 해석한다.
+- `.meta({ id })` → W2-6 Swagger component ID 자동 생성의 enabler. ADR §8 결정 없이는 W2-6이 blocking된다.
+- `nestjs-zod 5.x` 최신 API(`createZodDto()` pattern) 활용. W2-3 `b5558a3`에서 채택한 DTO 패턴이 이를 기반으로 한다.
+
+**Negative**
+
+- zod v3 → v4 marginal breaking changes: 현재 영향 없음. schemas가 `z.object / string / number / enum / array` 등 안정 API만 사용한다.
+- `better-call 1.3.5` pin은 Better Auth 메이저 업그레이드(예: 2.x) 시 재검증이 필요하다는 의미다.
+- **`HORIZONTAL_SCALE_TRIGGER` doc 시점**에 zod v4 + Better Auth interop 재확인 필요. Q4 throttler memory store 호환 재검증과 동일한 타이밍으로 처리한다.
+
+### 8.6 Validation
+
+W2-3 + W2-4 두 커밋에서 순차 검증이 완료되었다.
+
+- W2-3 commit `b5558a3 feat(api): nestjs-zod global validation + matching/auth DTOs`: 8 sub-steps + 7 gates pass (curl HTTP 400 gate 포함).
+- W2-4 commit `1b37cbe feat(api): prisma seed for mock fixtures`: 9 sub-steps + 8 gates pass + live pipe `2 2 3` idempotent 확인.
+- CI run 26884509375 (HEAD `7360d4f` → 이후 `a193ae8`): 5/5 quality matrix green — `guard:no-mock-auth`, `format:check`, `lint`, `typecheck`, `build`.
+- `APP_PIPE ZodValidationPipe` (`apps/api/src/app.module.ts`) + Better Auth signin/signup runtime 정상 동작 확인 (handoff §1.4 통합 검증 매트릭스).
+
+### 8.7 Forward-migration placeholder (zod v5)
+
+zod v5 stable 출시 시 동일 패턴으로 마이그레이션 가능하다.
+
+절차:
+
+1. `packages/shared/package.json` peerDep bump → `"zod": "^5.0.0"`, devDep bump → `"zod": "^5.x.x"`
+2. `apps/api/package.json` dep bump → `"zod": "^5.x.x"`
+3. schemas 호환성 확인 (breaking changes 체크)
+4. `better-call` peer 재확인 → Better Auth가 zod v5 호환 better-call 릴리스 여부 검토
+
+트리거: zod v5 stable release + Better Auth가 zod v5 호환 better-call 릴리스.
+
+본 ADR을 reference로 ADR §9 (zod v5) 신설하는 패턴을 권장한다.
+
+### 8.8 References
+
+- W2-3 atomic commit: `b5558a3 feat(api): nestjs-zod global validation + matching/auth DTOs`
+- W2-4 atomic commit: `1b37cbe feat(api): prisma seed for mock fixtures (users + companies + quote requests via better auth signup)`
+- Wave 3a closure handoff: `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §1.1 (deviation row "zod v3 → v4 bump + better-call@1.3.5 명시 pin")
+- backlog §3.4.4 (Tier 2 SHOULD — 이 ADR이 closure)
+- W2-3 commit body R1 mitigation: "shared declares zod as a peerDependency and API resolves the same zod v4 instance; better-call is pinned to satisfy Better Auth runtime peers after the zod v4 move required by .meta({ id })"

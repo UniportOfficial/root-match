@@ -175,6 +175,7 @@ model QuoteRequest {
 
   recommendations MatchRecommendation[]
 
+  @@unique([clientUserId, projectName])
   @@index([clientUserId])
   @@index([status])
   @@map("quote_requests")

@@ -38,6 +38,7 @@
     "@prisma/client": "6.19.3",
     "@rootmatching/shared": "workspace:*",
     "better-auth": "1.6.13",
+    "better-call": "1.3.5",
     "cookie-parser": "^1.4.7",
     "helmet": "8.2.0",
     "nestjs-pino": "4.6.1",
@@ -45,7 +46,7 @@
     "pino-http": "^10.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

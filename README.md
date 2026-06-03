@@ -147,9 +147,10 @@ pnpm dev
 
 ## API 엔드포인트
 
-| 메서드 | 경로                  | 동작                                                                    |
-| ------ | --------------------- | ----------------------------------------------------------------------- |
-| POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 (key 미설정 시 mock fallback) |
+| 메서드 | 경로                  | 동작                                                                      |
+| ------ | --------------------- | ------------------------------------------------------------------------- |
+| GET    | `/health/db`          | DB + pgvector 상태 확인 (`{ db, vectorExtension, latencyMs, timestamp }`) |
+| POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 (key 미설정 시 mock fallback)   |
 
 > 1-step vs 2-step 엔드포인트 설계 결정은 [`docs/specs/matching-endpoint-design-decision.md`](./docs/specs/matching-endpoint-design-decision.md) 참고.
 

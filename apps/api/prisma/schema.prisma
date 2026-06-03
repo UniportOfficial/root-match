@@ -1,11 +1,11 @@
-// Rootmatching Phase 1.W2 — Prisma schema (PLACEHOLDER for Pre-Flight)
+// Rootmatching Phase 1.W2 — Prisma 6 full schema
+// Canonical source: .sisyphus/plans/phase-1-w2.md §7.1.3 sub-step 1
 //
-// The full model graph (User, Session, Account, Verification, Company,
-// QuoteRequest, MatchRecommendation, FactoryEmbedding with pgvector) is
-// authored in W2-1 per .sisyphus/plans/phase-1-w2.md §7.1.3.
-//
-// Pre-Flight goal: this file must compile via `prisma generate` so
-// PrismaService scaffold typechecks. _Placeholder model is removed in W2-1.
+// Model/enum names are NON-NEGOTIABLE (see §A.1 [EXPECTED OUTCOME] item 1).
+// Dual-enum design (Q1 RESOLVED 2026-06-03):
+//   UserRole = intra-company role (admin/member) + platform staff (operator)
+//   AccountType = business side (client = 발주처 / factory = 공장)
+// PK strategy: cuid() everywhere (Q2 RESOLVED).
 
 generator client {
   provider        = "prisma-client-js"
@@ -19,10 +19,199 @@ datasource db {
   extensions = [vector]
 }
 
-// W2-1에서 제거 — Pre-Flight typecheck를 위한 minimal model
-model PreFlightPlaceholder {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now()) @map("created_at")
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
 
-  @@map("pre_flight_placeholder")
+enum UserRole {
+  admin // company-level admin (default for primary user of a company)
+  member // company-level member
+  operator // Rootmatching platform staff (admin dashboard, dispute mediator)
+}
+
+enum AccountType {
+  client // 발주처 — sends quote requests
+  factory // 공장 — receives & quotes
+}
+
+enum QuoteRequestStatus {
+  NEW
+  REVIEWING
+  MATCHED
+  QUOTED
+  CONTRACTED
+  CANCELLED
+}
+
+enum MatchingSource {
+  DETERMINISTIC_MOCK
+  OPENAI_ADAPTER
+  MANUAL_ADMIN
+}
+
+// ─────────────────────────────────────────────
+// Better Auth 1.6 core models
+// Source: bg_607b471d librarian snippet (§7.1.3 sub-step 1)
+// ─────────────────────────────────────────────
+
+model User {
+  id            String      @id
+  name          String
+  email         String      @unique
+  emailVerified Boolean     @default(false)
+  image         String?
+  role          UserRole    @default(member)
+  accountType   AccountType @default(client)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // scrypt-hashed by Better Auth
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─────────────────────────────────────────────
+// Domain models
+// Source: matching-endpoint-design-decision.md §4.1 + ERD
+// ─────────────────────────────────────────────
+
+model Company {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  name            String
+  industry        String?
+  region          String?
+  size            String?
+  description     String?  @db.Text
+  contactEmail    String?  @map("contact_email")
+  contactPhone    String?  @map("contact_phone")
+  website         String?
+  establishedYear Int?     @map("established_year")
+  employeeCount   Int?     @map("employee_count")
+  revenue         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("company")
+}
+
+model Profile {
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id")
+  companyId        String?  @map("company_id")
+  managerName      String?  @map("manager_name")
+  location         String?
+  phone            String?
+  introduction     String?  @db.Text
+  monthlyCapacity  String?  @map("monthly_capacity")
+  reliabilityScore Int?     @map("reliability_score")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("profile")
+}
+
+model QuoteRequest {
+  id                 String             @id @default(cuid())
+  clientUserId       String             @map("client_user_id")
+  clientCompanyId    String?            @map("client_company_id")
+  projectName        String             @map("project_name")
+  processType        String             @map("process_type")
+  productItem        String             @map("product_item") @db.Text
+  estimatedQuantity  String             @map("estimated_quantity")
+  desiredDeadline    String             @map("desired_deadline")
+  budgetRange        String             @map("budget_range")
+  detailRequirements String             @map("detail_requirements") @db.Text
+  status             QuoteRequestStatus @default(NEW)
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  recommendations MatchRecommendation[]
+
+  @@index([clientUserId])
+  @@index([status])
+  @@map("quote_requests")
+}
+
+model MatchRecommendation {
+  id             String         @id @default(cuid())
+  quoteRequestId String         @map("quote_request_id")
+  factoryId      String         @map("factory_id")
+  score          Int
+  qualityScore   Int            @map("quality_score")
+  deliveryScore  Int            @map("delivery_score")
+  priceScore     Int            @map("price_score")
+  trustScore     Int            @map("trust_score")
+  reason         String         @db.Text
+  estimateMin    Int            @map("estimate_min")
+  estimateMax    Int            @map("estimate_max")
+  source         MatchingSource @default(DETERMINISTIC_MOCK)
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([quoteRequestId, factoryId, source])
+  @@index([quoteRequestId])
+  @@map("match_recommendations")
+}
+
+// ─────────────────────────────────────────────
+// pgvector model (Phase 1.W2 placeholder — W2-4 seed populates async)
+// The `?` makes embedding nullable to keep initial migration simple.
+// Prisma optional-Unsupported syntax per §7.1.3 sub-step 1 final bullet.
+// ─────────────────────────────────────────────
+
+model FactoryEmbedding {
+  id        String                       @id @default(cuid())
+  factoryId String                       @unique @map("factory_id")
+  embedding Unsupported("vector(1536)")?
+
+  @@map("factory_embeddings")
 }

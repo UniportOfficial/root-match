@@ -455,3 +455,45 @@ zod v5 stable 출시 시 동일 패턴으로 마이그레이션 가능하다.
 - Wave 3a closure handoff: `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §1.1 (deviation row "zod v3 → v4 bump + better-call@1.3.5 명시 pin")
 - backlog §3.4.4 (Tier 2 SHOULD — 이 ADR이 closure)
 - W2-3 commit body R1 mitigation: "shared declares zod as a peerDependency and API resolves the same zod v4 instance; better-call is pinned to satisfy Better Auth runtime peers after the zod v4 move required by .meta({ id })"
+
+---
+
+## 9. HORIZONTAL_SCALE_TRIGGER — Throttler Redis migration trigger
+
+> W2-6 (`docs/specs/w2-6-security-swagger-spec.md` §1.4) 기준: MVP는 `@nestjs/throttler` built-in in-memory storage를 사용한다. 아래 조건 중 하나라도 충족하면 Redis-backed shared storage로 전환한다.
+
+### 9.1 Redis 전환 트리거
+
+- 동일 public traffic을 2개 이상의 NestJS instance/pod가 처리한다.
+- autoscaling 또는 rolling deploy가 활성화되어 요청이 여러 process로 분산된다.
+- serverless/ephemeral runtime처럼 memory counter가 cold start/isolate 경계에서 휘발한다.
+- multi-region/AZ 배포로 rate-limit counter 공유가 필요하다.
+- 운영상 rate-limit telemetry를 재시작 이후에도 보존하거나 중앙 모니터링해야 한다.
+- abuse 시도가 여러 instance로 분산되어 in-memory counter를 우회하는 정황이 관찰된다.
+
+### 9.2 전환 후보 구현
+
+```bash
+pnpm --filter @rootmatching/api add @nest-lab/throttler-storage-redis ioredis
+```
+
+```ts
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
+
+const redis = new Redis(process.env.REDIS_URL!);
+
+ThrottlerModule.forRoot({
+  throttlers: [
+    { name: 'default', ttl: seconds(60), limit: 30 },
+    { name: 'expensive', ttl: seconds(60), limit: 5 },
+    { name: 'auth-strict', ttl: seconds(60), limit: 5 },
+  ],
+  storage: new ThrottlerStorageRedisService(redis),
+});
+```
+
+### 9.3 W2-6 현재 결정
+
+- 현재 Phase 1.W2-6는 단일 API instance 전제이므로 Redis package는 설치하지 않는다.
+- 실제 전환은 위 trigger 발생 시 별도 backlog/ADR로 진행한다.

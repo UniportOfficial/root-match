@@ -83,7 +83,8 @@
     "moduleFileExtensions": [
       "js",
       "json",
-      "ts"
+      "ts",
+      "mjs"
     ],
     "rootDir": ".",
     "roots": [
@@ -92,8 +93,11 @@
     ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j|mj)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!.*(better-auth|@better-auth|better-call|@better-fetch|@noble|nanostores|jose|uncrypto|defu|destr|kysely|@simplewebauthn|rou3))"
+    ],
     "collectCoverageFrom": [
       "src/**/*.(t|j)s"
     ],

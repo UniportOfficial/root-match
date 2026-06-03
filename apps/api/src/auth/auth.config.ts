@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { openAPI } from 'better-auth/plugins';
 import { AccountType, UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../prisma/prisma.client';
@@ -49,6 +50,11 @@ export const auth = betterAuth({
     requireEmailVerification: isProduction,
   },
 
+  logger: {
+    level: isProduction ? 'warn' : 'info',
+    disabled: process.env.NODE_ENV === 'test',
+  },
+
   advanced: {
     useSecureCookies: betterAuthUrl.startsWith('https://'),
     ...(isProduction
@@ -87,6 +93,8 @@ export const auth = betterAuth({
       },
     },
   },
+
+  plugins: [openAPI({})],
 });
 
 export type AuthSession = typeof auth.$Infer.Session;

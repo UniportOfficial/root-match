@@ -1,0 +1,481 @@
+# Session Handoff — 2026-06-03 (W2-6 closure + Snowsign vendor + Hackathon demo prep)
+
+> 다음 세션이 zero-context로 이어받을 수 있도록 정리한 **새 master reference doc**. 이전 master (`docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` v1.0)는 Wave 3a/Q10/Session C closure 시점 historical reference로 보존. **본 doc이 현재 master**.
+
+**현재 origin/dev-monorepo HEAD `9a5b5f5`** + 이번 핸드오프 commit. W2-6 closure (Wave 4b) + Snowsign vendor 결정 + hackathon demo prep agent in-flight.
+
+**이번 세션 산출물** (Wave 4b W2-6 + Phase 3 vendor decision + demo prep 통합):
+
+- Wave 3b W2-5 atomic commit: `6451145` Users + Companies modules + DTOs + e2e
+- Tier 1 parallel side-quests 5 commits: `e47045c` (MIGRATION §8) + `7cdf6c2` (quotes decision) + `78d0bfa` (mvp-roadmap v1.2) + `08984ff` (Phase 2 follow-up) + `73dbc0d` (W2-6 spec v0.1)
+- backlog v0.5: `bb66a4f` (W2-5 closure + §3.4.1/§3.4.4 closed + §3.5/§3.6 added)
+- W2-6 spec v0.2: `dbc97d7` (Q1-Q8 user decisions, 7 default + Q5 changed)
+- **W2-6 atomic commit**: `ea2bd66` `feat(api): security hardening + swagger + nestjs-pino (W2-6)` — Wave 4b closure
+- Snowsign vendor reference: `815e782` (Phase 3 vendor decision)
+- backlog v0.6: `9a5b5f5` (W2-6 §3.6.1/§3.6.2 closed + §3.7 Snowsign Phase 3 prep)
+- **Plan v0.12** (gitignored): `.sisyphus/plans/phase-1-w2.md` W2-5 closure summary + inline `[RESOLVED v0.12]` markers + §16 changelog v0.12 segment + #3 W2-6 spec landed status fold-in
+- **Demo prep agent**: `bg_06bb5b1c` (in-flight at handoff commit; visual-engineering + frontend-ui-ux skills) — 9 P0+P1+P2 fixes for hackathon
+- 본 master handoff: `[this commit]`
+
+**다음 작업 (다음 세션 첫 액션)**:
+
+1. **`bg_06bb5b1c` retrieve** — `background_output(task_id="bg_06bb5b1c")` — demo prep 9 fixes 결과 검증
+2. Path A 10분 manual rehearsal (signup → request → AI 매칭 → contract → transactions → review → dispute)
+3. Vercel preview 배포 + 시연 환경 검증
+4. 최종 rehearsal + bug fix
+
+---
+
+## Quick Reference
+
+```text
+저장소:        /Users/uni-claw/dev/root-match
+활성 브랜치:    dev-monorepo (push 정책: 명시 요청 시에만; 본 세션 3차례 push 완료)
+HEAD:          `9a5b5f5` (docs(specs): w2-2.5 backlog v0.6) → 본 핸드오프 commit 후 update
+origin/dev-monorepo:  `9a5b5f5` (synced; push 완료 후 `[this commit]`)
+
+핵심 commit chain (이번 세션, 새것 → 옛것):
+  [this commit]: docs(handoffs): w2-6 + snowsign + demo prep (v1.0, new master ref)
+  9a5b5f5  docs(specs): w2-2.5 backlog v0.6 (W2-6 ea2bd66 closure + §3.7 Snowsign Phase 3 prep)
+  815e782  docs(specs): snowsign-api-reference v0.1 (Phase 3 vendor decision)
+  ea2bd66  feat(api): security hardening + swagger + nestjs-pino (W2-6)              ← Wave 4b closure
+  dbc97d7  docs(specs): w2-6 spec v0.2 Q1-Q8 user decisions
+  bb66a4f  docs(specs): w2-2.5 backlog v0.5 (Wave 3b W2-5 closure + §3.4.1/§3.4.4 closed)
+  73dbc0d  docs(specs): w2-6 security + swagger spec v0.1 (Wave 4b prep)
+  6451145  feat(api): users + companies modules + DTOs + e2e (W2-5)                  ← Wave 3b closure
+  08984ff  docs(specs): phase 2 quotes route conflict + lighthouse coverage gap
+  78d0bfa  docs(plans): mvp-roadmap v1.2 (Phase 2-6 sub-tasks + external deps cross-ref)
+  7cdf6c2  docs(decisions): quotes route grouping decision package (external dep #1 unlock)
+  e47045c  docs(api): MIGRATION.md §8 zod v4 + better-call ADR (closes backlog §3.4.4)
+  a193ae8  docs(handoffs): wave 3a + q10 + session c complete (v1.0, historical master)
+  ...
+
+런타임 요구:    Node ≥ 22.13 (nvm use 22 매 세션 첫 명령)
+                commit 시 PATH prefix:
+                  `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`
+
+핵심 문서:
+  - 본 핸드오프 (현재 master, demo prep in-flight)
+  - docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md v1.0 (이전 master, frozen at Wave 3a/Q10/Session C closure)
+  - .sisyphus/plans/phase-1-w2.md v0.12 (gitignored; W2-5 closure summary 반영)
+  - docs/specs/w2-2.5-followup-backlog.md v0.6 (§3.4.1/§3.4.4/§3.6.1/§3.6.2 closed + §3.5/§3.7 신설)
+  - docs/specs/w2-6-security-swagger-spec.md v0.2 (Q1-Q8 ACCEPTED + §8.1 Decisions sub-section)
+  - docs/specs/snowsign-api-reference.md v0.1 (Phase 3 vendor decision + integration plan)
+  - apps/api/MIGRATION.md v0.2 (§8 zod v4 + better-call ADR + §9 HORIZONTAL_SCALE_TRIGGER from W2-6)
+  - docs/plans/mvp-roadmap.md v1.2 (Phase 2-6 sub-tasks + 외부 dep cross-ref)
+  - docs/decisions/quotes-route-grouping.md (외부 dep #1 decision package — Option B 권장)
+  - docs/specs/phase-2-quotes-route-design-conflict.md (Session C 후속)
+  - docs/specs/lighthouse-coverage-gap.md (22 routes 미검증 inventory)
+  - docs/specs/design-system-upgrade.md v0.1 (Session C 적용 spec)
+  - docs/specs/prisma-service-pattern.md v0.1
+
+다음 작업 순서:
+  1. (다음 세션 첫 액션) `bg_06bb5b1c` retrieve → demo prep 9 fixes 결과 검증
+  2. Path A 10분 manual rehearsal (apps/api + apps/web 모두 띄우고 walkthrough)
+  3. Vercel preview 배포 + 시연 환경 검증
+  4. 최종 rehearsal + bug fix
+  5. (해커톤 후 또는 병렬) W2-7 (E2E + Neon CI) 진입 결정 — Q3 hybrid CI 결정 시점
+  6. (병렬) Snowsign vendor 문의 (webhook + sandbox + 가격) → backlog §3.7.2/§3.7.3 resolve
+```
+
+---
+
+## 1. 이번 세션 closure 요약
+
+### 1.1 Wave 3b W2-5 (Users + Companies)
+
+| 항목            | 값                                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| Commit          | `6451145` `feat(api): users + companies modules + DTOs + e2e (W2-5)`                                  |
+| Agent           | Sisyphus-Junior `unspecified-high`, 25m 5s                                                            |
+| Files changed   | 16 (+523 / -15)                                                                                       |
+| Sub-steps       | 9/9 ✓ (8 W2-5 + 1 anti-flake fold-in)                                                                 |
+| Verification    | 8 gates pass + e2e 7 suites / 14 tests / 97.479s `--runInBand`                                        |
+| Body closures   | `Closes phase-1-W2-5` + `Closes backlog §3.4.1`                                                       |
+| Bonus deviation | `seed.e2e-spec.ts` retry hardening (Neon P1001 transient 대응, +44 lines) — twin-layer §3.4.1 closure |
+
+**주요 endpoint** (W2-5 추가):
+
+- `GET /users/me` (BetterAuthGuard) — UserProfile (name + email + accountType + role)
+- `PATCH /users/me` — `UserProfileUpdateSchema.pick({ name: true })` (name only)
+- `GET /companies/me` — Company 전체 (Prisma model)
+- `PATCH /companies/me` — `CompanyUpdateSchema` 10 optional fields + `.refine(>0)`
+
+### 1.2 Tier 1 parallel side-quests (5 commits)
+
+이전 master handoff §6 후보 1 (Wave 3b W2-5 직진 + 통합 push) 채택 시 fire한 5 side-quests + #3 W2-6 spec:
+
+| #   | 작업                                                                             | Commit    | Lines      |
+| --- | -------------------------------------------------------------------------------- | --------- | ---------- |
+| #1  | MIGRATION.md §8 zod v4 + better-call ADR (Closes backlog §3.4.4)                 | `e47045c` | +105       |
+| #2  | plan v0.11/v0.12 (gitignored, §7.5 + §A.5 + §7.5.8 → v0.12 W2-5 closure summary) | —         | —          |
+| #3  | W2-6 security + swagger spec v0.1 (Wave 4b prep, 873 lines)                      | `73dbc0d` | +873       |
+| #4  | Phase 2 follow-up specs (quotes-route-conflict + lighthouse-coverage-gap)        | `08984ff` | +435       |
+| #5  | mvp-roadmap v1.2 (Phase 2-6 sub-tasks + 외부 dep cross-ref)                      | `78d0bfa` | +215 / -47 |
+| #6  | quotes route grouping decision package (외부 dep #1 unlock)                      | `7cdf6c2` | +213       |
+
+**중요 finding** (#6 작업 중): `(factory)` 라우트 그룹이 `apps/web`에 이미 존재함 → Option B (factory 그룹 활용) 비용 감소 반영. handoff §3.4 외부 dep #1 status: ⏳ decision package committed, 사용자 결정 대기.
+
+### 1.3 Wave 4b W2-6 closure (보안 + Swagger + nestjs-pino)
+
+| 항목          | 값                                                                                                       |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| spec v0.1     | `73dbc0d` 873 lines (#3 Tier 1 side-quest)                                                               |
+| spec v0.2     | `dbc97d7` Q1-Q8 user decisions ACCEPTED (7 default + Q5 changed)                                         |
+| atomic commit | `ea2bd66` `feat(api): security hardening + swagger + nestjs-pino (W2-6)`                                 |
+| Agent         | Sisyphus-Junior `unspecified-high`, 24m 21s                                                              |
+| Files changed | 13 (modified 6 + new 6 + lock)                                                                           |
+| Sub-steps     | 8/8 ✓ + Q5 fold-in + cleanupOpenApiDoc retroactive                                                       |
+| Verification  | 9 gates pass + e2e 10 suites / 24 tests `--runInBand` + 9 schemas `/docs-json` emit + Q5 twin-layer 검증 |
+| Body closures | `Closes phase-1-W2-6` + `Closes backlog §3.6.1` + `Closes backlog §3.6.2`                                |
+
+**Q1-Q8 사용자 결정 (spec §8.1 ACCEPTED)**:
+
+- Q1 default: throttler 30 req/60s + expensive 5/60s
+- Q2 default: HSTS preload false (Phase 6 prod 재평가)
+- Q3 default: `/docs` dev/staging only
+- Q4 default: `req.body.email` redaction 포함 (B2B privacy)
+- **Q5 CHANGED**: NestJS auth-strict bucket (5 req/60s) on `/api/auth/sign-in/email` — **twin-layer with Better Auth own 3/10s**
+- Q6 default: Better Auth `openAPI({})` Scalar UI dev/staging only
+- Q7 default: nestjs-pino validated incoming-trust correlation ID
+- Q8 default: `cleanupOpenApiDoc()` W2-6 absorb (W2-3 retroactive)
+
+**9 schemas `/docs-json` components.schemas emit 확인** (live curl):
+W2-3 (b5558a3): UserRole, AccountType, CompanyRole, Login, Register, QuoteRequestDraft
+W2-5 (6451145): UserProfile, UserProfileUpdate, CompanyUpdate
+
+**Q5 twin-layer verification**:
+
+- Better Auth 자체 4번째 sign-in within 10s → 429 (Better Auth own)
+- NestJS auth-strict 6번째 within 60s → 429 (NestJS ThrottlerGuard)
+
+**Deviation**: Better Auth raw Express handler가 Nest controllers bypass → `auth-strict`을 pre-handler middleware로 enforce (`ThrottlerModule.forRoot`에 bucket 선언 + middleware로 실제 enforce). MIGRATION.md §9에 HORIZONTAL_SCALE_TRIGGER doc.
+
+### 1.4 Phase 3 vendor 결정 — 스노우싸인 (Snowsign)
+
+| 항목             | 값                                                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| spec doc         | `docs/specs/snowsign-api-reference.md` v0.1 (commit `815e782`, 477 lines)                                                           |
+| vendor           | 스노우싸인 (Snowsign by JT Snowball, `jtsnowball.com`)                                                                              |
+| 출처             | Snowsign Public API Guide v1.3 (2026-05-30, 외부 vendor 제공)                                                                       |
+| PRD 영향         | v0.4 §6.2 "모두싸인 / 이폼사인" → **스노우싸인** (PRD v0.5 갱신 필요 — backlog §3.7.4)                                              |
+| FR-5 cover       | P0 5/5 + P1 1 (변경계약서) vendor 확인                                                                                              |
+| 한국 전자문서법  | §4의2 감사추적인증서 별도 PDF + integrity_hash (SHA-256)                                                                            |
+| **Phase 5 영향** | Snowsign 자체 모바일 알림톡 (`mobile_alimtalk_enabled`) → 계약 관련 알림 vendor managed → NotificationModule scope 30-40% 감소 가능 |
+
+**⚠️ Security alert (이번 세션 중요 이벤트)**: 사용자가 chat에 API key 일부 plain text로 노출 (`rSpf__sa...`). file system 검색 결과 어디에도 저장 안 됨 (`apps/api/.env` 포함 clean). 그러나 chat transcript 저장됐을 가능성 — **사용자 측 vendor 콘솔 rotate 권고**.
+
+**Open questions (vendor 문의 needed)**:
+
+- §3.7.2: webhook 지원 여부 (가이드 미명시; polling fallback 준비)
+- §3.7.3: sandbox 환경 + dev key + 단가 + 변경계약서 (FR-5.6 P1)
+
+### 1.5 backlog v0.6 update
+
+`docs/specs/w2-2.5-followup-backlog.md` v0.6 (commit `9a5b5f5`):
+
+**Closures (4건)**:
+
+- §3.4.1 ✅ CLOSED (W2-5 `6451145` `--runInBand` fold-in + seed.e2e retry hardening)
+- §3.4.4 ✅ CLOSED (MIGRATION §8 `e47045c`)
+- §3.6.1 ✅ CLOSED (W2-6 `ea2bd66` Q1-Q8 fold-in)
+- §3.6.2 ✅ CLOSED (W2-6 `ea2bd66` cleanupOpenApiDoc retroactive absorb)
+
+**신설 sections**:
+
+- §3.5 (Wave 3b W2-5 후속, 6 항목): role.mapper.ts deferred (§3.5.1) / UserProfileUpdate scope (§3.5.2) / Company.bizNumber schema gap (§3.5.3) / AccountType+CompanyRole single SoT (§3.5.4) / seed.e2e retry hardening 일반화 (§3.5.5) / W2-6 .meta({id}) propagation 검증 (§3.5.6)
+- §3.7 (Wave 4b W2-6 + Phase 3 prep, 6 항목): vendor 결정 ✅ closure (§3.7.1, Snowsign) / webhook 문의 (§3.7.2) / sandbox + 가격 문의 (§3.7.3) / PRD v0.5 + mvp-roadmap v1.3 갱신 (§3.7.4) / plan §A.7 작성 (§3.7.5) / Phase 5 NotificationModule scope 축소 (§3.7.6)
+
+### 1.6 Hackathon demo prep — in-flight
+
+| 항목              | 값                                                               |
+| ----------------- | ---------------------------------------------------------------- |
+| Background task   | `bg_06bb5b1c` (session `ses_171f986d7ffeBukBPyhqoQeYYT`)         |
+| Agent             | Sisyphus-Junior `visual-engineering` + `frontend-ui-ux` skill    |
+| Status at handoff | in-flight                                                        |
+| Scope             | 9 fixes (P0 4 + P1 3 + P2 2)                                     |
+| 작업 영역         | apps/web/src/\*\* + packages/shared/src/fixtures/factory-data.ts |
+
+**fix items**:
+
+- P0 #1 `/request` 폼 demo prefill (1-click)
+- P0 #2 `/matching` AI reasoning UI 강화 ⭐️ (핵심 강조점)
+- P0 #3 `/request` submit 4-step loading effect (임베딩 / vector search / GPT-4o / 정리)
+- P0 #4 mock factory data 7-10개 보강 (인천 남동/안산 시화 + 6대 공정)
+- P1 #5 `/transactions/[id] → /disputes/mediation` query param prefill
+- P1 #6 `/factory/requests/[id]` 견적 sender → factory user
+- P1 #7 requestData 발주처 이름 → 테크솔루션 정합화 (mock user company)
+- P2 #8 WorkflowContext sessionStorage persist (contract/review/messages)
+- P2 #9 demo mode toggle (`?demo=true` URL param OR `NEXT_PUBLIC_DEMO_MODE`)
+
+**다음 세션 첫 액션 (필수)**:
+
+```typescript
+mcp_Background_output((task_id = 'bg_06bb5b1c'))
+// 결과 8-item report 검증:
+// 1. commit hash + subject (feat(web): hackathon demo prep — AI matching UX + ...)
+// 2. 9 fix items matrix ✓/✗
+// 3. Path A 발주처 10분 walkthrough 검증 결과
+// 4. AI 매칭 UX 강화 결과 (4-step loading + reasoning UI + fallback)
+// 5. Mock factory data inventory (7-10개, 문래정밀가공 Top-1/2 보장)
+// 6. Files modified + new files
+// 7. Verification gates (7 gates)
+// 8. Deviations + 발견된 demo risk
+```
+
+---
+
+## 2. Hackathon demo plan v1
+
+### 2.1 시연 컨텍스트
+
+| 항목           | 값                                                           |
+| -------------- | ------------------------------------------------------------ |
+| 시연 시기      | 이번 주 (3-5일)                                              |
+| 시연 시간      | 10분 walkthrough                                             |
+| 시연 강조점    | **AI 매칭 (기술 쇼케이스)** — PRD §4.3 3축 Moat 중 기술 차별 |
+| Mock OK        | 사용자 명시: "mock 데이터여도 상관없음, 시연만 가능하면 됨"  |
+| OPENAI_API_KEY | 빈값 → dev mock fallback 정상 동작 (실제 호출 불필요)        |
+
+### 2.2 Path A 발주처 10분 walkthrough
+
+| 분      | Step            | Page                                                                | 핵심 narration                                   |
+| ------- | --------------- | ------------------------------------------------------------------- | ------------------------------------------------ |
+| 0-1     | Intro           | `/` landing                                                         | 뿌리산업 65,101개 공장 + 분쟁 +42% YoY 문제 정의 |
+| 1-2     | 회원가입 + 역할 | `/login` (client) → `/role-select` → `/dashboard`                   | Better Auth scrypt + session + role guard        |
+| 2-3.5   | 발주 요청       | `/request` 폼 (demo prefill 1-click → 1.5min 단축)                  | "14일 걸리던 일을 3분에"                         |
+| 3.5-6.5 | **AI 매칭** ⭐️  | `/matching` Top-N + 신뢰점수/납기/거리/사유 (4-step loading 첫 ~3s) | vector search + GPT-4o + transparency (PRD §4.3) |
+| 6.5-7.5 | 계약            | `/contract` (문래정밀가공 선택, 고정)                               | 전자계약 (Snowsign) + escrow (토스)              |
+| 7.5-8.5 | 거래 진행       | `/transactions/TXN-2026-018`                                        | 진행률 + 납품 + 검수                             |
+| 8.5-9.5 | 리뷰            | `/transaction/review`                                               | 평판 시스템                                      |
+| 9.5-10  | 분쟁 안전망     | `/disputes/DSP-2026-014` (같은 거래의 분쟁)                         | Human-in-the-Loop 4단계                          |
+
+**선택 공장 고정**: 문래정밀가공 (TXN-2026-018 + DSP-2026-014 cross-ref 일관). 다른 공장 선택 시 transaction/dispute 데이터 mismatch.
+
+**새로고침 안전 구간** (P2 #8 적용 후): /matching, /contract, /transaction/review, /messages.
+
+### 2.3 Path B 공장 보조 3분 (선택)
+
+| Step | Page                        | Action                                                       |
+| ---- | --------------------------- | ------------------------------------------------------------ |
+| 1    | `/factory/onboarding`       | 공장 프로필 등록                                             |
+| 2    | `/factory/requests`         | `req-001` 알루미늄 하우징 선택                               |
+| 3    | `/factory/requests/req-001` | 견적 금액/납기/제안 작성 → 제출                              |
+| 4    | `/messages`                 | 견적 메시지 확인 (sender = factory user — P1 #6 fix 적용 후) |
+
+### 2.4 Path C 분쟁 (참고만, end-to-end 신청 X)
+
+- `/transactions/TXN-2026-018` → "문제 발생, 중재 요청" → `/disputes/mediation?txn=TXN-2026-018&counterparty=문래정밀가공&amount=4200000` (P1 #5 fix 적용 후) → 폼 prefill 확인 → 제출 → `/disputes` redirect → 기존 `/disputes/DSP-2026-014` 클릭하여 상세 설명
+
+**중요**: dispute mediation submit은 신규 생성 X — 기존 case 보여주기만 가능.
+
+### 2.5 Demo 직전 사용자 액션 checklist
+
+- [ ] `pnpm dev` (apps/web :3000 + apps/api :3001 병렬)
+- [ ] (선택) OPENAI_API_KEY 실제 발급 (실제 호출 보여주려면; mock도 OK)
+- [ ] Vercel preview 또는 localhost (네트워크 안정 시 localhost 권장)
+- [ ] Path A pre-rehearsal 1-2회 (cookie/session 정상 + AI 매칭 결과 일관)
+- [ ] Browser cache clear + sessionStorage 초기화 (시연 시작 전)
+- [ ] 발표자 화면 + 청중 시점 분리 (zoom in font, hide nav)
+
+---
+
+## 3. Phase 1.W2 closure 상태
+
+```text
+W2-1   ✅ Prisma + pgvector                          (467b73f)
+W2-2   ✅ Better Auth 1.6                            (f484ad5)
+W2-2.5 ✅ Tier 1+2 closure                          (b059cad, 23d917a, 02f8178, 6695887 등)
+W2-3   ✅ nestjs-zod global validation               (b5558a3)
+W2-4   ✅ Prisma seed (mock → DB)                    (1b37cbe)
+W2-5   ✅ Users + Companies + DTOs + e2e             (6451145)   ← 이번 세션
+Session C ✅ Design system (Toss + WCAG AAA)         (3679a34)
+Q10    ✅ CI matrix 5/5 green                        (multiple)
+W2-6   ✅ Security + Swagger + nestjs-pino           (ea2bd66)   ← 이번 세션 (Wave 4b closure)
+─────────────────────────────────────────────────────
+W2-7   ⏸ E2E + Neon CI branching                    (미시작; Q3 hybrid CI 결정 needed)
+```
+
+**Phase 1.W2 ≈ 95% complete** (W2-7만 남음).
+
+---
+
+## 4. 외부 의존성 6건 status update
+
+| #   | 항목                          | Phase | 이번 세션 update                                                           | 다음 action                                   |
+| --- | ----------------------------- | ----- | -------------------------------------------------------------------------- | --------------------------------------------- |
+| 1   | `(client)/quotes` 라우트 결정 | 2     | decision package committed (`7cdf6c2`)                                     | 사용자 결정 (Option A/B/C, 권장 B)            |
+| 2   | **전자계약 vendor 선정**      | 3     | **⏳ 부분 closure**: Snowsign 채택 (`815e782`) + sandbox/webhook 확인 대기 | 사용자 vendor 문의 (§3.7.2/§3.7.3)            |
+| 3   | 토스 escrow KYC               | 4     | ⏸ 미착수                                                                   | 사용자 사업자 KYC 진행                        |
+| 4   | Prod 도메인                   | 6     | ⏸ 미착수                                                                   | `rootmatching.com` 확정                       |
+| 5   | Neon ap-northeast-2 region    | 6     | ⏸ 미착수                                                                   | Prod 이전 시점                                |
+| 6   | 카카오 알림톡 비즈            | 5     | ⏸ 미착수 + **scope 축소 가능** (Snowsign 자체 알림톡으로 계약 알림 cover)  | Bizmsg/NHN 계정 + 비계약 거래 template만 등록 |
+
+---
+
+## 5. backlog v0.6 §3.5 + §3.7 상세
+
+### 5.1 §3.5 Wave 3b W2-5 후속 (6 항목)
+
+| #      | 항목                                                  | Tier          | 의존                                                              |
+| ------ | ----------------------------------------------------- | ------------- | ----------------------------------------------------------------- |
+| §3.5.1 | `role.mapper.ts` deferred                             | Tier 3 NICE   | Frontend legacy enum 폐기 결정 (Phase 2+)                         |
+| §3.5.2 | `UserProfileUpdateSchema` scope expansion             | Tier 3 NICE   | Phase 2 profile UI 작업 시점                                      |
+| §3.5.3 | `Company.bizNumber` Prisma schema gap                 | Tier 2 SHOULD | PRD §6 검토 (B2B 사업자등록번호 필수)                             |
+| §3.5.4 | `AccountType` + `CompanyRole` single SoT verification | Tier 2 SHOULD | assertSameSet runtime check 추가                                  |
+| §3.5.5 | `seed.e2e` retry hardening 일반화                     | Tier 3 NICE   | §3.4.2 CI matrix 추가 시점                                        |
+| §3.5.6 | W2-6 Swagger `.meta({id})` propagation                | Tier 2 SHOULD | W2-6 verification에 fold-in (이미 완료, `ea2bd66`로 부분 closure) |
+
+### 5.2 §3.7 Wave 4b W2-6 + Phase 3 prep (6 항목)
+
+| #      | 항목                                                         | Tier          | 의존                                        |
+| ------ | ------------------------------------------------------------ | ------------- | ------------------------------------------- |
+| §3.7.1 | vendor 결정 (Snowsign 채택)                                  | Tier 1 MUST   | ✅ **CLOSED** (snowsign-api-reference v0.1) |
+| §3.7.2 | webhook 지원 vendor 문의                                     | Tier 1 MUST   | 사용자 vendor 응답                          |
+| §3.7.3 | sandbox + 가격 + 변경계약서 vendor 문의                      | Tier 1 MUST   | 사용자 vendor 응답                          |
+| §3.7.4 | PRD v0.5 + mvp-roadmap v1.3 갱신 (vendor + Phase 5 scope)    | Tier 2 SHOULD | §3.7.2 + §3.7.3 응답 (또는 partial wording) |
+| §3.7.5 | plan §A.7 Phase 3 delegation prompt                          | Tier 2 SHOULD | gitignored plan; W2-6 closure 후 작성 가능  |
+| §3.7.6 | Phase 5 NotificationModule scope 축소 (Snowsign vendor 활용) | Tier 3 NICE   | §3.7.4 fold-in 또는 mvp-roadmap v1.3        |
+
+---
+
+## 6. 작업 금지 영역 (다음 세션 reminder)
+
+| 영역                                                                                                           | 이유                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/{auth,prisma,health,matching,users,companies}/**` core logic                                     | W2-2/W2-3/W2-5/W2-6 frozen — demo prep 시 미터치                                                          |
+| `apps/api/src/{main.ts,app.module.ts}`                                                                         | W2-6 closure 후 frozen 추정                                                                               |
+| `apps/api/prisma/schema.prisma`                                                                                | W2-4 territory                                                                                            |
+| Better Auth code (auth.config.ts)                                                                              | W2-2 + W2-6 fold-in                                                                                       |
+| `apps/api/test/{auth,matching,validation,seed,users,companies,throttler,security-headers,swagger}.e2e-spec.ts` | W2-2~W2-6 territories                                                                                     |
+| `.github/workflows/ci.yml` (matrix 변경)                                                                       | backlog §3.4.2 territory (W2-7 Q3 hybrid 결정 후)                                                         |
+| Force push                                                                                                     | NEVER — dead commits (`b89f7a6`, `bf7c0a7`) 는 dev-monorepo → main PR squash 시점에 정리 (backlog §3.4.6) |
+
+**demo prep 작업 (`bg_06bb5b1c`) 영역 (다음 세션 결과 retrieve 후)**:
+
+- `apps/web/src/app/(client)/{request,matching,contract}/page.tsx` (UI 강화)
+- `apps/web/src/app/(common)/{transactions/[id],disputes/mediation}/page.tsx` (prefill)
+- `apps/web/src/app/(factory)/factory/requests/[id]/page.tsx` (sender fix)
+- `apps/web/src/state/WorkflowContext.tsx` (persist)
+- `apps/web/src/data/{requestData,transactionData,disputeData}.ts` (정합화)
+- `packages/shared/src/fixtures/factory-data.ts` (보강)
+- `apps/web/src/lib/demo-mode.ts` (NEW, helper)
+
+---
+
+## 7. 다음 세션 첫 메시지 후보
+
+### 후보 1 — Demo prep 결과 검증 + rehearsal (가장 권장, 핵심 path)
+
+> "demo prep agent (`bg_06bb5b1c`) 결과 retrieve 해서 9 fixes 검증해줘. 본 핸드오프 (`docs/handoffs/2026-06-03-w2-6-snowsign-demo-prep.md`) §1.6 + §2 참고. 이후 Path A 10분 manual rehearsal 진행."
+
+### 후보 2 — Vercel preview 배포 + 시연 환경 검증
+
+> "demo prep agent 결과 검증 후 Vercel preview에 배포. 시연 환경에서 Path A walkthrough 검증 (cookie/session 정상, AI 매칭 결과 일관). 발견된 bug fix."
+
+### 후보 3 — Snowsign vendor 응답 fold-in (별도 path)
+
+> "Snowsign vendor 문의 응답 받았어. webhook=○○ / sandbox=○○ / 가격=○○ / 변경계약서=○○. backlog §3.7.2/§3.7.3 fold-in + PRD v0.5 갱신 진행."
+
+### 후보 4 — W2-7 진입 (Phase 1.W2 마무리)
+
+> "W2-7 (E2E + Neon CI branching) 진입. Q3 hybrid CI 결정 = ○○ (ephemeral Neon / Docker pgvector / SQLite shim). plan §A.7는 추후."
+
+### 후보 5 — Phase 2 진입 준비 (해커톤 후)
+
+> "해커톤 시연 끝났어. Phase 2 (견적/매칭 persist) 진입 준비. Path A demo prep 산출물 (mock factory + AI reasoning UI) 살리면서 backend persist 추가."
+
+---
+
+## 8. 환경 정보
+
+```text
+OS:           macOS (darwin)
+Node:         v22.22.3 (nvm) — 필수 ≥ 22.13
+pnpm:         11.3.0 (corepack)
+저장소:        /Users/uni-claw/dev/root-match
+remote:       origin (push 정책: 명시 요청 시에만; 본 세션 3차례 push)
+Neon:         Postgres 18.4 / us-east-2 / branch `production` / pgvector 0.8.1
+CI:           GitHub Actions, ubuntu-latest, Node 22, pnpm 11.3.0
+              quality matrix 5 jobs: lint / format:check / typecheck / build / guard:no-mock-auth
+              push.branches: [main, dev, dev-monorepo]
+              latest run 26892983228 (HEAD `9a5b5f5`) status: in_progress at handoff
+```
+
+### Commit 명령어 보일러플레이트 (husky 호환)
+
+```bash
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+git commit -m "..." -m "..."
+```
+
+### 검증 명령 빠른 참조
+
+```bash
+# 매 변경 후
+pnpm -r typecheck && pnpm lint && pnpm format:check
+pnpm guard:no-mock-auth
+
+# 풀 빌드 + 테스트
+pnpm -r run build
+pnpm -r test
+pnpm --filter @rootmatching/api test:e2e --runInBand     # 10 suites / 24 tests pass
+
+# Web Playwright
+pnpm --filter @rootmatching/web exec playwright test
+
+# Prisma
+pnpm --filter @rootmatching/api exec prisma generate
+pnpm --filter @rootmatching/api exec prisma migrate dev --name <name>
+pnpm --filter @rootmatching/api exec prisma migrate status
+
+# Health smoke
+curl -s http://localhost:3001/health/db | jq
+
+# W2-6 verification (9 schemas emit)
+curl -s http://localhost:3001/docs-json | jq '.components.schemas | keys'
+# 기대: ["AccountType", "CompanyRole", "CompanyUpdate", "Login", "QuoteRequestDraft", "Register", "UserProfile", "UserProfileUpdate", "UserRole"]
+
+# W2-6 throttler verification (Q5 twin-layer)
+for i in {1..6}; do curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3001/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{"email":"hong@techsolution.co.kr","password":"wrong"}'; done
+# 기대: 200/200/200/429... (Better Auth own 4th) or 200×5 + 429 (NestJS auth-strict 6th)
+
+# Demo path A 검증 (W2-5/W2-6 commits)
+pnpm --filter @rootmatching/api exec prisma migrate reset --force --skip-seed && \
+pnpm --filter @rootmatching/api exec prisma db seed
+pnpm dev &
+sleep 8
+
+# signin + /users/me + /companies/me (W2-5)
+curl -i -X POST http://localhost:3001/api/auth/sign-in/email \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"hong@techsolution.co.kr","password":"TempPass!2026"}' -c /tmp/cookies.txt
+curl -i http://localhost:3001/users/me -b /tmp/cookies.txt
+# 기대: { email: "hong@techsolution.co.kr", name: "홍길동", accountType: "client", role: "admin", ... }
+curl -i http://localhost:3001/companies/me -b /tmp/cookies.txt
+# 기대: { name: "테크솔루션", ... }
+
+# CI 상태 확인 (gh)
+gh run list --repo "L-dragon-woo/DGU-Technology-start-up-capstone" --branch dev-monorepo --limit 3
+```
+
+---
+
+## 9. ⚠️ 다음 세션 사용자 immediate action items
+
+1. **Snowsign vendor 콘솔 → 노출된 API key revoke + 새 key 발급** (chat transcript 보안 위험)
+2. **Snowsign vendor 문의** (backlog §3.7.2 + §3.7.3):
+   - webhook 지원 여부 + signing secret + retry policy
+   - sandbox URL + dev key 발급 + 월 사용량 면제
+   - 단가 + 월 한도 + 결제 주기
+   - 변경계약서 (FR-5.6 P1) 지원 패턴
+3. (선택) OPENAI_API_KEY 발급 (시연 시 실제 OpenAI 호출 보여주려면)
+4. (선택) Vercel preview 환경 변수 setup (시연용 배포)
+
+---
+
+## 10. 변경 이력
+
+| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v1.0 | 2026-06-03 | 신규 작성 — Wave 3b W2-5 (`6451145`) + Tier 1 parallel side-quests 5 commits (`e47045c` + `7cdf6c2` + `78d0bfa` + `08984ff` + `73dbc0d`) + plan v0.12 (gitignored) + backlog v0.5 (`bb66a4f`) + W2-6 spec v0.2 (`dbc97d7`) + Wave 4b W2-6 (`ea2bd66`) + Snowsign vendor reference (`815e782`) + backlog v0.6 (`9a5b5f5`) 통합 closure 시점 master ref doc. CI quality matrix 5/5 green at runs 26890386896 + 26890684223 (HEAD `9a5b5f5`). Hackathon demo prep agent (`bg_06bb5b1c`, in-flight at handoff commit) — visual-engineering + frontend-ui-ux skill, 9 fixes (P0 4 + P1 3 + P2 2) for AI matching shine + mock data 보강 + WorkflowContext persist. Phase 1.W2 ≈ 95% complete (W2-7만 남음). Phase 3 vendor 결정 Snowsign closure (외부 dep #2 부분 closure; sandbox/webhook 확인 대기). ⚠️ Security alert: 사용자 chat에 API key 일부 노출 (file system 어디에도 저장 안 됨, 그러나 chat transcript 위험 → 사용자 측 vendor 콘솔 rotate 권고). 다음 세션 첫 액션: `background_output(task_id="bg_06bb5b1c")` → 9 fixes 결과 검증 → Path A manual rehearsal → Vercel preview 배포 → 최종 rehearsal. 이전 master `2026-06-03-wave-3a-q10-session-c-complete.md` v1.0은 historical reference로 보존. |

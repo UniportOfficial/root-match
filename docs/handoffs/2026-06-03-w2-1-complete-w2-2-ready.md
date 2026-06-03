@@ -327,27 +327,31 @@ Wave 5:         W2-7 (Neon CI branching + E2E gate)
 
 ### ✅ Q1-Q10 RESOLVED + 적용됨
 
-| Q                          | 결정                                                                                                 | 본 세션 적용                          |
-| -------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Q1 UserRole vs AccountType | Dual-enum: `UserRole {admin,member,operator}` + `AccountType {client,factory}` (lowercase)           | ✅ W2-1 migration에 반영              |
-| Q2 PK strategy             | `cuid()`                                                                                             | ✅ W2-1 migration에 반영              |
-| Q3 Neon CI branching       | 하이브리드 — ephemeral Neon branch + Docker pgvector services block                                  | W2-7에서 적용                         |
-| Q4 Throttler storage       | In-memory MVP + explicit Redis migration trigger before horizontal scale                             | W2-6에서 적용                         |
-| Q5 Better Auth cookies     | `BETTER_AUTH_URL.startsWith('https://')` 기반 + prod `crossSubDomainCookies`                         | W2-2에서 적용                         |
-| Q6 additionalFields enum   | Prisma SoT + exported `assertSameSet()` boot-time guard + accountType `validator.input: z.enum(...)` | W2-2에서 적용                         |
-| Q7 Mock-user 비밀번호      | dev/CI 고정 `TempPass!2026`                                                                          | W2-4 + W2-2 Playwright smoke에서 적용 |
-| Q8 Where Option C lives    | Direct in `MatchingModule`                                                                           | Wave 4a에서 적용                      |
-| Q9 Better Auth CLI version | `@better-auth/cli@latest` (1.4.21) + W2-2 sub-step 2 dry-run smoke gate                              | W2-2 first action                     |
-| Q10 CI Node 22 mismatch    | ci.yml node-version: 22 + package.json engines.node >=22.13.0                                        | ✅ commit `13e90c1`                   |
+| Q                          | 결정                                                                                                                                                                                                                                                                | 본 세션 적용                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Q1 UserRole vs AccountType | Dual-enum: `UserRole {admin,member,operator}` + `AccountType {client,factory}` (lowercase)                                                                                                                                                                          | ✅ W2-1 migration에 반영              |
+| Q2 PK strategy             | `cuid()`                                                                                                                                                                                                                                                            | ✅ W2-1 migration에 반영              |
+| Q3 Neon CI branching       | 하이브리드 — ephemeral Neon branch + Docker pgvector services block                                                                                                                                                                                                 | W2-7에서 적용                         |
+| Q4 Throttler storage       | In-memory MVP + explicit Redis migration trigger before horizontal scale                                                                                                                                                                                            | W2-6에서 적용                         |
+| Q5 Better Auth cookies     | `BETTER_AUTH_URL.startsWith('https://')` 기반 + prod `crossSubDomainCookies`                                                                                                                                                                                        | W2-2에서 적용                         |
+| Q6 additionalFields enum   | Prisma SoT + exported `assertSameSet()` boot-time guard + accountType `validator.input: z.enum(...)`                                                                                                                                                                | W2-2에서 적용                         |
+| Q7 Mock-user 비밀번호      | dev/CI 고정 `TempPass!2026`                                                                                                                                                                                                                                         | W2-4 + W2-2 Playwright smoke에서 적용 |
+| Q8 Where Option C lives    | Direct in `MatchingModule`                                                                                                                                                                                                                                          | Wave 4a에서 적용                      |
+| Q9 Better Auth CLI version | `@better-auth/cli@1.4.21` dry-run **INCOMPATIBLE** (`kAPIErrorHeaderSymbol` skew with `@better-auth/core@1.6.13` transitive) → fallback **(c)** hand-authored §7.1.3 snippet (already in schema.prisma); no schema mutation; future re-attempt when CLI 1.6.x ships | ✅ commit `f484ad5` (W2-2)            |
+| Q10 CI Node 22 mismatch    | ci.yml node-version: 22 + package.json engines.node >=22.13.0                                                                                                                                                                                                       | ✅ commit `13e90c1`                   |
 
 ### 🟡 Deferred (non-blocking)
 
-| 항목                                             | 처리 시점                                             |
-| ------------------------------------------------ | ----------------------------------------------------- |
-| Q11 `prisma.config.ts` migration                 | Prisma 7 upgrade 시 함께                              |
-| §A.2 Gap C MIGRATION.md                          | W2-2.5 follow-up backlog (✅ v0.8 [MUST NOT DO] 명시) |
-| Plan §11.1 baseline-existing-DB fallback pattern | ✅ v0.8 applied (handoff v1.1)                        |
-| Plan §16 footer Momus v0.7-delta verdict 인용    | ✅ v0.8 applied (handoff v1.1)                        |
+| 항목                                                      | 처리 시점 / 현재 상태                                                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Q11 `prisma.config.ts` migration                          | Prisma 7 upgrade 시 함께                                                                           |
+| §A.2 Gap C MIGRATION.md                                   | ✅ **W2-2.5 applied** — `apps/api/MIGRATION.md` (commit `b059cad`)                                 |
+| Plan §11.1 baseline-existing-DB fallback pattern          | ✅ v0.8 applied (handoff v1.1)                                                                     |
+| Plan §16 footer Momus v0.7-delta verdict 인용             | ✅ v0.8 applied (handoff v1.1)                                                                     |
+| PrismaService Pattern (a) backfill                        | ✅ **W2-2.5 applied** — header comment + `docs/specs/prisma-service-pattern.md` (commit `23d917a`) |
+| PrismaService Pattern (a) → (b) refactor                  | Phase 2 또는 W2-6 (trigger conditions 충족 시); grep tag `HORIZONTAL_SCALE_TRIGGER`                |
+| W2-2.5 Tier 2 (mock auth regression guard + handoff v1.2) | W2-2.5 backlog §3.2 — Wave 3a 진입 전                                                              |
+| W2-2.5 Tier 3 (husky Node 22 자동화 + AC pattern doc)     | 기회 있을 때, max W2-7 전                                                                          |
 
 ### 🔴 외부 의존성 (사용자가 해결)
 

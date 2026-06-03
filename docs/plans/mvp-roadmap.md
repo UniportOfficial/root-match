@@ -40,16 +40,21 @@
 | Login form                   | mock 계정 2개만 (`hong@techsolution.co.kr`, factory)                    |
 | `/request → /matching` flow  | 1-step 동작하나 sessionStorage 의존 (새로고침 시 손실)                  |
 
-### 1.3 ❌ 미구현 (대부분)
+### 1.3 미구현 (Phase 1.W2 진행 중 업데이트 — 2026-06-03)
 
-- **인증**: Better Auth 0%, 비밀번호 hash 0%, DB session 0%
-- **API endpoint**: 27 라우트 중 1개만 실 백엔드. 나머지 26개는 mock/Context
-- **Prisma**: 의존성도 없음, schema 없음, migration 없음
-- **DB**: Neon 연결 0%
-- **파일 업로드/다운로드**: UI만, 실제 storage 0%
-- **외부 통합**: 토스페이먼츠, 모두싸인, 카카오 알림톡 0%
-- **거래 state machine**: 0% (`transactionData.ts` fixture)
-- **분쟁 case 영속**: 0% (제출 시 단순 redirect)
+**✅ Phase 1.W2 진행 중 해결**:
+
+- **인증**: Better Auth ✅ (W2-2 commit `f484ad5`) — signup/signin/session/middleware/role/accountType 작동; 비밀번호 hash (Better Auth scrypt) ✅; DB session ✅
+- **Prisma**: ✅ (W2-1 commit `467b73f`) — 9 models + 4 enums + pgvector 0.8.1 + 1 migration history
+- **DB**: Neon ✅ (us-east-2, Postgres 18.4, pooled connection)
+- **API endpoint**: 27 라우트 중 2개 실 백엔드 (`/matching/recommend` + `/auth/*`) + `/auth/me` + `/health/db`; 나머지는 Wave 3+ 진행 예정 (W2-5 Users/Companies, Phase 2 Quote/Request)
+
+**❌ 여전히 미구현**:
+
+- **파일 업로드/다운로드**: UI만, 실제 storage 0% (Phase 2)
+- **외부 통합**: 토스페이먼츠 0%, 모두싸인/이폼사인 0%, 카카오 알림톡 0% (Phase 3-5; 사용자 외부 의존)
+- **거래 state machine**: 0% (`transactionData.ts` fixture; Phase 4)
+- **분쟁 case 영속**: 0% (제출 시 단순 redirect; Phase 5)
 
 ### 1.4 📦 보유 자산 (재활용 가능)
 
@@ -67,17 +72,18 @@
 
 > **모든 후속 Phase가 여기에 막힘**. Better Auth + Prisma 없으면 어떤 도메인도 API화 불가.
 
-| #    | 작업                                                                                                                              |    Effort    | 핵심 함정                                                                                              | 검증                                             |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------- | :----------: | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| W2-1 | **Prisma 6 + Neon + pgvector** schema 작성, migration, PrismaService                                                              |   M (2-3d)   | DIRECT_URL vs DATABASE_URL, pgvector는 raw SQL (`Unsupported("vector")`)                               | `prisma migrate dev` + `GET /health/db`          |
-| W2-2 | **Better Auth 통합** (NestJS mount + Next.js 15 sync + Prisma adapter)                                                            | **L (5-7d)** | body-parser 순서, `trustedOrigins`, cookie sync, mock 계정 → real user 마이그레이션                    | `signIn.email` + protected route 401             |
-| W2-3 | **nestjs-zod DTO** + global `ZodValidationPipe` (shared schema 활용)                                                              |    S (1d)    | shared import 경계, transform 과사용 시 Swagger drift                                                  | invalid body → 400 + zod error                   |
-| W2-4 | **Mock fixtures → Prisma seed** (`apps/web/src/data/*.ts` 9개 → `apps/api/prisma/seed.ts`)                                        |   M (2-3d)   | 관계 seed 순서 (user→company→factory→request), idempotency (upsert), password는 Better Auth signup으로 | `migrate reset` 후 seed 통과, 2회 실행 후 중복 0 |
-| W2-5 | **Users + Companies 모듈** (`BetterAuthGuard` 적용)                                                                               |    M (2d)    | `User.role` enum 확장 (additionalFields)                                                               | `GET /users/me` + `PATCH /companies/:id`         |
-| W2-6 | **운영 보안** (`@nestjs/throttler` + `helmet` + `nestjs-pino` + cookie-parser) + **Swagger** (zod-to-openapi `cleanupOpenApiDoc`) |  S-M (2-3d)  | matching endpoint는 expensive → 별도 rate limit, CSP는 Swagger UI와 충돌 가능                          | `/docs` 접속, 5회 호출 후 429                    |
-| W2-7 | **E2E 테스트** (Nest supertest + 시나리오 #1, #2 Playwright)                                                                      |   M (2-3d)   | test DB 격리, OpenAI는 mock fallback 고정                                                              | CI에서 동일 재현                                 |
+| #      | 작업                                                                                                                              |    Effort    |                           상태                           | 검증                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------- | :----------: | :------------------------------------------------------: | --------------------------------------------------------------------------------- |
+| W2-1   | **Prisma 6 + Neon + pgvector** schema 작성, migration, PrismaService                                                              |   M (2-3d)   |                   ✅ commit `467b73f`                    | `/health/db` → `{db:"up", vectorExtension:"enabled"}`                             |
+| W2-2   | **Better Auth 통합** (NestJS mount + Next.js 15 sync + Prisma adapter)                                                            | **L (5-7d)** |                   ✅ commit `f484ad5`                    | 9/9 gates PASS; signup curl 200 + Set-Cookie verified; Playwright smoke PASS      |
+| W2-2.5 | **Follow-up backlog** (MIGRATION.md + PrismaService Pattern (a) backfill + Q9 status)                                             |   S (0.5d)   | 🟡 Tier 1 진행 중 (commits `b059cad`, `23d917a`, [this]) | `docs/specs/w2-2.5-followup-backlog.md`                                           |
+| W2-3   | **nestjs-zod DTO** + global `ZodValidationPipe` (shared schema 활용)                                                              |    S (1d)    |                      ⏸ Wave 3a 예정                      | invalid body → 400 + zod error                                                    |
+| W2-4   | **Mock fixtures → Prisma seed** (`apps/web/src/data/*.ts` 9개 → `apps/api/prisma/seed.ts`)                                        |   M (2-3d)   |                      ⏸ Wave 3a 예정                      | `migrate reset` 후 seed 통과, 2회 실행 후 중복 0; password from `MIGRATION.md` §3 |
+| W2-5   | **Users + Companies 모듈** (`BetterAuthGuard` 적용)                                                                               |    M (2d)    |                      ⏸ Wave 3b 예정                      | `GET /users/me` + `PATCH /companies/:id`                                          |
+| W2-6   | **운영 보안** (`@nestjs/throttler` + `helmet` + `nestjs-pino` + cookie-parser) + **Swagger** (zod-to-openapi `cleanupOpenApiDoc`) |  S-M (2-3d)  |                      ⏸ Wave 4b 예정                      | `/docs` 접속, 5회 호출 후 429                                                     |
+| W2-7   | **E2E 테스트** (Nest supertest + 시나리오 #1, #2 Playwright)                                                                      |   M (2-3d)   |                      ⏸ Wave 5 예정                       | CI에서 동일 재현                                                                  |
 
-**Phase 1.W2 합산**: **13-20 working days** (3-4주 풀타임 또는 5-7주 파트타임)
+**Phase 1.W2 합산**: **13-20 working days** (3-4주 풀타임 또는 5-7주 파트타임). **현재 진행도**: W2-1 + W2-2 + W2-2.5 Tier 1 ≈ 8-10 engineer-day 완료. 잔여 W2-3 ~ W2-7 ≈ 8-13 engineer-day.
 
 ### 2.2 Phase 2 (발주 + 매칭 MVP) — 약 2-3주
 

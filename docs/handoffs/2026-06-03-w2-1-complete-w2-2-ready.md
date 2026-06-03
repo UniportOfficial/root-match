@@ -342,12 +342,12 @@ Wave 5:         W2-7 (Neon CI branching + E2E gate)
 
 ### 🟡 Deferred (non-blocking)
 
-| 항목                                             | 처리 시점                       |
-| ------------------------------------------------ | ------------------------------- |
-| Q11 `prisma.config.ts` migration                 | Prisma 7 upgrade 시 함께        |
-| §A.2 Gap C MIGRATION.md                          | W2-2.5 follow-up backlog (권장) |
-| Plan §11.1 baseline-existing-DB fallback pattern | plan v0.8 changelog row         |
-| Plan §16 footer Momus v0.7-delta verdict 인용    | plan v0.8 changelog row         |
+| 항목                                             | 처리 시점                                             |
+| ------------------------------------------------ | ----------------------------------------------------- |
+| Q11 `prisma.config.ts` migration                 | Prisma 7 upgrade 시 함께                              |
+| §A.2 Gap C MIGRATION.md                          | W2-2.5 follow-up backlog (✅ v0.8 [MUST NOT DO] 명시) |
+| Plan §11.1 baseline-existing-DB fallback pattern | ✅ v0.8 applied (handoff v1.1)                        |
+| Plan §16 footer Momus v0.7-delta verdict 인용    | ✅ v0.8 applied (handoff v1.1)                        |
 
 ### 🔴 외부 의존성 (사용자가 해결)
 
@@ -356,12 +356,12 @@ Wave 5:         W2-7 (Neon CI branching + E2E gate)
 3. **프로덕션 도메인 확정** — `crossSubDomainCookies.domain: 'rootmatching.com'`은 placeholder. W2-2 production deploy 전 실제 도메인으로 교체.
 4. **Neon region 결정** — 현재 us-east-2. prod 이전 시 ap-northeast-2 (Tokyo)로 재생성/마이그레이션 권장.
 
-### 📋 Documented gaps (handoff 명시 → 다음 plan-edit turn에서 처리)
+### 📋 Documented gaps (handoff 명시 → 처리 상태)
 
-1. Pre-edit TDD acceptance-criteria list 권장 (Oracle round 1 9 drift fixes 예방용) — W2-2 onwards
-2. Momus v0.7-delta re-review verdict [OKAY] — plan §16 footer 갱신 미수행 (이번 세션 doc-only patches skip 결정)
-3. §A.2 Gap C MIGRATION.md — Option 2 권장 (follow-up backlog)
-4. §A.1 baseline-existing-DB pattern — plan §11.1 정상화 권장
+1. Pre-edit TDD acceptance-criteria list 권장 (Oracle round 1 9 drift fixes 예방용) — W2-2 onwards (여전히 권장; W2-2 위임 prompt에 ADDENDUM으로 반영)
+2. ✅ Momus v0.7-delta re-review verdict [OKAY] — plan §16 footer 갱신 완료 (v0.8, handoff v1.1)
+3. ✅ §A.2 Gap C MIGRATION.md — Option 2 적용 (W2-2.5 follow-up backlog로 §A.2 [MUST NOT DO]에 명시)
+4. ✅ §A.1 baseline-existing-DB pattern — plan §11.1 새 sub-section + §A.1 CONDITIONAL SWAP RULE로 정상화
 
 ### 무해한 warning (현 시점 무시 가능)
 
@@ -477,20 +477,21 @@ W2-2로 바로 진입:
 
 ## 참고 문서
 
-| 파일                                                                   | 역할                                                 |
-| ---------------------------------------------------------------------- | ---------------------------------------------------- |
-| `docs/handoffs/2026-06-03-scenario-b-complete-w2-1-ready.md`           | 이전 entry-point (Q10 fix 전 시점)                   |
-| `docs/handoffs/2026-06-03-phase-1-w2-preflight-complete.md`            | Pre-Flight + Scenario B closure (audit trail)        |
-| `docs/handoffs/2026-05-26-phase-1-week-1-complete.md`                  | Phase 1.W1 완료                                      |
-| `docs/handoffs/2026-06-02-backend-api-branch-evaluation.md`            | feature/backend-api 브랜치 평가                      |
-| `docs/handoffs/2026-06-02-remaining-pages-functional-spec-complete.md` | functional-spec 잔여 페이지                          |
-| `docs/handoffs/2026-06-02-upstream-divergence-trial-merge.md`          | upstream divergence 분석                             |
-| `.sisyphus/plans/phase-1-w2.md` v0.7 §7.2 + §11.1 + §A.2               | W2-2 sub-steps + Q5/Q6/Q9 detail + delegation prompt |
+| 파일                                                                   | 역할                                                                                                                                                                        |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/handoffs/2026-06-03-scenario-b-complete-w2-1-ready.md`           | 이전 entry-point (Q10 fix 전 시점)                                                                                                                                          |
+| `docs/handoffs/2026-06-03-phase-1-w2-preflight-complete.md`            | Pre-Flight + Scenario B closure (audit trail)                                                                                                                               |
+| `docs/handoffs/2026-05-26-phase-1-week-1-complete.md`                  | Phase 1.W1 완료                                                                                                                                                             |
+| `docs/handoffs/2026-06-02-backend-api-branch-evaluation.md`            | feature/backend-api 브랜치 평가                                                                                                                                             |
+| `docs/handoffs/2026-06-02-remaining-pages-functional-spec-complete.md` | functional-spec 잔여 페이지                                                                                                                                                 |
+| `docs/handoffs/2026-06-02-upstream-divergence-trial-merge.md`          | upstream divergence 분석                                                                                                                                                    |
+| `.sisyphus/plans/phase-1-w2.md` v0.8 §7.2 + §11.1 + §A.2               | W2-2 sub-steps + Q5/Q6/Q9 detail + delegation prompt (v0.8 patches: §A.2 mapping note + Gap C MUST NOT DO + §11.1 baseline-DB pattern + §A.1 swap rule + §16 Momus verdict) |
 
 ---
 
 ## 변경 이력 (이 핸드오프 문서)
 
-| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                              |
-| ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v1.0 | 2026-06-03 | W2-1 완료 시점 entry-point doc 신규 생성. Q10 fix commit + W2-1 commit + DB state 직접 검증 + Architectural 검토 2회 (Supabase, NextAuth+Supabase 모두 reject) 기록. W2-2 진입을 위한 ORCHESTRATOR ADDENDUM template + 5-step 절차 명시. plan §A.2 Gap C / §A.1 baseline-existing-DB 패턴 documented gaps로 명시. |
+| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1.1 | 2026-06-03 | **Stage B 완료: plan v0.8 patches 5건 적용 (doc-only, gitignored plan + handoff 동기화).** (a) §A.2 [EXPECTED OUTCOME] intro에 13↔15 mapping note (Gap A low / Gap B low / Gap C medium RESOLVED) 추가. (b) §A.2 [MUST NOT DO]에 `[Gap C — RESOLVED]` MIGRATION.md 금지 추가 (W2-2.5 follow-up backlog 분리). (c) §16 footer "Momus v0.7-delta re-review still pending" → ACCEPT [OKAY] `ses_1738f515affePoepgbPew1Dsq6` 인용 + "End of plan v0.7" → "End of plan v0.8". (d) §11.1 새 sub-section "W2-1 Implementation Note: baseline-existing-DB fallback pattern" 추가 (Combined template Implementation notes 뒤 line 1146) — W2-1 commit `467b73f`의 4-step baseline-DB triplet 정상화. (e) §A.1 [MUST DO]에 "CONDITIONAL SWAP RULE" pointer 추가 — pre-applied CREATE EXTENSION 케이스를 §11.1 baseline-DB triplet으로 swap. (f) §16 changelog table에 v0.8 row 추가. Plan: 1595 → 1620 lines (+25). 본 핸드오프: Deferred + Documented gaps 섹션 상태 flip. **No code/schema changes; push 정책 변경 없음** (8 commits ahead 유지, W2-2 commit 후 한 번에 push 예정). |
+| v1.0 | 2026-06-03 | W2-1 완료 시점 entry-point doc 신규 생성. Q10 fix commit + W2-1 commit + DB state 직접 검증 + Architectural 검토 2회 (Supabase, NextAuth+Supabase 모두 reject) 기록. W2-2 진입을 위한 ORCHESTRATOR ADDENDUM template + 5-step 절차 명시. plan §A.2 Gap C / §A.1 baseline-existing-DB 패턴 documented gaps로 명시.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |

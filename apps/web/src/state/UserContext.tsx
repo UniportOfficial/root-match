@@ -5,40 +5,20 @@ import {
   useContext,
   useEffect,
   useReducer,
-  useRef,
   type Dispatch,
   type ReactNode,
 } from 'react'
 import type { Company, User } from '@rootmatching/shared'
-import {
-  AUTH_COOKIE_NAME,
-  ROLE_COOKIE_NAME,
-  clearAuthCookie,
-  setAuthCookie,
-} from '@/lib/auth-cookie'
-import { mockCurrentUser, mockFactoryUser } from '@/data/users'
+import { authClient } from '@/lib/auth-client'
+import { mockCompanies } from '@/data/companies'
 
 interface UserState {
   currentUser: User | null
   isAuthenticated: boolean
 }
 
-interface RegisterPayload {
-  id: string
-  email: string
-  name: string
-  companyName: string
-  company: Company
-  role?: User['role']
-  password: string
-  terms: boolean
-  position?: string
-  phone?: string
-}
-
 type UserAction =
   | { type: 'user/login'; payload: User }
-  | { type: 'user/register'; payload: RegisterPayload }
   | {
       type: 'user/updateProfile'
       payload: Partial<Pick<User, 'name' | 'avatar' | 'position' | 'phone'>>
@@ -55,19 +35,6 @@ function reducer(state: UserState, action: UserAction): UserState {
   switch (action.type) {
     case 'user/login':
       return { currentUser: action.payload, isAuthenticated: true }
-    case 'user/register': {
-      const user: User = {
-        id: action.payload.id,
-        email: action.payload.email,
-        name: action.payload.name,
-        company: action.payload.company,
-        role: action.payload.role ?? 'admin',
-        accountType: 'client',
-        ...(action.payload.position ? { position: action.payload.position } : {}),
-        ...(action.payload.phone ? { phone: action.payload.phone } : {}),
-      }
-      return { currentUser: user, isAuthenticated: true }
-    }
     case 'user/updateProfile':
       if (!state.currentUser) return state
       return { ...state, currentUser: { ...state.currentUser, ...action.payload } }
@@ -84,35 +51,46 @@ function reducer(state: UserState, action: UserAction): UserState {
 const StateContext = createContext<UserState | undefined>(undefined)
 const DispatchContext = createContext<Dispatch<UserAction> | undefined>(undefined)
 
-function readCookieValue(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
-  const raw = match?.[1]
-  return raw === undefined ? undefined : decodeURIComponent(raw)
+// Map a Better Auth session.user → local UI User shape.
+// W2-5 will fetch real Company via /companies; for now we fall back to the
+// first mock company so existing UI surfaces (AppHeader, dashboard, contract,
+// mypage, companies/[id]) keep rendering.
+function sessionUserToLocalUser(sessionUser: {
+  id: string
+  email: string
+  name: string
+  image?: string | null
+  role: string
+  accountType: string
+}): User | null {
+  const fallbackCompany = mockCompanies[0]
+  if (!fallbackCompany) return null
+  return {
+    id: sessionUser.id,
+    email: sessionUser.email,
+    name: sessionUser.name,
+    company: fallbackCompany,
+    role: (sessionUser.role as User['role']) ?? 'member',
+    accountType: (sessionUser.accountType as User['accountType']) ?? 'client',
+    ...(sessionUser.image ? { avatar: sessionUser.image } : {}),
+  }
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const hydratedRef = useRef(false)
+  const session = authClient.useSession()
 
   useEffect(() => {
-    if (hydratedRef.current) return
-    hydratedRef.current = true
-    const hasAuth = readCookieValue(AUTH_COOKIE_NAME) === '1'
-    if (!hasAuth) return
-    const role = readCookieValue(ROLE_COOKIE_NAME)
-    const restored = role === 'factory' ? mockFactoryUser : mockCurrentUser
-    dispatch({ type: 'user/login', payload: restored })
-  }, [])
-
-  useEffect(() => {
-    if (!hydratedRef.current) return
-    if (state.isAuthenticated && state.currentUser) {
-      setAuthCookie(state.currentUser.accountType)
+    if (session.isPending) return
+    if (session.data?.user) {
+      const localUser = sessionUserToLocalUser(session.data.user)
+      if (localUser) {
+        dispatch({ type: 'user/login', payload: localUser })
+      }
     } else {
-      clearAuthCookie()
+      dispatch({ type: 'user/logout' })
     }
-  }, [state.isAuthenticated, state.currentUser])
+  }, [session.isPending, session.data?.user])
 
   return (
     <StateContext.Provider value={state}>

@@ -1,58 +1,28 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { AUTH_COOKIE_NAME, ROLE_COOKIE_NAME } from '@/lib/auth-cookie'
+import { getSessionCookie } from 'better-auth/cookies'
 
 const PUBLIC_ROUTES = new Set<string>(['/', '/login', '/role-select'])
 
-const FACTORY_ONLY_PREFIXES = ['/factory/']
-const CLIENT_ONLY_PREFIXES = ['/request', '/matching', '/contract', '/transaction/', '/requests']
-
-function isPublic(pathname: string): boolean {
-  return PUBLIC_ROUTES.has(pathname)
-}
-
-function startsWithAny(pathname: string, prefixes: readonly string[]): boolean {
-  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix))
-}
-
-function redirectTo(req: NextRequest, target: string): NextResponse {
-  const url = req.nextUrl.clone()
-  url.pathname = target
-  url.search = ''
-  return NextResponse.redirect(url)
-}
-
+// Optimistic-redirect pattern per Better Auth docs `integrations/next.mdx:155-177,299-326`.
+// `getSessionCookie()` only checks cookie presence — it does NOT validate the session.
+// Real authorization happens in Server Components, API routes, and the NestJS
+// BetterAuthGuard (apps/api/src/auth/better-auth.guard.ts). Full session validation
+// in middleware requires Node-runtime middleware (`runtime: 'nodejs'`), stable in
+// Next.js 16 — deferred until then.
+// Role-based path partitioning (factory/* vs client/*) is also deferred — session
+// roles are not visible to edge middleware without a DB hit; W2-5 will move that
+// logic into Server Components where `authClient.getSession()` is cheap.
 export function middleware(req: NextRequest): NextResponse {
   const { pathname, search } = req.nextUrl
+  if (PUBLIC_ROUTES.has(pathname)) return NextResponse.next()
 
-  if (isPublic(pathname)) {
-    return NextResponse.next()
-  }
-
-  const hasAuth = req.cookies.has(AUTH_COOKIE_NAME)
-  if (!hasAuth) {
+  const sessionCookie = getSessionCookie(req)
+  if (!sessionCookie) {
     const loginUrl = req.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('redirectTo', pathname + (search ?? ''))
     return NextResponse.redirect(loginUrl)
   }
-
-  const role = req.cookies.get(ROLE_COOKIE_NAME)?.value
-  const isFactoryOnly = startsWithAny(pathname, FACTORY_ONLY_PREFIXES)
-  const isClientOnly = startsWithAny(pathname, CLIENT_ONLY_PREFIXES)
-
-  if (isFactoryOnly || isClientOnly) {
-    if (role !== 'client' && role !== 'factory') {
-      // Role-scoped route reached without a role cookie — force role selection.
-      return redirectTo(req, '/role-select')
-    }
-    if (role === 'client' && isFactoryOnly) {
-      return redirectTo(req, '/dashboard')
-    }
-    if (role === 'factory' && isClientOnly) {
-      return redirectTo(req, '/dashboard')
-    }
-  }
-
   return NextResponse.next()
 }
 

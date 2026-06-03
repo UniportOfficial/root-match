@@ -1,24 +1,32 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Factory, Sparkles } from 'lucide-react'
 import { AppButton } from '@/components/ui/AppButton'
-import { mockCurrentUser, mockFactoryUser } from '@/data/users'
-import { useUserDispatch } from '@/state/UserContext'
+import { authClient, type AccountTypeValue } from '@/lib/auth-client'
 
 export default function RoleSelectPage() {
   const router = useRouter()
-  const dispatch = useUserDispatch()
+  const session = authClient.useSession()
+  const [submitError, setSubmitError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function startAsClient() {
-    dispatch({ type: 'user/login', payload: mockCurrentUser })
-    router.push('/request')
-  }
-
-  function startAsFactory() {
-    dispatch({ type: 'user/login', payload: mockFactoryUser })
-    router.push('/factory/onboarding')
+  async function selectAccountType(accountType: AccountTypeValue, target: string) {
+    setSubmitError('')
+    if (!session.data?.user) {
+      router.push(`/login?redirectTo=${encodeURIComponent('/role-select')}`)
+      return
+    }
+    setIsSubmitting(true)
+    const { error } = await authClient.updateUser({ accountType })
+    setIsSubmitting(false)
+    if (error) {
+      setSubmitError(error.message ?? '계정 유형을 변경하지 못했습니다')
+      return
+    }
+    router.push(target)
   }
 
   return (
@@ -37,6 +45,12 @@ export default function RoleSelectPage() {
           </p>
         </header>
 
+        {submitError && (
+          <p className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-bold text-danger">
+            {submitError}
+          </p>
+        )}
+
         <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <article className="rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-brand-light hover:shadow-md sm:p-8">
             <Sparkles className="h-12 w-12 text-brand" />
@@ -44,7 +58,14 @@ export default function RoleSelectPage() {
             <p className="mt-3 min-h-16 text-base leading-7 text-ink-700">
               제작 의뢰를 등록하고 AI 추천 공장과 매칭하세요.
             </p>
-            <AppButton type="button" size="lg" fullWidth className="mt-8" onClick={startAsClient}>
+            <AppButton
+              type="button"
+              size="lg"
+              fullWidth
+              className="mt-8"
+              disabled={isSubmitting}
+              onClick={() => selectAccountType('client', '/request')}
+            >
               견적 요청 등록하기
             </AppButton>
           </article>
@@ -55,7 +76,14 @@ export default function RoleSelectPage() {
             <p className="mt-3 min-h-16 text-base leading-7 text-ink-700">
               공장 프로필을 등록하고 견적 기회를 받아보세요.
             </p>
-            <AppButton type="button" size="lg" fullWidth className="mt-8" onClick={startAsFactory}>
+            <AppButton
+              type="button"
+              size="lg"
+              fullWidth
+              className="mt-8"
+              disabled={isSubmitting}
+              onClick={() => selectAccountType('factory', '/factory/onboarding')}
+            >
               공장 프로필 등록하기
             </AppButton>
           </article>

@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r run typecheck",
+    "guard:no-mock-auth": "bash apps/api/scripts/check-no-mock-auth.sh",
     "prepare": "husky"
   },
   "devDependencies": {

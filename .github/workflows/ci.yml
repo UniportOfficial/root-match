@@ -25,6 +25,7 @@ jobs:
           - format:check
           - typecheck
           - build
+          - guard:no-mock-auth
 
     steps:
       - name: Checkout
@@ -46,7 +47,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build shared package
-        if: matrix.task != 'lint' && matrix.task != 'format:check'
+        if: matrix.task != 'lint' && matrix.task != 'format:check' && matrix.task != 'guard:no-mock-auth'
         run: pnpm --filter @rootmatching/shared run build
 
       - name: Run ${{ matrix.task }}

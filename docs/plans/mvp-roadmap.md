@@ -85,53 +85,182 @@
 
 **Phase 1.W2 합산**: **13-20 working days** (3-4주 풀타임 또는 5-7주 파트타임). **현재 진행도**: W2-1 + W2-2 + W2-2.5 Tier 1 ≈ 8-10 engineer-day 완료. 잔여 W2-3 ~ W2-7 ≈ 8-13 engineer-day.
 
-### 2.2 Phase 2 (발주 + 매칭 MVP) — 약 2-3주
+### 2.2 Phase 2 — 견적 요청 + 매칭 (Phase 1 후속, ~2주)
 
-기능 ID와 작업 매핑 (functional-spec §6 + ERD 기반):
+#### §2.1 `(client)/quotes` 라우트 충돌 해소 (외부 dep #1)
 
-| 도메인                | 작업                                                                                                  | functional-spec ID   | 우선순위 |
-| --------------------- | ----------------------------------------------------------------------------------------------------- | -------------------- | :------: |
-| **Request**           | `POST/GET/PATCH /quote-requests`, Prisma model, 6대 공정 enum                                         | REQ-001~006          |    P0    |
-| **Request 영속화**    | `POST /matching/recommend`에 `quote_requests` + `match_recommendations` write (옵션 C, 프런트 변경 0) | REQ-007/008, AIM-003 |    P0    |
-| **File upload**       | Vercel Blob (사진/검사결과서) + S3 presigned (도면, 최대 50MB)                                        | REQ-005, FR-2.2      |    P0    |
-| **Factory directory** | `GET /companies`, `GET /companies/:id`, 즐겨찾기 + 검색/필터                                          | COM-001~006          |    P0    |
-| **Factory profile**   | `POST/PATCH /factories/profile/me` + 포트폴리오 metadata                                              | FAC-001~004          |    P0    |
+`(client)/quotes`가 factory 대상 콘텐츠를 담고 있어 라우트 그룹과 의미 불일치. **Phase 2 진입 전** decision package 확정 필요 (handoff §3.4 #1).
 
-### 2.3 Phase 3 (견적 + 계약) — 약 2-3주
+- 옵션 A: `(client)/quotes` → `(factory)/quotes`로 이동 (URL 변경 없음, 그룹만 이동)
+- 옵션 B: `/quotes` 공개 게시판 유지 + factory-specific 라우트 분리
+- 결정 후 `middleware.ts` `CLIENT_ONLY_PREFIXES` 정합 검토
 
-| 도메인             | 작업                                                                            | functional-spec ID      | 우선순위 |
-| ------------------ | ------------------------------------------------------------------------------- | ----------------------- | :------: |
-| **Quote**          | `POST /factory/quote-requests/:id/quotes` + 견적 제출 시 메시지/알림 자동 생성  | FAC-005/006, FR-4.1~4.7 |    P0    |
-| **운영자 정제 큐** | `apps/web/src/app/(admin)/quotes/` 보호 segment + Admin 모듈                    | FR-4.4, FR-10.2         |    P0    |
-| **Contract**       | `POST /contracts` + Prisma model + 상태 머신 (`CREATED → SIGNED → ESCROW_PAID`) | CON-001~004, FR-5.1~5.6 |    P0    |
-| **전자서명**       | **모두싸인** 또는 **이폼사인** webhook 연동 + 계약서 PDF S3 저장                | FR-5.2/5.3              |    P0    |
+#### §2.2 견적 요청 폼 → 실제 Prisma persist + AI 매칭 호출
 
-### 2.4 Phase 4 (결제 + 거래) — 약 2-3주
+W2-5 (Users + Companies) + W2-4 seed 산출물 기반. `/request` 폼 제출 시 `quote_requests` + `match_recommendations` DB 저장 (옵션 C, 프런트 변경 0).
 
-| 도메인                        | 작업                                                                                            | 우선순위 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- | :------: |
-| **에스크로 결제**             | 토스페이먼츠 escrow API 연동 + 결제 webhook + **idempotency key** (DB unique constraint)        |    P0    |
-| **Transaction state machine** | XState 또는 NestJS Guards. `PRODUCTION → INSPECTION → COMPLETED` + `DELAYED`/`DISPUTED` 분기    |    P0    |
-| **납품/검수**                 | `POST /transactions/:id/updates`, `POST /transactions/:id/approve-inspection`. 파일 업로드 통합 |    P0    |
-| **평판 batch**                | NestJS Cron으로 매일 trustScore/deliveryRate/reorderRate 계산                                   |    P0    |
-| **리뷰**                      | `POST /transactions/:id/review` + 평점 집계                                                     |    P0    |
+- `POST /quote-requests` — Prisma `QuoteRequest` model, 6대 공정 enum, `BetterAuthGuard`
+- `POST /matching/recommend` 응답 직전 `match_recommendations` persist
+- Vercel Blob (사진/검사결과서) + S3 presigned URL (도면, 최대 50MB)
+- functional-spec REQ-001~008, AIM-003
 
-### 2.5 Phase 5 (분쟁 중재 + 운영 도구) — 약 2-3주
+#### §2.3 매칭 결과 → `/matching` 페이지 server-side rendering
 
-| 도메인              | 작업                                                                               |     우선순위     |
-| ------------------- | ---------------------------------------------------------------------------------- | :--------------: |
-| **Dispute 4단계**   | 접수 → 운영자 1차 → 양측 의견 → 결론. `PATCH /disputes/:id/status` + timeline 영속 |        P0        |
-| **Admin Dashboard** | 거래 모니터링, 분쟁 큐, 견적 정제 큐, CS 도구                                      |        P0        |
-| **알림 시스템**     | 카카오 알림톡 (Bizmsg/NHN Toast) + 이메일 (Resend/Sendgrid) — 단계별 트리거        | P0 (알림톡은 P1) |
-| **실시간 알림**     | NestJS WebSocket/SSE + 알림 unread count sync                                      |        P1        |
+현재 sessionStorage 의존 → Prisma 기반 서버 조회. mock fallback 정책 유지 (OpenAI key 미설정 시 dev/test mock 자동 반환).
 
-### 2.6 Phase 6 (베타) — 1개 집적지 시범 운영
+- `GET /matching/recommendations` — `matchRecommendations` DB 조회
+- `/matching` 페이지 server component + Prisma fetch
+- functional-spec AIM-001~005
 
-- 인천 남동 or 안산 시화 50공장 + 5발주처 온보딩 (운영자 콜드콜 + Human-in-the-Loop)
-- 11단계 워크플로 end-to-end 5건 이상 검증
-- 분쟁/정산 실측 데이터 수집
-- 성능 부하 (1,000 동시 사용자, PRD NFR-1.3)
-- 보안 침투 (OWASP Top 10, PRD NFR-2.6)
+#### §2.4 견적 history (`/requests/[id]`) — Prisma 기반 view
+
+- `GET /quote-requests` + `GET /quote-requests/:id` — Prisma 조회
+- `/requests` + `/requests/[id]` server component 전환 (mock data 제거)
+- functional-spec REQ-007/008
+
+#### §2.5 Lighthouse a11y 22 routes 검증
+
+backlog §3.4.5 (22개 미검증 라우트 visual regression) + §3.4.2 (CI matrix test:e2e 추가) 통합.
+
+- Phase 2 완료 시점 전체 27 라우트 Lighthouse a11y 100/100 목표
+- Session C 적용 완료 5 routes (100×5) 기준 확장
+- CI matrix에 lighthouse 검증 추가 검토
+
+#### §2.6 E2E regression (matching + quote-request 시나리오)
+
+- Playwright 시나리오 #1 (로그인 → 견적 요청 → 매칭 결과 → DB 확인)
+- Playwright 시나리오 #2 (새로고침 후 `/requests`에서 요청 목록 표시)
+- `apps/api/test:e2e --runInBand` (backlog §3.4.1 fix 포함)
+
+### 2.3 Phase 3 — 전자 계약 (외부 dep #2, 1-2주)
+
+#### §3.1 모두싸인 / 이폼사인 vendor 선정 (기준 비교 표)
+
+**Phase 3 진입 전** 업체 선정 완료 필요 (handoff §3.4 #2). 선정 기준:
+
+| 기준            | 모두싸인      | 이폼사인  |
+| --------------- | ------------- | --------- |
+| API 방식        | REST          | REST      |
+| Sandbox 제공    | ✅            | ✅        |
+| 한국 전자서명법 | ✅            | ✅        |
+| 가격 (월정액)   | 확인 필요     | 확인 필요 |
+| NestJS 레퍼런스 | 커뮤니티 있음 | 공식 SDK  |
+
+#### §3.2 API integration + sandbox 테스트
+
+- NestJS `ContractModule` 내 webhook 수신 엔드포인트
+- sandbox 환경에서 서명 요청 → 완료 webhook 수신 → DB 상태 전환 확인
+- `POST /contracts/:id/sign-request` — 서명 요청 발송
+
+#### §3.3 계약 서명 flow → `transactions` 모듈
+
+- `POST /contracts` — `Contract` Prisma model 생성 (`CREATED` 상태)
+- 서명 완료 webhook → `SIGNED` 전환
+- 계약서 PDF → S3 저장 + `contract.documentUrl` 업데이트
+- functional-spec CON-001~004, FR-5.1~5.6
+
+#### §3.4 서명 완료 → 다음 단계 (escrow) 전환 trigger
+
+- `Contract.status = SIGNED` → `Transaction` 생성 (`ESCROW_PENDING`)
+- 발주처에게 결제 안내 알림 (Phase 5 알림 모듈 의존)
+- 상태 머신: `CREATED → SIGNED → ESCROW_PAID`
+
+### 2.4 Phase 4 — 토스페이먼츠 escrow (외부 dep #3, 2-3주)
+
+#### §4.1 사업자 KYC 완료 대기 + 페이먼츠 가맹 등록
+
+**Phase 4 진입 전** 완료 필요 (handoff §3.4 #3).
+
+- 토스페이먼츠 escrow 사용을 위한 사업자 KYC 통과
+- 가맹점 등록 + sandbox 키 발급
+- 정산 주기 + 수수료 정책 확인 (PRD §4.5 참조)
+
+#### §4.2 escrow API 통합 (결제 → escrow hold → 정산)
+
+- `POST /payments/escrow` — 토스페이먼츠 escrow 결제 요청
+- `idempotency key` — DB unique constraint (`Transaction.tossOrderId`)
+- 결제 완료 webhook → `Transaction.status = ESCROW_PAID`
+- 납품 확인 → `POST /payments/escrow/:id/release` — 정산 처리
+
+#### §4.3 분쟁 시 escrow refund flow
+
+- `DISPUTED` 상태 진입 시 escrow hold 유지
+- 운영자 결론 → `REFUNDED` (발주처 환불) 또는 `SETTLED` (공장 정산)
+- `POST /payments/escrow/:id/cancel` — 환불 API 호출
+
+#### §4.4 회계 / 세금 처리 (적격증빙 발급)
+
+- 세금계산서 발행 트리거 (정산 완료 시)
+- 거래 내역 CSV 내보내기 (Admin dashboard)
+- PRD NFR-3.x 규정 준수
+
+### 2.5 Phase 5 — 알림 (외부 dep #6, 1주)
+
+#### §5.1 카카오 알림톡 비즈니스 계정 + 템플릿 등록
+
+**Phase 5 진입 전** 완료 필요 (handoff §3.4 #6).
+
+- 카카오 비즈니스 채널 개설 + 알림톡 서비스 신청
+- Bizmsg / NHN Cloud 연동 채널 선택
+- 템플릿 등록 (견적 요청 접수 / 매칭 완료 / 계약 서명 요청 / 결제 완료 / 납품 확인 요청 / 검수 완료)
+
+#### §5.2 NHN / Bizmsg 통합 (template-based)
+
+- NestJS `NotificationModule` — 알림톡 + 이메일(Resend/Sendgrid) 통합
+- template ID map → `apps/api/src/notifications/templates.ts`
+- 수신자 국제전화 포맷 처리 (+82)
+
+#### §5.3 transaction state 변경 → 알림 발송 hook
+
+주요 트리거:
+
+| 이벤트             | 수신자 | 채널   |
+| ------------------ | ------ | ------ |
+| 견적 요청 접수     | 운영자 | 이메일 |
+| 매칭 완료          | 발주처 | 알림톡 |
+| 계약 서명 요청     | 공장   | 알림톡 |
+| 결제 완료          | 공장   | 알림톡 |
+| 납품 확인 요청     | 발주처 | 알림톡 |
+| 검수 완료/분쟁발생 | 양측   | 알림톡 |
+
+#### §5.4 알림 history + retry
+
+- `Notification` Prisma model (`id`, `userId`, `type`, `channel`, `status`, `sentAt`, `retryCount`)
+- 발송 실패 시 최대 3회 retry (`@nestjs/schedule` cron)
+- Admin dashboard 알림 발송 로그 조회
+
+### 2.6 Phase 6 — Prod deploy + monitoring (외부 dep #4, #5)
+
+#### §6.1 도메인 확정 (rootmatching.com 또는 대체)
+
+**Prod deploy 전** 완료 필요 (handoff §3.4 #4).
+
+- `rootmatching.com` 가용 여부 + 등록
+- DNS 설정 (Vercel custom domain + Railway/Fly.io API subdomain)
+- TLS 자동 갱신 확인
+
+#### §6.2 Neon ap-northeast-2 region 재생성 (us-east-2 이전)
+
+**Prod 이전 시** 필요 (handoff §3.4 #5).
+
+- 현재 us-east-2 (Postgres 18.4 / pgvector 0.8.1) → ap-northeast-2 재생성
+- 데이터 마이그레이션 + connection string 갱신 (`apps/api/.env`)
+- latency 개선 목표: 한국 사용자 기준 < 50ms
+
+#### §6.3 Vercel + Railway/Fly 배포 자동화 (CI/CD)
+
+- `dev-monorepo` → `main` PR merge 시 Vercel preview 자동 배포
+- `main` push 시 Railway/Fly.io API 자동 배포 (GitHub Actions)
+- `prisma migrate deploy` — production migration 자동화
+- 환경변수 관리: Vercel env + Railway secrets
+
+#### §6.4 Datadog / Sentry monitoring + alerting
+
+- Sentry 에러 트래킹 (Next.js + NestJS 양쪽)
+- Datadog APM (또는 Fly.io metrics)
+- PRD NFR-1.3 부하 목표: 1,000 동시 사용자
+- PRD NFR-2.6 보안: OWASP Top 10 침투 테스트
+- Alerting: 서버 에러율 > 1% → Slack 알림
 
 ---
 
@@ -291,9 +420,48 @@ PRD §6.1을 코드 기준으로 풀어쓰면:
 
 ---
 
+## 10. 외부 의존성 현황 (handoff §3.4 cross-reference)
+
+Phase 진입 전 사용자가 직접 해결해야 하는 외부 의존성 6건. 각 Phase의 blocking 조건.
+
+| #   | 항목                                   | Blocking        | 현재 상태           | Action                                                                       |
+| --- | -------------------------------------- | --------------- | ------------------- | ---------------------------------------------------------------------------- |
+| 1   | `(client)/quotes` 라우트-디자인 결정   | Phase 2 진입 전 | ⏳ decision 작성 중 | 디자인 결정 + 라우트 그룹 이동 PR (Session C closure에서 Phase 2로 deferred) |
+| 2   | 모두싸인 / 이폼사인 업체 선정 + API 키 | Phase 3 진입 전 | ⏸ 미착수            | 업체 contract + sandbox API 키 발급                                          |
+| 3   | 토스페이먼츠 escrow KYC                | Phase 4 진입 전 | ⏸ 미착수            | 사업자 KYC 완료 + 가맹점 등록                                                |
+| 4   | Prod 도메인 확정                       | Prod deploy 전  | ⏸ 미착수            | `rootmatching.com` 확정 또는 대체 도메인 선택                                |
+| 5   | Neon region 결정                       | Prod 이전 시    | ⏸ 미착수            | us-east-2 → ap-northeast-2 재생성 (한국 latency 최적화)                      |
+| 6   | 카카오 알림톡 비즈니스 계정            | Phase 5 알림 시 | ⏸ 미착수            | Bizmsg / NHN Cloud 계정 + 알림톡 템플릿 등록                                 |
+
+> **주의**: vendor 선정 / 도메인 등 결정 자체는 사용자 영역. 기술 통합은 결정 완료 후 Phase에서 진행.
+
+---
+
+## 11. Phase 1.W2 closure 상태 (Phase 1 완료 임박)
+
+Wave 3a + Q10 + Session C closure 기준 (2026-06-03). W2-5 현재 fire 중.
+
+| 항목      | 상태                                                 | commit / 비고                       |
+| --------- | ---------------------------------------------------- | ----------------------------------- |
+| W2-1      | ✅ Prisma + pgvector                                 | `467b73f`                           |
+| W2-2      | ✅ Better Auth 1.6                                   | `f484ad5`                           |
+| W2-2.5    | ✅ Tier 1+2 closure                                  | `b059cad`, `23d917a`, `6695887` 등  |
+| W2-3      | ✅ nestjs-zod                                        | `b5558a3`                           |
+| W2-4      | ✅ Prisma seed                                       | `1b37cbe`                           |
+| Session C | ✅ Design system (Toss tokens + WCAG AAA)            | `3679a34`                           |
+| Q10       | ✅ CI matrix 5/5 green (run 26884509375)             | `6cb22d9` + `0fe48aa` + `7360d4f`   |
+| W2-5      | ⏳ Users + Companies (현재 fire 중)                  | Wave 3b — 완료 시 §11 갱신          |
+| W2-6      | ⏸ 보안 + Swagger (사전 spec 작성 중, backlog §3.4.4) | Wave 4b 예정; W2-5 green 후 진입    |
+| W2-7      | ⏸ E2E + Neon CI branching                            | Wave 5 예정; Q3 hybrid CI 결정 시점 |
+
+**Phase 1.W2 완료 기준**: W2-5 + W2-6 + W2-7 green → Phase 2 진입 가능.
+
+---
+
 ## 9. 변경 이력
 
 | 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                           |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v1.2 | 2026-06-03 | Phase 2/3/4/5/6 sub-task 구체화 (Phase 2: §2.1~§2.6 / Phase 3: §3.1~§3.4 / Phase 4: §4.1~§4.4 / Phase 5: §5.1~§5.4 / Phase 6: §6.1~§6.4). 외부 dep 6건 cross-reference (§10 신규). Phase 1.W2 closure 상태 매트릭스 (§11 신규). W2-5 ⏳ fire 중 상태 반영.                     |
 | v1.1 | 2026-06-03 | §6 housekeeping 5개 항목 중 3개 적용(① redirect stubs 제거 / ④ Hello World → `/health` / ⑤ backend-design-mapping.md 라벨 보강), 2개는 검토 결과 변경 불필요로 종결(② shared types 미사용 0개, ③ middleware 확장 후보 모두 부적합). 자세한 결과는 §6.1. §7 권장 순서 D로 진입. |
 | v1.0 | 2026-06-02 | 초기 작성. dev-monorepo HEAD `5f98508` 기준 MVP 백로그 + Critical Path + 1주 실행 가이드. explore + librarian 에이전트 검증 완료.                                                                                                                                              |

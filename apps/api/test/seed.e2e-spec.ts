@@ -8,11 +8,21 @@ const apiRoot = join(__dirname, '..');
 jest.setTimeout(60_000);
 
 function runPrisma(args: string[]): void {
-  execFileSync('pnpm', ['exec', 'prisma', ...args], {
-    cwd: apiRoot,
-    stdio: 'inherit',
-    env: process.env,
-  });
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      execFileSync('pnpm', ['exec', 'prisma', ...args], {
+        cwd: apiRoot,
+        stdio: 'inherit',
+        env: process.env,
+      });
+      return;
+    } catch (error) {
+      if (attempt === 3) {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2_000);
+    }
+  }
 }
 
 async function counts(): Promise<{
@@ -20,13 +30,25 @@ async function counts(): Promise<{
   companies: number;
   quoteRequests: number;
 }> {
-  const [users, companies, quoteRequests] = await Promise.all([
-    prisma.user.count(),
-    prisma.company.count(),
-    prisma.quoteRequest.count(),
-  ]);
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const [users, companies, quoteRequests] = await Promise.all([
+        prisma.user.count(),
+        prisma.company.count(),
+        prisma.quoteRequest.count(),
+      ]);
 
-  return { users, companies, quoteRequests };
+      return { users, companies, quoteRequests };
+    } catch (error) {
+      if (attempt === 3) {
+        throw error;
+      }
+      await prisma.$disconnect();
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2_000);
+    }
+  }
+
+  throw new Error('unreachable seed count retry state');
 }
 
 describe('Prisma seed e2e (W2-4)', () => {

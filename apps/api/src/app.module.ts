@@ -5,9 +5,11 @@ import { ZodError } from 'zod';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CompaniesModule } from './companies/companies.module';
 import { HealthModule } from './health/health.module';
 import { MatchingModule } from './matching/matching.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
 
 const ZodValidationPipe = createZodValidationPipe({
   createValidationException: (error: unknown) => {
@@ -25,7 +27,14 @@ const ZodValidationPipe = createZodValidationPipe({
 });
 
 @Module({
-  imports: [PrismaModule, AuthModule, MatchingModule, HealthModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    MatchingModule,
+    UsersModule,
+    CompaniesModule,
+    HealthModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,

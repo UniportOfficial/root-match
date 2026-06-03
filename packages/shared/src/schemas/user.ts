@@ -5,9 +5,34 @@ export const UserRoleSchema = z.enum(['client', 'factory', 'operator']).meta({
 })
 export type UserRole = z.infer<typeof UserRoleSchema>
 
+export const AccountTypeSchema = z.enum(['client', 'factory']).meta({
+  id: 'AccountType',
+})
+export type UserAccountType = z.infer<typeof AccountTypeSchema>
+
+export const CompanyRoleSchema = z.enum(['admin', 'member', 'operator']).meta({
+  id: 'CompanyRole',
+})
+export type CompanyRole = z.infer<typeof CompanyRoleSchema>
+
+export const UserProfileSchema = z
+  .object({
+    name: z.string().min(1, '이름을 입력하세요.'),
+    email: z.email({ error: '유효한 이메일을 입력하세요.' }),
+    accountType: AccountTypeSchema,
+    role: CompanyRoleSchema,
+  })
+  .meta({ id: 'UserProfile' })
+export type UserProfile = z.infer<typeof UserProfileSchema>
+
+export const UserProfileUpdateSchema = UserProfileSchema.pick({
+  name: true,
+}).meta({ id: 'UserProfileUpdate' })
+export type UserProfileUpdate = z.infer<typeof UserProfileUpdateSchema>
+
 export const LoginSchema = z
   .object({
-    email: z.string().email('유효한 이메일을 입력하세요.'),
+    email: z.email({ error: '유효한 이메일을 입력하세요.' }),
     password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
   })
   .meta({ id: 'Login' })
@@ -15,7 +40,7 @@ export type LoginInput = z.infer<typeof LoginSchema>
 
 export const RegisterSchema = z
   .object({
-    email: z.string().email('유효한 이메일을 입력하세요.'),
+    email: z.email({ error: '유효한 이메일을 입력하세요.' }),
     password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
     passwordConfirm: z.string().min(8),
     name: z.string().min(1, '이름을 입력하세요.'),

@@ -58,7 +58,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               type="button"
               onClick={() => setDropdownOpen((open) => !open)}
               className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white text-ink-700 transition hover:border-brand-light hover:text-brand"
-              aria-label="알림"
+              aria-label={totalUnreadCount > 0 ? `알림 ${totalUnreadCount}개` : '알림'}
             >
               <Bell className="h-5 w-5" />
               {totalUnreadCount > 0 && (

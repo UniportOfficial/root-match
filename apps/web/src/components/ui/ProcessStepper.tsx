@@ -23,21 +23,31 @@ export function ProcessStepper({ steps, currentStep, className }: ProcessStepper
         const isDone = stepNumber < currentStep
 
         return (
-          <li key={step.title} className="rounded-xl border border-border bg-surface-muted p-4">
+          <li
+            key={step.title}
+            className={cn(
+              'rounded-lg border bg-surface p-4 shadow-toss-sm transition',
+              isCurrent
+                ? 'border-brand bg-brand-light/60 shadow-toss-md ring-2 ring-brand-subtle'
+                : isDone
+                  ? 'border-success/30 bg-success-bg'
+                  : 'border-border bg-surface-subtle',
+            )}
+          >
             <div
               className={cn(
-                'mb-3 flex h-9 w-9 items-center justify-center rounded-full text-sm font-black',
+                'mb-3 flex h-10 w-10 items-center justify-center rounded-pill text-sm font-black shadow-toss-sm',
                 isCurrent
                   ? 'bg-brand text-white'
                   : isDone
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white text-ink-400',
+                    ? 'bg-success text-white'
+                    : 'bg-white text-ink-600 ring-1 ring-border',
               )}
             >
               {isDone ? <CheckCircle className="h-5 w-5" /> : stepNumber}
             </div>
-            <p className="text-sm font-bold text-ink-950">{step.title}</p>
-            <p className="mt-1 text-xs leading-5 text-ink-400">{step.description}</p>
+            <p className="text-base font-bold text-ink-950">{step.title}</p>
+            <p className="mt-1 text-sm leading-6 text-ink-800">{step.description}</p>
           </li>
         )
       })}

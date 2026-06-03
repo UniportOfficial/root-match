@@ -5,13 +5,78 @@
 @layer base {
   html {
     color-scheme: light;
+    font-size: 18px;
   }
 
   body {
     background-color: theme('colors.surface.muted');
-    color: theme('colors.ink.950');
+    color: theme('colors.ink.800');
+    font-size: 1rem;
+    line-height: 1.6;
     font-feature-settings: 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  *:focus-visible {
+    outline: 3px solid theme('colors.brand.DEFAULT');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button,
+  [role='button'],
+  a {
+    min-height: 48px;
+  }
+
+  input[type='file'].sr-only {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .bg-brand {
+    background-color: theme('colors.toss.blue.900') !important;
+  }
+
+  .text-brand {
+    color: theme('colors.toss.blue.900') !important;
+  }
+
+  .bg-danger {
+    background-color: theme('colors.toss.red.900') !important;
+  }
+
+  .text-danger {
+    color: theme('colors.toss.red.900') !important;
+  }
+}
+
+@layer utilities {
+  .tap-target-min {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  .tap-target-primary {
+    min-height: 56px;
+    min-width: 56px;
+  }
+
+  .tap-target-critical {
+    min-height: 64px;
+    min-width: 64px;
+  }
+
+  .text-body-senior {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .text-label-senior {
+    font-size: 17px;
+    line-height: 1.5;
+    font-weight: 500;
   }
 }

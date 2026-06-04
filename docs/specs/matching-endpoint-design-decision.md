@@ -246,5 +246,5 @@ async getRecommendations(@Param('id') id: string) { ... }
 - `docs/specs/backend-api-contract.md` 2-step shape 정의 (옵션 B reference)
 - `docs/specs/rootmatching-erd.md` `quote_requests` + `match_recommendations` ERD
 - `docs/specs/backend-design-mapping.md` `QuoteRequestStatus` + `MatchingSource` enum 정의
-- `docs/handoffs/2026-06-02-backend-api-branch-evaluation.md` 채택 결정
+- `docs/handoffs/archive/2026-06-02-backend-api-branch-evaluation.md` 채택 결정
 - `apps/api/src/matching/services/ai-matching.service.ts` 현재 1-step 구현

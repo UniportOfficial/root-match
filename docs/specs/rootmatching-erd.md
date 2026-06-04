@@ -33,7 +33,7 @@
 > ### 관련 거부 결정
 >
 > 동일 브랜치의 Spring Boot 코드(`backend/`), Vue 코드(`frontend/`), MySQL `docker-compose.yml`은 채택하지 않습니다.
-> 사유: `docs/handoffs/2026-06-02-backend-api-branch-evaluation.md`
+> 사유: `docs/handoffs/archive/2026-06-02-backend-api-branch-evaluation.md`
 
 ---
 

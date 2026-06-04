@@ -1,13 +1,13 @@
 # Decision: /quotes 라우트 그룹 위치
 
-| 항목                             | 내용                                                                                    |
-| -------------------------------- | --------------------------------------------------------------------------------------- |
-| **Status**                       | PROPOSED (waiting for stakeholder decision)                                             |
-| **Stakeholder (decision owner)** | 사용자 (디자인 PM 역할)                                                                 |
-| **Deadline**                     | Phase 2 진입 전 (target: 2026-06 중순)                                                  |
-| **Decision ID**                  | D-001                                                                                   |
-| **Created**                      | 2026-06-03                                                                              |
-| **Related external dep**         | handoff §3.4 외부 dep #1 (`docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md`) |
+| 항목                             | 내용                                                                                            |
+| -------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Status**                       | PROPOSED (waiting for stakeholder decision)                                                     |
+| **Stakeholder (decision owner)** | 사용자 (디자인 PM 역할)                                                                         |
+| **Deadline**                     | Phase 2 진입 전 (target: 2026-06 중순)                                                          |
+| **Decision ID**                  | D-001                                                                                           |
+| **Created**                      | 2026-06-03                                                                                      |
+| **Related external dep**         | handoff §3.4 외부 dep #1 (`docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md`) |
 
 ---
 
@@ -189,9 +189,9 @@ Phase 2 진입 전에 아래 세 가지를 확정해야 한다:
 
 ## 7. References
 
-- `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §3.4 외부 dep #1 (근거 원문: "(client)/quotes 라우트-디자인 모순 해소 (mvp-roadmap §6.1.3); Phase 2 진입 전 Blocking")
+- `docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` §3.4 외부 dep #1 (근거 원문: "(client)/quotes 라우트-디자인 모순 해소 (mvp-roadmap §6.1.3); Phase 2 진입 전 Blocking")
 - `docs/prd/rootmatching-prd.md` v0.4 §3 페르소나 정의 (공장주/구매담당자 구분)
-- `docs/specs/design-system-upgrade.md` v0.1 (Session C 결과, 현재 `/quotes` 디자인 베이스)
+- `docs/specs/closed/design-system-upgrade.md` v0.1 (Session C 결과, 현재 `/quotes` 디자인 베이스)
 - `apps/web/src/app/(client)/quotes/page.tsx` (현재 파일 위치, 이동 대상)
 - `apps/web/src/app/(factory)/` (기존 factory 라우트 그룹, Option B 이동 대상)
 - `docs/specs/phase-2-quotes-route-design-conflict.md` (분석 base 문서 — 본 문서 작성 시점 미존재, self-contained 모드로 작성)

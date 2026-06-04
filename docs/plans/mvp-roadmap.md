@@ -2,14 +2,14 @@
 
 > **MVP 완성까지 남은 작업의 단일 진실원 (Single Source of Truth)**
 
-| 항목                 | 값                                                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 작성일               | 2026-06-02                                                                                                                                 |
-| 활성 브랜치          | `dev-monorepo`                                                                                                                             |
-| 기준 HEAD            | `5f98508` (docs: matching endpoint design decision)                                                                                        |
-| PRD 기준             | `docs/prd/rootmatching-prd.md` v0.4                                                                                                        |
-| Functional Spec 기준 | `docs/specs/functional-spec.md` (27 라우트 + §14 9 acceptance criteria)                                                                    |
-| 참고 자료            | `docs/handoffs/2026-05-26-phase-1-week-1-complete.md`, `docs/specs/rootmatching-erd.md`, `docs/specs/matching-endpoint-design-decision.md` |
+| 항목                 | 값                                                                                                                                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 작성일               | 2026-06-02                                                                                                                                         |
+| 활성 브랜치          | `dev-monorepo`                                                                                                                                     |
+| 기준 HEAD            | `5f98508` (docs: matching endpoint design decision)                                                                                                |
+| PRD 기준             | `docs/prd/rootmatching-prd.md` v0.4                                                                                                                |
+| Functional Spec 기준 | `docs/specs/functional-spec.md` (27 라우트 + §14 9 acceptance criteria)                                                                            |
+| 참고 자료            | `docs/handoffs/archive/2026-05-26-phase-1-week-1-complete.md`, `docs/specs/rootmatching-erd.md`, `docs/specs/matching-endpoint-design-decision.md` |
 
 ---
 

@@ -236,7 +236,7 @@ Doc: docs/specs/prisma-service-pattern.md §2
 - `apps/api/src/prisma/prisma.client.ts` (Pattern (a) singleton; W2-2 신규)
 - `apps/api/src/prisma/prisma.service.ts` (Pattern (a) inheritance; Pre-Flight + W2-2.5 header backfill)
 - `docs/specs/w2-2.5-followup-backlog.md` §3.1.2 (본 backfill 작업 출처)
-- `docs/handoffs/2026-06-03-w2-1-complete-w2-2-ready.md` v1.1 (W2-2 컨텍스트)
+- `docs/handoffs/archive/2026-06-03-w2-1-complete-w2-2-ready.md` v1.1 (W2-2 컨텍스트)
 - Prisma 공식: "Use a single PrismaClient instance" — https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections#prismaclient-in-long-running-applications
 
 ---

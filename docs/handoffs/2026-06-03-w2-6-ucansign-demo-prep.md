@@ -1,6 +1,6 @@
 # Session Handoff — 2026-06-03 (W2-6 closure + UCanSign vendor + Hackathon demo prep) — v1.2
 
-> 다음 세션이 zero-context로 이어받을 수 있도록 정리한 **master reference doc**. 이전 master (`docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` v1.0)는 Wave 3a/Q10/Session C closure 시점 historical reference로 보존. **본 doc이 현재 master**.
+> 다음 세션이 zero-context로 이어받을 수 있도록 정리한 **master reference doc**. 이전 master (`docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` v1.0)는 Wave 3a/Q10/Session C closure 시점 historical reference로 보존. **본 doc이 현재 master**.
 
 **현재 origin/dev-monorepo HEAD `865461e` → local `f23c144` (demo prep closure) → `[v1.1 handoff commit]`.** W2-6 closure (Wave 4b) + UCanSign vendor 결정 + hackathon demo prep ✅ **CLOSED** (commit `f23c144`, 9 fixes verified + 4 validation gates + Playwright auth + Path A pre-rehearsal smoke 전수 통과).
 
@@ -68,16 +68,16 @@ origin/dev-monorepo:  v1.0 시점 `9a5b5f5` (synced); v1.1 시점 `[v1.1 handoff
 
 핵심 문서:
   - 본 핸드오프 (현재 master, demo prep in-flight)
-  - docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md v1.0 (이전 master, frozen at Wave 3a/Q10/Session C closure)
+  - docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md v1.0 (이전 master, frozen at Wave 3a/Q10/Session C closure)
   - .sisyphus/plans/phase-1-w2.md v0.12 (gitignored; W2-5 closure summary 반영)
   - docs/specs/w2-2.5-followup-backlog.md v0.6 (§3.4.1/§3.4.4/§3.6.1/§3.6.2 closed + §3.5/§3.7 신설)
-  - docs/specs/w2-6-security-swagger-spec.md v0.2 (Q1-Q8 ACCEPTED + §8.1 Decisions sub-section)
+  - docs/specs/closed/w2-6-security-swagger-spec.md v0.2 (Q1-Q8 ACCEPTED + §8.1 Decisions sub-section)
   - apps/api/MIGRATION.md v0.2 (§8 zod v4 + better-call ADR + §9 HORIZONTAL_SCALE_TRIGGER from W2-6)
   - docs/plans/mvp-roadmap.md v1.2 (Phase 2-6 sub-tasks + 외부 dep cross-ref)
   - docs/decisions/quotes-route-grouping.md (외부 dep #1 decision package — Option B 권장)
   - docs/specs/phase-2-quotes-route-design-conflict.md (Session C 후속)
   - docs/specs/lighthouse-coverage-gap.md (22 routes 미검증 inventory)
-  - docs/specs/design-system-upgrade.md v0.1 (Session C 적용 spec)
+  - docs/specs/closed/design-system-upgrade.md v0.1 (Session C 적용 spec)
   - docs/specs/prisma-service-pattern.md v0.1
 
 다음 작업 순서 (v1.1 시점):

@@ -173,14 +173,14 @@ apps/web/src/app/(client)/quotes/page.tsx
 
 ## 7. References
 
-| 파일                                                                     | 관련 내용                                        |
-| ------------------------------------------------------------------------ | ------------------------------------------------ |
-| `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §1.2        | Session C 결과 (Lighthouse 100x5 포함)           |
-| `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §3.4 dep #1 | 본 외부 dep 원문 (Phase 2 진입 blocking)         |
-| `apps/web/src/app/(client)/quotes/page.tsx`                              | 현재 파일 위치                                   |
-| `apps/web/src/app/(factory)/factory/requests/page.tsx`                   | factory 그룹 참조 예시                           |
-| `docs/plans/mvp-roadmap.md` v1.1 §Phase 2.1                              | Phase 2 진입 기준점                              |
-| `docs/decisions/quotes-route-grouping.md` (미작성, 별도 작업 #6)         | 의사결정 패키지 — 옵션 확정 + 담당자 + 실행 날짜 |
+| 파일                                                                             | 관련 내용                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` §1.2        | Session C 결과 (Lighthouse 100x5 포함)           |
+| `docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` §3.4 dep #1 | 본 외부 dep 원문 (Phase 2 진입 blocking)         |
+| `apps/web/src/app/(client)/quotes/page.tsx`                                      | 현재 파일 위치                                   |
+| `apps/web/src/app/(factory)/factory/requests/page.tsx`                           | factory 그룹 참조 예시                           |
+| `docs/plans/mvp-roadmap.md` v1.1 §Phase 2.1                                      | Phase 2 진입 기준점                              |
+| `docs/decisions/quotes-route-grouping.md` (미작성, 별도 작업 #6)                 | 의사결정 패키지 — 옵션 확정 + 담당자 + 실행 날짜 |
 
 ---
 

@@ -226,14 +226,14 @@ for (const route of routes) {
 
 ## 5. References
 
-| 파일                                                              | 관련 내용                                                        |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` §1.2 | Session C Lighthouse 5/5 100/100 결과                            |
-| `docs/specs/design-system-upgrade.md` v0.1 §8 Phase D             | "27개 라우트 전수 screenshot check" 원문 (glob 실측 28개와 차이) |
-| `docs/specs/w2-2.5-followup-backlog.md` §3.4.5                    | Tier 3 NICE — 본 spec이 §3.4.5의 구체 plan                       |
-| `docs/specs/w2-2.5-followup-backlog.md` §3.4.2                    | CI matrix test:e2e 추가 (Phase 2 closure 시 통합 타겟)           |
-| `apps/web/src/app/**/page.tsx` (glob 28개)                        | 라우트 inventory source of truth                                 |
-| `docs/specs/phase-2-quotes-route-design-conflict.md`              | `/quotes` 라우트 그룹 모순 상세 분석                             |
+| 파일                                                                      | 관련 내용                                                        |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` §1.2 | Session C Lighthouse 5/5 100/100 결과                            |
+| `docs/specs/closed/design-system-upgrade.md` v0.1 §8 Phase D              | "27개 라우트 전수 screenshot check" 원문 (glob 실측 28개와 차이) |
+| `docs/specs/w2-2.5-followup-backlog.md` §3.4.5                            | Tier 3 NICE — 본 spec이 §3.4.5의 구체 plan                       |
+| `docs/specs/w2-2.5-followup-backlog.md` §3.4.2                            | CI matrix test:e2e 추가 (Phase 2 closure 시 통합 타겟)           |
+| `apps/web/src/app/**/page.tsx` (glob 28개)                                | 라우트 inventory source of truth                                 |
+| `docs/specs/phase-2-quotes-route-design-conflict.md`                      | `/quotes` 라우트 그룹 모순 상세 분석                             |
 
 ---
 

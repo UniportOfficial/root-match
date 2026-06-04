@@ -1,4 +1,4 @@
-# Session Handoff — 2026-06-03 (W2-6 closure + UCanSign vendor + Hackathon demo prep) — v1.2
+# Session Handoff — 2026-06-03 (W2-6 closure + UCanSign vendor + Hackathon demo prep) — v1.3
 
 > 다음 세션이 zero-context로 이어받을 수 있도록 정리한 **master reference doc**. 이전 master (`docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md` v1.0)는 Wave 3a/Q10/Session C closure 시점 historical reference로 보존. **본 doc이 현재 master**.
 
@@ -27,13 +27,12 @@
 
 **다음 작업 (다음 세션 첫 액션)**:
 
-1. ✅ ~~`bg_06bb5b1c` retrieve~~ → CLOSED (commit `f23c144`, §1.6 매트릭스 참조)
-2. **Path A 10분 manual rehearsal** — 사용자 직접 브라우저 walkthrough (apps/web :3000 + apps/api :3001 ready; signup → request `?demo=true` prefill → AI 매칭 4-step loading → contract → transactions → review → dispute)
-3. **Vercel preview 배포** + 시연 환경 검증 (v1.1 push 완료 후 CI/Vercel 자동 트리거 예상)
-4. 최종 rehearsal + bug fix (rehearsal 중 발견 이슈)
-5. (선택) R1 해결: Prisma seed 4→8 factories (`?demo=true` 의존 제거; backlog §3.5.5와 통합)
-6. (병렬) UCanSign vendor 응답 fold-in (backlog §3.7.2/§3.7.3)
-7. (해커톤 후) W2-7 (E2E + Neon CI) 진입
+1. **시연 결과 확인** — Path A walkthrough 결과 (성공/이슈) 확인
+2. **shadcn/cointoss 통합 마무리** — 사용자 in-progress (`apps/web/` 28+ unstaged 파일 + `docs/_design-migration-guide.md`). custom 3개 (`AppBadge`/`AppButton`/`ProcessStepper`) → shadcn 마이그레이션 후 custom 삭제. `lib/cn.ts` vs `lib/utils.ts` 정리
+3. (선택) mock data cleanup — `apps/web/src/data/*.ts` 9 파일 중 dead/duplicated 정리 (Phase 2 진입 시 Prisma 응답으로 대체)
+4. (선택) R1 해결: Prisma seed 4→8 factories — `?demo=true` 의존 제거 (backlog §3.5.5)
+5. (병렬) UCanSign vendor 8 questions 답변 받으면 fold-in (backlog §3.7.2/§3.7.3)
+6. (해커톤 후) W2-7 (E2E + Neon CI) 진입 → Phase 2 (견적/매칭 persist)
 
 ---
 
@@ -41,50 +40,49 @@
 
 ```text
 저장소:        /Users/uni-claw/dev/root-match
-활성 브랜치:    dev-monorepo (push 정책: 명시 요청 시에만; v1.0 시점 3차례 push + v1.1 시점 1차례 push)
-HEAD:          `f23c144` (feat(web): hackathon demo prep ...) → v1.1 핸드오프 commit 후 update
-origin/dev-monorepo:  v1.0 시점 `9a5b5f5` (synced); v1.1 시점 `[v1.1 handoff commit]` 포함하여 push
+활성 브랜치:    dev-monorepo (push 정책: 명시 요청 시에만)
+HEAD:          `fa92fd6` (docs MECE cleanup) → v1.3 handoff commit 후 update
+origin/dev-monorepo:  `fa92fd6` (synced); v1.3 handoff commit 포함하여 push
 
-핵심 commit chain (v1.0 + v1.1 통합, 새것 → 옛것):
-  [v1.1 handoff commit]: docs(handoffs): v1.1 — demo prep CLOSED + Path A 검증 fold-in
-  f23c144  feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist  ← Demo prep closure (12 files +1002/-407)
+이번 세션 commits (v1.1 → v1.3, 새것 → 옛것):
+  [v1.3 handoff commit]: docs(handoffs): v1.3 — Snowsign 제거 + docs MECE cleanup fold-in
+  fa92fd6  docs: archive frozen handoffs/specs + truncate backlog history
+  e359bf2  docs: Snowsign 관련 기록 제거 (vendor decision UCanSign로 단일화)
+  79fb773  docs(specs,vendor): Phase 3 vendor 재결정 Snowsign → UCanSign (handoff v1.2, backlog v0.7)
+  58652cc  docs(vendor-inquiries): snowsign §1 metadata mock 채움 (이후 e359bf2에서 제거)
+  953fff9  docs(vendor-inquiries): snowsign 사전 문의서 v1.0 (이후 e359bf2에서 제거)
+  e59d0ed  docs(handoffs): v1.1 — demo prep CLOSED + Path A 검증 fold-in
+  f23c144  feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist
   865461e  docs(handoffs): w2-6 + vendor + demo prep (v1.0, new master ref)
-  9a5b5f5  docs(specs): w2-2.5 backlog v0.6 (W2-6 ea2bd66 closure + §3.7 Phase 3 vendor prep)
-    ea2bd66  feat(api): security hardening + swagger + nestjs-pino (W2-6)              ← Wave 4b closure
-  dbc97d7  docs(specs): w2-6 spec v0.2 Q1-Q8 user decisions
-  bb66a4f  docs(specs): w2-2.5 backlog v0.5 (Wave 3b W2-5 closure + §3.4.1/§3.4.4 closed)
-  73dbc0d  docs(specs): w2-6 security + swagger spec v0.1 (Wave 4b prep)
-  6451145  feat(api): users + companies modules + DTOs + e2e (W2-5)                  ← Wave 3b closure
-  08984ff  docs(specs): phase 2 quotes route conflict + lighthouse coverage gap
-  78d0bfa  docs(plans): mvp-roadmap v1.2 (Phase 2-6 sub-tasks + external deps cross-ref)
-  7cdf6c2  docs(decisions): quotes route grouping decision package (external dep #1 unlock)
-  e47045c  docs(api): MIGRATION.md §8 zod v4 + better-call ADR (closes backlog §3.4.4)
-  a193ae8  docs(handoffs): wave 3a + q10 + session c complete (v1.0, historical master)
   ...
 
 런타임 요구:    Node ≥ 22.13 (nvm use 22 매 세션 첫 명령)
                 commit 시 PATH prefix:
                   `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`
 
-핵심 문서:
-  - 본 핸드오프 (현재 master, demo prep in-flight)
-  - docs/handoffs/archive/2026-06-03-wave-3a-q10-session-c-complete.md v1.0 (이전 master, frozen at Wave 3a/Q10/Session C closure)
-  - .sisyphus/plans/phase-1-w2.md v0.12 (gitignored; W2-5 closure summary 반영)
-  - docs/specs/w2-2.5-followup-backlog.md v0.6 (§3.4.1/§3.4.4/§3.6.1/§3.6.2 closed + §3.5/§3.7 신설)
-  - docs/specs/closed/w2-6-security-swagger-spec.md v0.2 (Q1-Q8 ACCEPTED + §8.1 Decisions sub-section)
-  - apps/api/MIGRATION.md v0.2 (§8 zod v4 + better-call ADR + §9 HORIZONTAL_SCALE_TRIGGER from W2-6)
-  - docs/plans/mvp-roadmap.md v1.2 (Phase 2-6 sub-tasks + 외부 dep cross-ref)
-  - docs/decisions/quotes-route-grouping.md (외부 dep #1 decision package — Option B 권장)
-  - docs/specs/phase-2-quotes-route-design-conflict.md (Session C 후속)
-  - docs/specs/lighthouse-coverage-gap.md (22 routes 미검증 inventory)
-  - docs/specs/closed/design-system-upgrade.md v0.1 (Session C 적용 spec)
-  - docs/specs/prisma-service-pattern.md v0.1
+환경변수 (apps/api/.env, gitignored):
+  - OPENAI_API_KEY        ✓ 설정됨 (실제 호출 작동, ~6s latency, Top-1 문래정밀가공)
+  - UCANSIGN_API_KEY      ✓ 설정됨 (Phase 3 진입 시 사용 예정)
 
-다음 작업 순서 (v1.1 시점):
-  1. ✅ ~~`bg_06bb5b1c` retrieve~~ → CLOSED (commit `f23c144`, §1.6 매트릭스)
-  2. Path A 10분 manual rehearsal — 사용자 브라우저 직접 walkthrough (apps/web :3000 + apps/api :3001 ready)
-  3. Vercel preview 배포 + 시연 환경 검증 (v1.1 push 후 CI 트리거 예상)
-  4. 최종 rehearsal + bug fix
+핵심 문서 (active):
+  - 본 핸드오프 (현재 master, v1.3)
+  - .sisyphus/plans/phase-1-w2.md v0.12 (gitignored)
+  - docs/specs/w2-2.5-followup-backlog.md v0.7 (Phase 3 vendor UCanSign closure)
+  - docs/specs/ucansign-api-reference.md v0.1 (Phase 3 vendor spec)
+  - docs/vendor-inquiries/ucansign-2026-06-04.md v1.0 (DEMO MOCK, 8 questions)
+  - docs/plans/mvp-roadmap.md v1.2
+  - docs/decisions/quotes-route-grouping.md (외부 dep #1 — Option B 권장)
+  - docs/_design-migration-guide.md (사용자 작업, shadcn 통합 가이드)
+  - apps/api/MIGRATION.md v0.2
+
+아카이브 (참조용):
+  - docs/handoffs/archive/* (11 frozen historical handoffs)
+  - docs/specs/closed/{w2-6-security-swagger-spec, design-system-upgrade}.md
+
+다음 작업 순서:
+  1. 시연 결과 확인 (Path A 성공/이슈)
+  2. shadcn 통합 마무리 (사용자 in-progress)
+  3. mock data cleanup (apps/web/src/data/)
   5. (선택) R1 해결: Prisma seed 4→8 factories (시연 ?demo=true 의존 제거)
   6. (해커톤 후 또는 병렬) W2-7 (E2E + Neon CI) 진입 결정 — Q3 hybrid CI 결정 시점
   7. (병렬) UCanSign vendor 문의 (webhook + sandbox + 가격) → backlog §3.7.2/§3.7.3 resolve
@@ -509,12 +507,10 @@ gh run list --repo "L-dragon-woo/DGU-Technology-start-up-capstone" --branch dev-
 
 ## 9. ⚠️ 다음 세션 사용자 immediate action items
 
-1. **UCanSign 신규 가입** (`app.ucansign.com/developer`) + API KEY 발급 + apps/api/.env에 `UCANSIGN_API_KEY` 추가 (Phase 3 진입 시; 현재 추가됨)
-2. **UCanSign vendor 문의 8건** (backlog §3.7.2 + §3.7.3):
-   - Tier 1: 외국인 본인인증 / sandbox / webhook signing / audit-trail 법적 효력
-   - Tier 2: 가격 상세 / 변경계약서 / integrity_hash / multi-tenant
-3. (선택) OPENAI_API_KEY 발급 (시연 시 실제 OpenAI 호출 보여주려면)
-4. (선택) Vercel preview 환경 변수 setup (시연용 배포)
+1. ✅ ~~Snowsign console revoke~~ + ~~UCanSign 가입 + UCANSIGN_API_KEY 추가~~ — 완료
+2. ✅ ~~OPENAI_API_KEY 발급 + 추가~~ — 완료 (실제 호출 작동 확인)
+3. (선택) UCanSign vendor 8 questions 송부 (`docs/vendor-inquiries/ucansign-2026-06-04.md`) — 실제 운영 가까울 때
+4. (선택) Vercel preview 환경변수 setup — 외부 데모 배포 시
 
 ---
 
@@ -522,6 +518,7 @@ gh run list --repo "L-dragon-woo/DGU-Technology-start-up-capstone" --branch dev-
 
 | 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1.3 | 2026-06-04 | (a) **OpenAI 실제 호출 가동** — `OPENAI_API_KEY` 추가 후 `/matching/recommend` 응답에서 mock prefix 사라짐 (Top-1 문래정밀가공, ~6s latency). (b) **Snowsign 흔적 모두 제거** (`e359bf2`) — snowsign-api-reference + vendor inquiry 2 파일 삭제 + handoff rename (`...ucansign-demo-prep.md`) + cross-ref + 비교 매트릭스 모두 정리 (사용자 console revoke 완료 후). (c) `UCANSIGN_API_KEY` apps/api/.env 추가 (uppercase 정식 변수명). (d) **docs MECE cleanup** (`fa92fd6`) — handoffs 12→1 active + archive/ 11 / specs 12→10 active + closed/ 2 / 9 cross-ref path 갱신 / backlog 변경 이력 v0.1-v0.4 단일 row로 통합. (e) 사용자 in-progress: shadcn 통합 (apps/web/ 28+ unstaged 파일 + `docs/_design-migration-guide.md`).                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | v1.2 | 2026-06-04 | Phase 3 vendor 결정 UCanSign 채택. §1.4 single vendor 정보로 정리 (이전 vendor 후보 비교 정보는 history에서 제거). ucansign-api-reference v0.1 + ucansign vendor inquiry mock v1.0 신설. backlog v0.7 + handoff 파일명 갱신 (`...ucansign-demo-prep.md`). 외부 dep #2 status: 🔄 vendor 결정 완료, 8 questions 응답 대기. 실제 코드 통합은 Phase 3 진입 시.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | v1.1 | 2026-06-04 | Demo prep ✅ CLOSED — `bg_06bb5b1c` 결과 검증 + atomic commit `f23c144` `feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist` (12 files +1002/-407). 9 fixes verified (§1.6 매트릭스): P0 (request prefill + matching UI + 4-step loading + 8 factories) + P1 (mediation prefill + factory sender + 발주처 정합화) + P2 (WorkflowContext persist + demo-mode toggle). Bonus: `FactoryRecommendation` 6 optional 필드 (`matchScore`/`reorderCustomerCount`/`distanceKm`/`employeeCount`/`industrialComplex`/`aiReasonBullets`). Validation 전수 green: typecheck (3 pkg) + lint (0 errors) + format:check + guard:no-mock-auth + build (26 routes) + Playwright auth.spec (3.7s). Live W2-6 재확인: 9 schemas + /health/db + /matching/recommend mock fallback (Top-1 문래정밀가공 matchScore 97) + Q5 throttler 5/60s. Path A pre-rehearsal: 15 web routes 307 redirect query param 보존. 5 risks 식별 (R1 DB seed 4 vs fixture 8 / R2 OPENAI mock prefix / R3 middleware auth / R4 Better Auth 3/10s / R5 task tracker 손실은 commit 봉인으로 해소). 다음: Path A 사용자 manual rehearsal → Vercel preview 배포 → 최종 fix. |
 | v1.0 | 2026-06-03 | 신규 작성 — Wave 3b W2-5 (`6451145`) + Tier 1 parallel side-quests 5 commits (`e47045c` + `7cdf6c2` + `78d0bfa` + `08984ff` + `73dbc0d`) + plan v0.12 (gitignored) + backlog v0.5 (`bb66a4f`) + W2-6 spec v0.2 (`dbc97d7`) + Wave 4b W2-6 (`ea2bd66`) + Phase 3 vendor reference (`815e782`) + backlog v0.6 (`9a5b5f5`) 통합 closure 시점 master ref doc. CI quality matrix 5/5 green at runs 26890386896 + 26890684223 (HEAD `9a5b5f5`). Hackathon demo prep agent (`bg_06bb5b1c`, in-flight at handoff commit) — visual-engineering + frontend-ui-ux skill, 9 fixes (P0 4 + P1 3 + P2 2) for AI matching shine + mock data 보강 + WorkflowContext persist. Phase 1.W2 ≈ 95% complete (W2-7만 남음). Phase 3 vendor 결정 진행 (외부 dep #2 부분 closure; v1.2에서 UCanSign 최종 결정). 다음 세션 첫 액션: `background_output(task_id="bg_06bb5b1c")` → 9 fixes 결과 검증 → Path A manual rehearsal → Vercel preview 배포 → 최종 rehearsal. 이전 master `2026-06-03-wave-3a-q10-session-c-complete.md` v1.0은 historical reference로 보존.                                                                                                                          |

@@ -1,8 +1,8 @@
-# Session Handoff — 2026-06-03 (W2-6 closure + Snowsign→UCanSign vendor + Hackathon demo prep) — v1.2
+# Session Handoff — 2026-06-03 (W2-6 closure + UCanSign vendor + Hackathon demo prep) — v1.2
 
 > 다음 세션이 zero-context로 이어받을 수 있도록 정리한 **master reference doc**. 이전 master (`docs/handoffs/2026-06-03-wave-3a-q10-session-c-complete.md` v1.0)는 Wave 3a/Q10/Session C closure 시점 historical reference로 보존. **본 doc이 현재 master**.
 
-**현재 origin/dev-monorepo HEAD `865461e` → local `f23c144` (demo prep closure) → `[v1.1 handoff commit]`.** W2-6 closure (Wave 4b) + Snowsign vendor 결정 + hackathon demo prep ✅ **CLOSED** (commit `f23c144`, 9 fixes verified + 4 validation gates + Playwright auth + Path A pre-rehearsal smoke 전수 통과).
+**현재 origin/dev-monorepo HEAD `865461e` → local `f23c144` (demo prep closure) → `[v1.1 handoff commit]`.** W2-6 closure (Wave 4b) + UCanSign vendor 결정 + hackathon demo prep ✅ **CLOSED** (commit `f23c144`, 9 fixes verified + 4 validation gates + Playwright auth + Path A pre-rehearsal smoke 전수 통과).
 
 **v1.1 update (2026-06-04)**:
 
@@ -20,8 +20,7 @@
 - backlog v0.5: `bb66a4f` (W2-5 closure + §3.4.1/§3.4.4 closed + §3.5/§3.6 added)
 - W2-6 spec v0.2: `dbc97d7` (Q1-Q8 user decisions, 7 default + Q5 changed)
 - **W2-6 atomic commit**: `ea2bd66` `feat(api): security hardening + swagger + nestjs-pino (W2-6)` — Wave 4b closure
-- Snowsign vendor reference: `815e782` (Phase 3 vendor decision)
-- backlog v0.6: `9a5b5f5` (W2-6 §3.6.1/§3.6.2 closed + §3.7 Snowsign Phase 3 prep)
+- backlog v0.6: `9a5b5f5` (W2-6 §3.6.1/§3.6.2 closed + §3.7 Phase 3 vendor prep)
 - **Plan v0.12** (gitignored): `.sisyphus/plans/phase-1-w2.md` W2-5 closure summary + inline `[RESOLVED v0.12]` markers + §16 changelog v0.12 segment + #3 W2-6 spec landed status fold-in
 - Demo prep agent `bg_06bb5b1c` (v1.0 시점 in-flight; v1.1 시점 ✅ CLOSED via `f23c144`)
 - v1.0 master handoff: `865461e`
@@ -33,7 +32,7 @@
 3. **Vercel preview 배포** + 시연 환경 검증 (v1.1 push 완료 후 CI/Vercel 자동 트리거 예상)
 4. 최종 rehearsal + bug fix (rehearsal 중 발견 이슈)
 5. (선택) R1 해결: Prisma seed 4→8 factories (`?demo=true` 의존 제거; backlog §3.5.5와 통합)
-6. (병렬) Snowsign vendor 응답 fold-in (backlog §3.7.2/§3.7.3)
+6. (병렬) UCanSign vendor 응답 fold-in (backlog §3.7.2/§3.7.3)
 7. (해커톤 후) W2-7 (E2E + Neon CI) 진입
 
 ---
@@ -49,10 +48,9 @@ origin/dev-monorepo:  v1.0 시점 `9a5b5f5` (synced); v1.1 시점 `[v1.1 handoff
 핵심 commit chain (v1.0 + v1.1 통합, 새것 → 옛것):
   [v1.1 handoff commit]: docs(handoffs): v1.1 — demo prep CLOSED + Path A 검증 fold-in
   f23c144  feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist  ← Demo prep closure (12 files +1002/-407)
-  865461e  docs(handoffs): w2-6 + snowsign + demo prep (v1.0, new master ref)
-  9a5b5f5  docs(specs): w2-2.5 backlog v0.6 (W2-6 ea2bd66 closure + §3.7 Snowsign Phase 3 prep)
-  815e782  docs(specs): snowsign-api-reference v0.1 (Phase 3 vendor decision)
-  ea2bd66  feat(api): security hardening + swagger + nestjs-pino (W2-6)              ← Wave 4b closure
+  865461e  docs(handoffs): w2-6 + vendor + demo prep (v1.0, new master ref)
+  9a5b5f5  docs(specs): w2-2.5 backlog v0.6 (W2-6 ea2bd66 closure + §3.7 Phase 3 vendor prep)
+    ea2bd66  feat(api): security hardening + swagger + nestjs-pino (W2-6)              ← Wave 4b closure
   dbc97d7  docs(specs): w2-6 spec v0.2 Q1-Q8 user decisions
   bb66a4f  docs(specs): w2-2.5 backlog v0.5 (Wave 3b W2-5 closure + §3.4.1/§3.4.4 closed)
   73dbc0d  docs(specs): w2-6 security + swagger spec v0.1 (Wave 4b prep)
@@ -74,7 +72,6 @@ origin/dev-monorepo:  v1.0 시점 `9a5b5f5` (synced); v1.1 시점 `[v1.1 handoff
   - .sisyphus/plans/phase-1-w2.md v0.12 (gitignored; W2-5 closure summary 반영)
   - docs/specs/w2-2.5-followup-backlog.md v0.6 (§3.4.1/§3.4.4/§3.6.1/§3.6.2 closed + §3.5/§3.7 신설)
   - docs/specs/w2-6-security-swagger-spec.md v0.2 (Q1-Q8 ACCEPTED + §8.1 Decisions sub-section)
-  - docs/specs/snowsign-api-reference.md v0.1 (Phase 3 vendor decision + integration plan)
   - apps/api/MIGRATION.md v0.2 (§8 zod v4 + better-call ADR + §9 HORIZONTAL_SCALE_TRIGGER from W2-6)
   - docs/plans/mvp-roadmap.md v1.2 (Phase 2-6 sub-tasks + 외부 dep cross-ref)
   - docs/decisions/quotes-route-grouping.md (외부 dep #1 decision package — Option B 권장)
@@ -90,7 +87,7 @@ origin/dev-monorepo:  v1.0 시점 `9a5b5f5` (synced); v1.1 시점 `[v1.1 handoff
   4. 최종 rehearsal + bug fix
   5. (선택) R1 해결: Prisma seed 4→8 factories (시연 ?demo=true 의존 제거)
   6. (해커톤 후 또는 병렬) W2-7 (E2E + Neon CI) 진입 결정 — Q3 hybrid CI 결정 시점
-  7. (병렬) Snowsign vendor 문의 (webhook + sandbox + 가격) → backlog §3.7.2/§3.7.3 resolve
+  7. (병렬) UCanSign vendor 문의 (webhook + sandbox + 가격) → backlog §3.7.2/§3.7.3 resolve
 ```
 
 ---
@@ -166,47 +163,30 @@ W2-5 (6451145): UserProfile, UserProfileUpdate, CompanyUpdate
 
 **Deviation**: Better Auth raw Express handler가 Nest controllers bypass → `auth-strict`을 pre-handler middleware로 enforce (`ThrottlerModule.forRoot`에 bucket 선언 + middleware로 실제 enforce). MIGRATION.md §9에 HORIZONTAL_SCALE_TRIGGER doc.
 
-### 1.4 Phase 3 vendor 재결정 (v1.2) — Snowsign → UCanSign
+### 1.4 Phase 3 vendor 결정 — UCanSign (유캔싸인)
 
-**v1.1 시점 Snowsign 채택 (handoff §3.7.1 ✅ CLOSED via `815e782`)이 v1.2 시점 UCanSign으로 재결정**. UCanSign Postman 공식 문서 추가 검토 결과 webhook 명시 + 가격 투명 + 임베딩 우위로 vendor 변경.
+| 항목           | 값                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| spec doc       | `docs/specs/ucansign-api-reference.md` v0.1 (~580 lines, 10 sections)                           |
+| vendor         | UCanSign (유캔싸인, `ucansign.com` / `app.ucansign.com`)                                        |
+| 출처           | UCanSign Postman 공식 문서 (publishedId `2s7YfHhcGY`, 2022-09-15)                               |
+| 인증           | API KEY → accessToken (30분 만료, Bearer)                                                       |
+| Webhook        | ✅ 4 events 명시 (sign_creating / signing_canceled / signing_completed / signing_completed_all) |
+| 가격           | ✅ 1건당 100원 + 신규 10건 무료                                                                 |
+| 임베딩 페이지  | ✅ 4 endpoints (iframe 통합)                                                                    |
+| customValue    | ✅ × 6 필드 (rootmatching internal IDs 매핑)                                                    |
+| 모바일 알림톡  | signingMethodType=kakao 제한적                                                                  |
+| integrity_hash | vendor 미명시 → 자체 계산 (PDF + audit-trail SHA-256, §3.7.6)                                   |
+| PRD 영향       | v0.4 §6.2 "모두싸인 / 이폼사인" → **UCanSign** (PRD v0.5 갱신 필요 — backlog §3.7.4)            |
+| FR-5 cover     | P0 5/5 cover + audit-trail 법적 효력 vendor 확인                                                |
+| Phase 5 영향   | 카카오 알림톡 비즈 그대로 필요 (외부 dep #6)                                                    |
 
-| 항목              | UCanSign (v1.2 채택)                                                                                                          | Snowsign (v1.1 채택, 현 deprecated)                                    |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| spec doc          | `docs/specs/ucansign-api-reference.md` v0.1 (UCanSign 통합 spec, ~580 lines)                                                  | `docs/specs/snowsign-api-reference.md` v0.1 (deprecated, alternative)  |
-| vendor            | UCanSign (유캔싸인, `ucansign.com` / `app.ucansign.com`)                                                                      | 스노우싸인 (Snowsign by JT Snowball, `jtsnowball.com`)                 |
-| 출처              | UCanSign Postman 공식 문서 (publishedId `2s7YfHhcGY`, 2022-09-15)                                                             | Snowsign Public API Guide v1.3 (2026-05-30)                            |
-| 인증              | API KEY → accessToken (30분 만료, Bearer)                                                                                     | X-API-Key (간단, 무만료)                                               |
-| **Webhook**       | ✅ **명시 지원** (4 events: sign_creating / signing_canceled / signing_completed / signing_completed_all)                     | ❌ Guide v1.3 미명시 (Q1 blocker)                                      |
-| **가격**          | ✅ **명확: 1건당 100원 + 신규 10건 무료**                                                                                     | ❌ 비공개 (Q3 blocker)                                                 |
-| **임베딩 페이지** | ✅ 4 endpoints 명시 (iframe 통합)                                                                                             | 가이드 미명시                                                          |
-| customValue       | ✅ 6 필드 (rootmatching internal IDs 매핑 — multi-tenant)                                                                     | 명시적 사용자 정의 필드 없음                                           |
-| 모바일 알림톡     | signingMethodType=kakao 제한적 (서명 요청만)                                                                                  | ✅ vendor 자체 자동 발송 (`mobile_alimtalk_enabled`)                   |
-| integrity_hash    | 가이드 미명시 — 자체 계산 패턴 (PDF + audit-trail SHA-256, §3.7.7)                                                            | ✅ `data.integrity_hash` (SHA-256) 자체 제공                           |
-| PRD 영향          | v0.4 §6.2 "모두싸인 / 이폼사인" → **UCanSign** (PRD v0.5 갱신 필요 — backlog §3.7.4)                                          | v0.6 시점 PRD v0.5 갱신 wording이 Snowsign이었으나 UCanSign으로 재정의 |
-| FR-5 cover        | P0 5/5 cover + P1 1 (변경계약서) vendor 확인 + audit-trail 법적 효력 vendor 확인                                              | P0 5/5 + P1 1 (변경계약서) vendor 확인                                 |
-| Phase 5 영향      | ❌ 모바일 알림톡 자체 발송 효과 없음 → 외부 dep #6 카카오 알림톡 비즈 그대로 필요 (Snowsign 대비 trade-off; §3.7.6 CANCELLED) | ✅ Phase 5 NotificationModule scope 30-40% 감소 가능 (현 deprecated)   |
-
-**Vendor 재결정 trade-off 정리**:
-
-- **UCanSign 우위 (3 항목)**: webhook 명시 / 가격 투명 / 임베딩 페이지 → 운영 efficiency
-- **Snowsign 우위 (2 항목)**: 모바일 알림톡 자체 / integrity_hash → Phase 5 + 무결성
-- **rootmatching 선택**: 운영 efficiency 우선 → **UCanSign 채택** (integrity_hash는 자체 계산 패턴 §3.7.7로 보완, 알림톡은 카카오 알림톡 비즈 그대로 유지)
-
-**Open questions (vendor 문의 needed, v0.7 backlog §3.7.2 + §3.7.3)**:
+**Open questions (vendor 문의 needed, backlog §3.7.2 + §3.7.3)**:
 
 - **Tier 1 CRITICAL**: Q1 외국인 본인인증 / Q2 sandbox 환경 / Q3 webhook signing secret + retry / Q4 audit-trail = §4의2 법적 효력
 - **Tier 2 SHOULD**: Q5 가격 상세 / Q6 변경계약서 / Q7 integrity_hash 자체 계산 효력 / Q8 multi-tenant + locale
 
 문의서 mock: `docs/vendor-inquiries/ucansign-2026-06-04.md` v1.0 (실제 송부 미진행, DEMO MOCK).
-
-**⚠️ Security alert (v1.1 시점 이미 명시)**: 사용자가 chat에 API key 일부 plain text로 노출 — Snowsign 콘솔에서 revoke 필요 (handoff §9.1). UCanSign으로 vendor 변경됐으므로 Snowsign key는 자동 사용 중단; UCanSign 신규 가입 시 별도 API KEY 발급 + .env 추가 필요 (handoff §9 immediate action 갱신).
-
-**⚠️ Security alert (이번 세션 중요 이벤트)**: 사용자가 chat에 API key 일부 plain text로 노출 (`rSpf__sa...`). file system 검색 결과 어디에도 저장 안 됨 (`apps/api/.env` 포함 clean). 그러나 chat transcript 저장됐을 가능성 — **사용자 측 vendor 콘솔 rotate 권고**.
-
-**Open questions (vendor 문의 needed)**:
-
-- §3.7.2: webhook 지원 여부 (가이드 미명시; polling fallback 준비)
-- §3.7.3: sandbox 환경 + dev key + 단가 + 변경계약서 (FR-5.6 P1)
 
 ### 1.5 backlog v0.6 update
 
@@ -222,7 +202,7 @@ W2-5 (6451145): UserProfile, UserProfileUpdate, CompanyUpdate
 **신설 sections**:
 
 - §3.5 (Wave 3b W2-5 후속, 6 항목): role.mapper.ts deferred (§3.5.1) / UserProfileUpdate scope (§3.5.2) / Company.bizNumber schema gap (§3.5.3) / AccountType+CompanyRole single SoT (§3.5.4) / seed.e2e retry hardening 일반화 (§3.5.5) / W2-6 .meta({id}) propagation 검증 (§3.5.6)
-- §3.7 (Wave 4b W2-6 + Phase 3 prep, 6 항목): vendor 결정 ✅ closure (§3.7.1, Snowsign) / webhook 문의 (§3.7.2) / sandbox + 가격 문의 (§3.7.3) / PRD v0.5 + mvp-roadmap v1.3 갱신 (§3.7.4) / plan §A.7 작성 (§3.7.5) / Phase 5 NotificationModule scope 축소 (§3.7.6)
+- §3.7 (Phase 3 prep, 6 항목): vendor 결정 ✅ closure (§3.7.1, UCanSign) / Tier 1 4건 문의 (§3.7.2) / Tier 2 4건 문의 (§3.7.3) / PRD v0.5 + mvp-roadmap v1.3 갱신 (§3.7.4) / plan §A.7 작성 (§3.7.5) / integrity_hash 자체 계산 패턴 (§3.7.6)
 
 ### 1.6 Hackathon demo prep — ✅ CLOSED (v1.1 update)
 
@@ -305,7 +285,7 @@ W2-5 (6451145): UserProfile, UserProfileUpdate, CompanyUpdate
 | 1-2     | 회원가입 + 역할 | `/login` (client) → `/role-select` → `/dashboard`                   | Better Auth scrypt + session + role guard        |
 | 2-3.5   | 발주 요청       | `/request` 폼 (demo prefill 1-click → 1.5min 단축)                  | "14일 걸리던 일을 3분에"                         |
 | 3.5-6.5 | **AI 매칭** ⭐️  | `/matching` Top-N + 신뢰점수/납기/거리/사유 (4-step loading 첫 ~3s) | vector search + GPT-4o + transparency (PRD §4.3) |
-| 6.5-7.5 | 계약            | `/contract` (문래정밀가공 선택, 고정)                               | 전자계약 (Snowsign) + escrow (토스)              |
+| 6.5-7.5 | 계약            | `/contract` (문래정밀가공 선택, 고정)                               | 전자계약 (UCanSign) + escrow (토스)              |
 | 7.5-8.5 | 거래 진행       | `/transactions/TXN-2026-018`                                        | 진행률 + 납품 + 검수                             |
 | 8.5-9.5 | 리뷰            | `/transaction/review`                                               | 평판 시스템                                      |
 | 9.5-10  | 분쟁 안전망     | `/disputes/DSP-2026-014` (같은 거래의 분쟁)                         | Human-in-the-Loop 4단계                          |
@@ -363,14 +343,14 @@ W2-7      ⏸ E2E + Neon CI branching                  (미시작; Q3 hybrid CI 
 
 ## 4. 외부 의존성 6건 status update
 
-| #   | 항목                          | Phase | 이번 세션 update                                                           | 다음 action                                   |
-| --- | ----------------------------- | ----- | -------------------------------------------------------------------------- | --------------------------------------------- |
-| 1   | `(client)/quotes` 라우트 결정 | 2     | decision package committed (`7cdf6c2`)                                     | 사용자 결정 (Option A/B/C, 권장 B)            |
-| 2   | **전자계약 vendor 선정**      | 3     | **⏳ 부분 closure**: Snowsign 채택 (`815e782`) + sandbox/webhook 확인 대기 | 사용자 vendor 문의 (§3.7.2/§3.7.3)            |
-| 3   | 토스 escrow KYC               | 4     | ⏸ 미착수                                                                   | 사용자 사업자 KYC 진행                        |
-| 4   | Prod 도메인                   | 6     | ⏸ 미착수                                                                   | `rootmatching.com` 확정                       |
-| 5   | Neon ap-northeast-2 region    | 6     | ⏸ 미착수                                                                   | Prod 이전 시점                                |
-| 6   | 카카오 알림톡 비즈            | 5     | ⏸ 미착수 + **scope 축소 가능** (Snowsign 자체 알림톡으로 계약 알림 cover)  | Bizmsg/NHN 계정 + 비계약 거래 template만 등록 |
+| #   | 항목                          | Phase | 이번 세션 update                                               | 다음 action                                   |
+| --- | ----------------------------- | ----- | -------------------------------------------------------------- | --------------------------------------------- |
+| 1   | `(client)/quotes` 라우트 결정 | 2     | decision package committed (`7cdf6c2`)                         | 사용자 결정 (Option A/B/C, 권장 B)            |
+| 2   | **전자계약 vendor 선정**      | 3     | 🔄 **vendor 결정 완료**: UCanSign 채택 + 8 questions 응답 대기 | 사용자 vendor 문의 (§3.7.2/§3.7.3)            |
+| 3   | 토스 escrow KYC               | 4     | ⏸ 미착수                                                       | 사용자 사업자 KYC 진행                        |
+| 4   | Prod 도메인                   | 6     | ⏸ 미착수                                                       | `rootmatching.com` 확정                       |
+| 5   | Neon ap-northeast-2 region    | 6     | ⏸ 미착수                                                       | Prod 이전 시점                                |
+| 6   | 카카오 알림톡 비즈            | 5     | ⏸ 미착수                                                       | Bizmsg/NHN 계정 + 비계약 거래 template만 등록 |
 
 ---
 
@@ -389,14 +369,14 @@ W2-7      ⏸ E2E + Neon CI branching                  (미시작; Q3 hybrid CI 
 
 ### 5.2 §3.7 Wave 4b W2-6 + Phase 3 prep (6 항목)
 
-| #      | 항목                                                         | Tier          | 의존                                        |
-| ------ | ------------------------------------------------------------ | ------------- | ------------------------------------------- |
-| §3.7.1 | vendor 결정 (Snowsign 채택)                                  | Tier 1 MUST   | ✅ **CLOSED** (snowsign-api-reference v0.1) |
-| §3.7.2 | webhook 지원 vendor 문의                                     | Tier 1 MUST   | 사용자 vendor 응답                          |
-| §3.7.3 | sandbox + 가격 + 변경계약서 vendor 문의                      | Tier 1 MUST   | 사용자 vendor 응답                          |
-| §3.7.4 | PRD v0.5 + mvp-roadmap v1.3 갱신 (vendor + Phase 5 scope)    | Tier 2 SHOULD | §3.7.2 + §3.7.3 응답 (또는 partial wording) |
-| §3.7.5 | plan §A.7 Phase 3 delegation prompt                          | Tier 2 SHOULD | gitignored plan; W2-6 closure 후 작성 가능  |
-| §3.7.6 | Phase 5 NotificationModule scope 축소 (Snowsign vendor 활용) | Tier 3 NICE   | §3.7.4 fold-in 또는 mvp-roadmap v1.3        |
+| #      | 항목                                                      | Tier          | 의존                                        |
+| ------ | --------------------------------------------------------- | ------------- | ------------------------------------------- |
+| §3.7.1 | vendor 결정 (UCanSign 채택)                               | Tier 1 MUST   | ✅ **CLOSED** (ucansign-api-reference v0.1) |
+| §3.7.2 | webhook 지원 vendor 문의                                  | Tier 1 MUST   | 사용자 vendor 응답                          |
+| §3.7.3 | sandbox + 가격 + 변경계약서 vendor 문의                   | Tier 1 MUST   | 사용자 vendor 응답                          |
+| §3.7.4 | PRD v0.5 + mvp-roadmap v1.3 갱신 (vendor + Phase 5 scope) | Tier 2 SHOULD | §3.7.2 + §3.7.3 응답 (또는 partial wording) |
+| §3.7.5 | plan §A.7 Phase 3 delegation prompt                       | Tier 2 SHOULD | gitignored plan; W2-6 closure 후 작성 가능  |
+| §3.7.6 | integrity_hash 자체 계산 패턴 (PDF + audit-trail SHA-256) | Tier 2 SHOULD | Phase 3 e2e test 흡수                       |
 
 ---
 
@@ -439,9 +419,9 @@ W2-7      ⏸ E2E + Neon CI branching                  (미시작; Q3 hybrid CI 
 
 > "시연 시 `?demo=true` 의존도 제거하고 싶음. Prisma seed에 frontend fixture 8 factories 동일하게 반영해줘 (W2-4 territory 갱신; backlog §3.5.5와 통합). e2e 영향 검토 + 변경 atomic commit."
 
-### 후보 4 — Snowsign vendor 응답 fold-in (별도 path)
+### 후보 4 — UCanSign vendor 응답 fold-in (별도 path)
 
-> "Snowsign vendor 문의 응답 받았어. webhook=○○ / sandbox=○○ / 가격=○○ / 변경계약서=○○. backlog §3.7.2/§3.7.3 fold-in + PRD v0.5 갱신 진행."
+> "UCanSign vendor 문의 응답 받았어. webhook signing=○○ / sandbox=○○ / 가격=○○ / 외국인 인증=○○. backlog §3.7.2/§3.7.3 fold-in + PRD v0.5 갱신 진행."
 
 ### 후보 5 — W2-7 진입 (Phase 1.W2 마무리)
 
@@ -529,12 +509,10 @@ gh run list --repo "L-dragon-woo/DGU-Technology-start-up-capstone" --branch dev-
 
 ## 9. ⚠️ 다음 세션 사용자 immediate action items
 
-1. **Snowsign vendor 콘솔 → 노출된 API key revoke + 새 key 발급** (chat transcript 보안 위험)
-2. **Snowsign vendor 문의** (backlog §3.7.2 + §3.7.3):
-   - webhook 지원 여부 + signing secret + retry policy
-   - sandbox URL + dev key 발급 + 월 사용량 면제
-   - 단가 + 월 한도 + 결제 주기
-   - 변경계약서 (FR-5.6 P1) 지원 패턴
+1. **UCanSign 신규 가입** (`app.ucansign.com/developer`) + API KEY 발급 + apps/api/.env에 `UCANSIGN_API_KEY` 추가 (Phase 3 진입 시; 현재 추가됨)
+2. **UCanSign vendor 문의 8건** (backlog §3.7.2 + §3.7.3):
+   - Tier 1: 외국인 본인인증 / sandbox / webhook signing / audit-trail 법적 효력
+   - Tier 2: 가격 상세 / 변경계약서 / integrity_hash / multi-tenant
 3. (선택) OPENAI_API_KEY 발급 (시연 시 실제 OpenAI 호출 보여주려면)
 4. (선택) Vercel preview 환경 변수 setup (시연용 배포)
 
@@ -542,8 +520,8 @@ gh run list --repo "L-dragon-woo/DGU-Technology-start-up-capstone" --branch dev-
 
 ## 10. 변경 이력
 
-| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v1.2 | 2026-06-04 | **Phase 3 vendor 재결정: Snowsign → UCanSign**. v1.1 시점 Snowsign 채택 (§3.7.1 ✅ CLOSED via `815e782`)이 UCanSign Postman 공식 문서 추가 검토 결과 재결정. UCanSign 우위 항목: webhook 명시 (4 events) + 가격 투명 (1건당 100원 + 신규 10건 무료) + 임베딩 페이지 (iframe 통합 4 endpoints) + customValue × 6 필드 (multi-tenant 매핑). Snowsign 우위 항목 (sacrifice): 모바일 알림톡 자체 자동 발송 (Phase 5 NotificationModule scope 축소 효과 없음 → 외부 dep #6 카카오 알림톡 비즈 그대로 필요) + integrity_hash 자체 제공 (rootmatching 자체 계산 패턴 §3.7.7로 보완 — PDF + audit-trail binary concat → SHA-256). Doc 변경: `docs/specs/ucansign-api-reference.md` v0.1 신설 (~580 lines, 10 sections) + `docs/specs/snowsign-api-reference.md` v0.1 deprecated banner + `docs/vendor-inquiries/ucansign-2026-06-04.md` v1.0 신설 (DEMO MOCK, 8 questions Q1-Q8) + `docs/vendor-inquiries/snowsign-2026-06-04.md` v1.1 deprecated banner + `docs/specs/w2-2.5-followup-backlog.md` v0.7 (§3.7 전체 재정의 + §3.7.7 신설 + §3.7.6 CANCELLED). vendor 문의 8건 미확인: Tier 1 4건 (외국인 본인인증/sandbox/webhook signing/audit-trail 법적 효력) + Tier 2 4건 (가격 상세/변경계약서/integrity_hash 자체 계산/multi-tenant). 외부 dep #2 status: ⏳ → 🔄 (UCanSign 재결정 + vendor 응답 대기). 본 vendor switch는 doc/decision 레벨만 — 실제 코드 통합은 Phase 3 진입 시 (W2-6 closure + Phase 2 closure 후). |
-| v1.1 | 2026-06-04 | Demo prep ✅ CLOSED — `bg_06bb5b1c` 결과 검증 + atomic commit `f23c144` `feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist` (12 files +1002/-407). 9 fixes verified (§1.6 매트릭스): P0 (request prefill + matching UI + 4-step loading + 8 factories) + P1 (mediation prefill + factory sender + 발주처 정합화) + P2 (WorkflowContext persist + demo-mode toggle). Bonus: `FactoryRecommendation` 6 optional 필드 (`matchScore`/`reorderCustomerCount`/`distanceKm`/`employeeCount`/`industrialComplex`/`aiReasonBullets`). Validation 전수 green: typecheck (3 pkg) + lint (0 errors) + format:check + guard:no-mock-auth + build (26 routes) + Playwright auth.spec (3.7s). Live W2-6 재확인: 9 schemas + /health/db + /matching/recommend mock fallback (Top-1 문래정밀가공 matchScore 97) + Q5 throttler 5/60s. Path A pre-rehearsal: 15 web routes 307 redirect query param 보존. 5 risks 식별 (R1 DB seed 4 vs fixture 8 / R2 OPENAI mock prefix / R3 middleware auth / R4 Better Auth 3/10s / R5 task tracker 손실은 commit 봉인으로 해소). 다음: Path A 사용자 manual rehearsal → Vercel preview 배포 → 최종 fix.                                                                                                                                                                                                                                                 |
-| v1.0 | 2026-06-03 | 신규 작성 — Wave 3b W2-5 (`6451145`) + Tier 1 parallel side-quests 5 commits (`e47045c` + `7cdf6c2` + `78d0bfa` + `08984ff` + `73dbc0d`) + plan v0.12 (gitignored) + backlog v0.5 (`bb66a4f`) + W2-6 spec v0.2 (`dbc97d7`) + Wave 4b W2-6 (`ea2bd66`) + Snowsign vendor reference (`815e782`) + backlog v0.6 (`9a5b5f5`) 통합 closure 시점 master ref doc. CI quality matrix 5/5 green at runs 26890386896 + 26890684223 (HEAD `9a5b5f5`). Hackathon demo prep agent (`bg_06bb5b1c`, in-flight at handoff commit) — visual-engineering + frontend-ui-ux skill, 9 fixes (P0 4 + P1 3 + P2 2) for AI matching shine + mock data 보강 + WorkflowContext persist. Phase 1.W2 ≈ 95% complete (W2-7만 남음). Phase 3 vendor 결정 Snowsign closure (외부 dep #2 부분 closure; sandbox/webhook 확인 대기). ⚠️ Security alert: 사용자 chat에 API key 일부 노출 (file system 어디에도 저장 안 됨, 그러나 chat transcript 위험 → 사용자 측 vendor 콘솔 rotate 권고). 다음 세션 첫 액션: `background_output(task_id="bg_06bb5b1c")` → 9 fixes 결과 검증 → Path A manual rehearsal → Vercel preview 배포 → 최종 rehearsal. 이전 master `2026-06-03-wave-3a-q10-session-c-complete.md` v1.0은 historical reference로 보존.                                                                                                                                                                                                        |
+| 버전 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1.2 | 2026-06-04 | Phase 3 vendor 결정 UCanSign 채택. §1.4 single vendor 정보로 정리 (이전 vendor 후보 비교 정보는 history에서 제거). ucansign-api-reference v0.1 + ucansign vendor inquiry mock v1.0 신설. backlog v0.7 + handoff 파일명 갱신 (`...ucansign-demo-prep.md`). 외부 dep #2 status: 🔄 vendor 결정 완료, 8 questions 응답 대기. 실제 코드 통합은 Phase 3 진입 시.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| v1.1 | 2026-06-04 | Demo prep ✅ CLOSED — `bg_06bb5b1c` 결과 검증 + atomic commit `f23c144` `feat(web): hackathon demo prep — AI matching shine + factory data boost + workflow persist` (12 files +1002/-407). 9 fixes verified (§1.6 매트릭스): P0 (request prefill + matching UI + 4-step loading + 8 factories) + P1 (mediation prefill + factory sender + 발주처 정합화) + P2 (WorkflowContext persist + demo-mode toggle). Bonus: `FactoryRecommendation` 6 optional 필드 (`matchScore`/`reorderCustomerCount`/`distanceKm`/`employeeCount`/`industrialComplex`/`aiReasonBullets`). Validation 전수 green: typecheck (3 pkg) + lint (0 errors) + format:check + guard:no-mock-auth + build (26 routes) + Playwright auth.spec (3.7s). Live W2-6 재확인: 9 schemas + /health/db + /matching/recommend mock fallback (Top-1 문래정밀가공 matchScore 97) + Q5 throttler 5/60s. Path A pre-rehearsal: 15 web routes 307 redirect query param 보존. 5 risks 식별 (R1 DB seed 4 vs fixture 8 / R2 OPENAI mock prefix / R3 middleware auth / R4 Better Auth 3/10s / R5 task tracker 손실은 commit 봉인으로 해소). 다음: Path A 사용자 manual rehearsal → Vercel preview 배포 → 최종 fix. |
+| v1.0 | 2026-06-03 | 신규 작성 — Wave 3b W2-5 (`6451145`) + Tier 1 parallel side-quests 5 commits (`e47045c` + `7cdf6c2` + `78d0bfa` + `08984ff` + `73dbc0d`) + plan v0.12 (gitignored) + backlog v0.5 (`bb66a4f`) + W2-6 spec v0.2 (`dbc97d7`) + Wave 4b W2-6 (`ea2bd66`) + Phase 3 vendor reference (`815e782`) + backlog v0.6 (`9a5b5f5`) 통합 closure 시점 master ref doc. CI quality matrix 5/5 green at runs 26890386896 + 26890684223 (HEAD `9a5b5f5`). Hackathon demo prep agent (`bg_06bb5b1c`, in-flight at handoff commit) — visual-engineering + frontend-ui-ux skill, 9 fixes (P0 4 + P1 3 + P2 2) for AI matching shine + mock data 보강 + WorkflowContext persist. Phase 1.W2 ≈ 95% complete (W2-7만 남음). Phase 3 vendor 결정 진행 (외부 dep #2 부분 closure; v1.2에서 UCanSign 최종 결정). 다음 세션 첫 액션: `background_output(task_id="bg_06bb5b1c")` → 9 fixes 결과 검증 → Path A manual rehearsal → Vercel preview 배포 → 최종 rehearsal. 이전 master `2026-06-03-wave-3a-q10-session-c-complete.md` v1.0은 historical reference로 보존.                                                                                                                          |

@@ -1,5 +1,7 @@
 # Snowsign API Reference + Phase 3 Integration Plan
 
+> ⚠️ **DEPRECATED (2026-06-04, handoff v1.2 시점)** — Snowsign 채택 결정 (v0.6 backlog 시점)이 **UCanSign으로 재결정**되어 본 doc은 **alternative reference로 보존**. 현 채택 vendor spec은 `docs/specs/ucansign-api-reference.md` v0.1 참조. 본 doc은 비교/PoC failure rollback 시 swap option으로 유지.
+
 > Phase 3 (전자계약) vendor 결정 및 rootmatching 통합 design. 외부 vendor 가이드의 핵심 부분을 hoist하여 우리 시스템과의 매핑을 명시. 실제 구현은 W2-6 closure + Phase 2 (견적/매칭 persist) 후 별도 delegation으로 진행.
 
 | 항목             | 값                                                                                        |

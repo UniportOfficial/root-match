@@ -45,10 +45,10 @@ playwright/.cache/
 !.env.local.example
 
 # Editor / IDE
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 .idea/
+.zed/
+.fleet/
 *.suo
 *.ntvs*
 *.njsproj
@@ -92,7 +92,7 @@ temp/
 *.orig
 *~
 
-# Database (Prisma / Postgres / SQLite — Phase 1.W2 대비)
+# Local DB files
 *.sqlite
 *.sqlite3
 *.sqlite-journal
@@ -102,7 +102,7 @@ prisma/*.db*
 pgdata/
 postgres-data/
 
-# AI coding tools (per-developer local state)
+# AI tool state (per-developer)
 .cursor/
 .cursorrules.local.md
 .windsurfrules
@@ -113,7 +113,7 @@ postgres-data/
 .qodo/
 *.local.md
 
-# Cert/key safety net (Better Auth / UCanSign / TLS)
+# Certs / keys
 *.pem
 *.key
 *.crt
@@ -128,3 +128,136 @@ certs/
 # Foreign lockfiles (pnpm-only project — prevent accidental commits)
 package-lock.json
 yarn.lock
+
+# AI tool config files
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+AGENTS.local.md
+GEMINI.md
+OPENCODE.md
+OPENROUTER.md
+.cursorrules
+.copilot-instructions.local.md
+.github/copilot-instructions.md
+.mcp.json
+.mcp.local.json
+mcp-config*.json
+mcp-server*.json
+codex.toml
+.codex.toml
+claude.json
+.claude.json
+gemini.json
+.gemini.json
+.aigenrc
+
+# Markdown drafts / notes
+TODO.md
+TODO.*.md
+NOTES.md
+NOTE.md
+PLAN.md
+PLANNING.md
+ROADMAP.md
+JOURNAL.md
+LOG.md
+DIARY.md
+DECISIONS.md
+ADR*.md
+RFC*.md
+IDEAS.md
+BRAINSTORM.md
+SCRATCH.md
+HANDOFF*.md
+handoff*.md
+*.draft.md
+*-DRAFT.md
+*.bak.md
+*.bk.md
+
+# PR / review drafts
+PR_DESCRIPTION.md
+PR_BODY.md
+PR-DESCRIPTION.md
+pr-*.md
+PR-*.md
+review.md
+reviews/
+code-review.md
+review-*.md
+
+# Meeting / comm drafts
+meeting-*.md
+meeting-*.txt
+meetings/
+standup-*.md
+1on1-*.md
+retro-*.md
+
+# Session / task scratch
+chats/
+.chats/
+conversations/
+transcript*
+transcripts/
+*.session
+*.replay
+tasks/local/
+.tasks/
+.todos/
+journal/
+.journal/
+scratch/
+.scratch/
+playground/
+.playground/
+wip/
+.wip/
+drafts/
+
+# Screenshots / recordings
+screenshots/
+screenshot-*.png
+screen-*.png
+screen-*.jpg
+recording-*.mov
+recording-*.webm
+recordings/
+
+# Additional AI tool state
+.opencode/
+.opencode-*/
+.cody/
+.amazonq/
+.q/
+.tabnine/
+.tabnine_*
+.copilot/
+.kite/
+.cursor-server/
+.anthropic/
+.openai/
+.gemini/
+.specify/
+.plan/
+plans/local/
+
+# Profiling / analysis artifacts
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+*.trace
+flamegraph-*
+lighthouse-report*.html
+lighthouse-report*.json
+bundle-analyzer-report*
+stats.json
+
+# Local env / tool config
+.tool-versions
+.python-version
+.ruby-version
+.terraform-version
+.envrc
+.direnv/

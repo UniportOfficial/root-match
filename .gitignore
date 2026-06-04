@@ -73,3 +73,6 @@ __v0_jsx-dev-runtime.ts
 # Sisyphus / OpenCode tool state (never commit)
 .sisyphus/
 .omx/
+
+# Project docs — local-only (PRD/specs/handoffs/decisions/vendor-inquiries)
+docs/

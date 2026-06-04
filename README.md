@@ -7,8 +7,6 @@
 - **프로젝트**: Rootmatching (`rootmatching`)
 - **도메인**: 한국 뿌리산업(6대 공정) 발주처 ↔ 공장 매칭
 - **팀**: 동국대 2026-1 기술창업캡스톤디자인 1 · 이용우 · 박세준 · 서동건 · 장준서
-- **PRD**: [`docs/prd/rootmatching-prd.md`](./docs/prd/rootmatching-prd.md) (v0.4)
-- **디자인 시스템**: [`docs/design-system.md`](./docs/design-system.md)
 
 ## 브랜치 현황
 
@@ -53,10 +51,6 @@ rootmatching/
 ├── packages/
 │   └── shared/                     # 공용 zod schemas + 도메인 타입
 │       └── src/types/              #   matching, requests, transactions, disputes
-├── docs/
-│   ├── prd/                        # PRD v0.4
-│   ├── handoffs/                   # 세션 인계 문서
-│   └── design-system.md            # Toss-style 토큰
 └── .github/workflows/ci.yml
 ```
 
@@ -101,8 +95,6 @@ pnpm dev
 | production | 설정             | (무관)                   | 실제 OpenAI 호출                                         |
 | production | 미설정           | 미설정 또는 `false`      | **500 throw** (silent mock 금지)                         |
 | production | 미설정           | `"true"`                 | mock 추천 반환 (명시적 opt-in)                           |
-
-근거: [`docs/specs/rootmatching-backend-checklist.md`](./docs/specs/rootmatching-backend-checklist.md) AIM-004 정책과 정렬.
 
 ## 워크스페이스 명령
 
@@ -152,11 +144,7 @@ pnpm dev
 | GET    | `/health/db`          | DB + pgvector 상태 확인 (`{ db, vectorExtension, latencyMs, timestamp }`) |
 | POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 (key 미설정 시 mock fallback)   |
 
-> 1-step vs 2-step 엔드포인트 설계 결정은 [`docs/specs/matching-endpoint-design-decision.md`](./docs/specs/matching-endpoint-design-decision.md) 참고.
-
 ## 다음 작업 (Phase 1.Week 2)
-
-`docs/handoffs/2026-05-26-phase-1-week-1-complete.md` v1.1 참고:
 
 1. Prisma 6 + Neon PostgreSQL 연결
 2. Better Auth 통합 (`better-auth` + Prisma adapter, NestJS 안에 내장)

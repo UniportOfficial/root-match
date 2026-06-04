@@ -22,6 +22,7 @@ import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { mockReceivedQuoteRequests } from '@/data/requestData'
 import { useMessagesDispatch } from '@/state/MessagesContext'
+import { useUserState } from '@/state/UserContext'
 
 const quoteSubmissionSchema = z.object({
   quoteAmount: z.string().min(1, '견적 금액을 입력해주세요'),
@@ -61,6 +62,7 @@ export default function FactoryRequestDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const dispatch = useMessagesDispatch()
+  const { currentUser } = useUserState()
   const request = mockReceivedQuoteRequests.find((item) => item.id === params.id)
 
   const {
@@ -102,11 +104,14 @@ export default function FactoryRequestDetailPage() {
 
   function submitQuote(data: QuoteSubmission) {
     const newMessageId = `msg-quote-${Date.now()}`
+    const senderName = currentUser?.accountType === 'factory' ? currentUser.name : '박공장'
+    const senderCompany =
+      currentUser?.accountType === 'factory' ? currentUser.company.name : '문래정밀가공'
     const newMessage: Message = {
       id: newMessageId,
-      senderId: 'user1',
-      senderName: '홍길동',
-      senderCompany: '테크솔루션 주식회사',
+      senderId: currentUser?.accountType === 'factory' ? currentUser.id : 'factory-user1',
+      senderName,
+      senderCompany,
       receiverId: 'client-' + currentRequest.id,
       receiverName: currentRequest.clientName,
       receiverCompany: currentRequest.clientName,

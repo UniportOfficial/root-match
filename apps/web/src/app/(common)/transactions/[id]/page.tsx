@@ -88,6 +88,8 @@ export default function TransactionProgressPage() {
     )
   }
 
+  const currentTransaction = transaction
+
   const displayedUpdates = [...localUpdates, ...transaction.updates]
 
   function submitProgressUpdate() {
@@ -111,6 +113,17 @@ export default function TransactionProgressPage() {
     ])
     setUpdateTitle('')
     setUpdateDescription('')
+  }
+
+  function goToMediation() {
+    const params = new URLSearchParams({
+      txn: currentTransaction.id,
+      counterparty: currentTransaction.factory,
+      amount: currentTransaction.amount.replace(/[^0-9]/g, ''),
+      projectName: currentTransaction.projectName,
+    })
+
+    router.push(`/disputes/mediation?${params.toString()}`)
   }
 
   return (
@@ -352,7 +365,7 @@ export default function TransactionProgressPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => router.push('/disputes/mediation')}
+                  onClick={goToMediation}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-3 text-base font-bold text-ink-700 transition hover:border-brand-light hover:bg-surface-muted hover:text-brand"
                 >
                   <AlertTriangle className="h-6 w-6" />

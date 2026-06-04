@@ -13,12 +13,18 @@ export interface FactoryRecommendation {
   name: string
   location: string
   processes: string[]
+  matchScore?: number
   trustScore: number
   deliveryRate: number
   reorderRate: number
+  reorderCustomerCount?: number
+  distanceKm?: number
+  employeeCount?: number
+  industrialComplex?: string
   estimateMin: number
   estimateMax: number
   aiReason: string
+  aiReasonBullets?: string[]
   qualityScore: number
   deliveryScore: number
   priceCompetitiveness: number

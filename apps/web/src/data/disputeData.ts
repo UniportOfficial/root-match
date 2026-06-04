@@ -20,7 +20,7 @@ export const disputeCases: DisputeCase[] = [
     mediator: '플랫폼 중재팀',
     progress: 45,
     updatedAt: '2026.05.27 14:20',
-    requester: '루트테크',
+    requester: '테크솔루션 주식회사',
     respondent: '문래정밀가공',
     contractDate: '2026.04.28',
     dueDate: '2026.05.20',

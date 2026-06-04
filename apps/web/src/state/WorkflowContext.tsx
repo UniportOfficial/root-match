@@ -12,6 +12,7 @@ import type { FactoryRecommendation, QuoteRequestDraft } from '@rootmatching/sha
 
 const MATCHING_RESULTS_KEY = 'rm:matchingResults'
 const SELECTED_FACTORY_KEY = 'rm:selectedFactory'
+const WORKFLOW_EXTRA_KEY = 'rm:workflowExtra'
 const STALE_AFTER_MS = 60 * 60 * 1000
 
 export interface MatchingResultsPayload {
@@ -51,6 +52,10 @@ type WorkflowAction =
       payload: {
         matchingResults: MatchingResultsPayload | null
         selectedFactory: FactoryRecommendation | null
+        contract: WorkflowContract | null
+        paymentCompleted: boolean
+        inspectionApproved: boolean
+        review: WorkflowReview | null
       }
     }
   | { type: 'workflow/setMatchingResults'; payload: MatchingResultsPayload | null }
@@ -78,6 +83,10 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
         hydrated: true,
         matchingResults: action.payload.matchingResults,
         selectedFactory: action.payload.selectedFactory,
+        contract: action.payload.contract,
+        paymentCompleted: action.payload.paymentCompleted,
+        inspectionApproved: action.payload.inspectionApproved,
+        review: action.payload.review,
       }
     case 'workflow/setMatchingResults':
       return { ...state, matchingResults: action.payload }
@@ -149,6 +158,47 @@ function isMatchingResultsPayload(value: unknown): value is MatchingResultsPaylo
   )
 }
 
+function isWorkflowContract(value: unknown): value is WorkflowContract {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value.transactionId === 'string' &&
+    typeof value.projectName === 'string' &&
+    typeof value.factoryName === 'string' &&
+    typeof value.amount === 'string' &&
+    typeof value.dueDate === 'string'
+  )
+}
+
+function isWorkflowReview(value: unknown): value is WorkflowReview {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value.transactionId === 'string' &&
+    typeof value.rating === 'number' &&
+    typeof value.content === 'string' &&
+    typeof value.submittedAt === 'string'
+  )
+}
+
+interface WorkflowExtraPayload {
+  contract: WorkflowContract | null
+  paymentCompleted: boolean
+  inspectionApproved: boolean
+  review: WorkflowReview | null
+}
+
+function isWorkflowExtraPayload(value: unknown): value is WorkflowExtraPayload {
+  if (!isRecord(value)) return false
+
+  return (
+    (value.contract === null || isWorkflowContract(value.contract)) &&
+    typeof value.paymentCompleted === 'boolean' &&
+    typeof value.inspectionApproved === 'boolean' &&
+    (value.review === null || isWorkflowReview(value.review))
+  )
+}
+
 function readMatchingResults(): MatchingResultsPayload | null {
   try {
     const raw = sessionStorage.getItem(MATCHING_RESULTS_KEY)
@@ -175,6 +225,38 @@ function readSelectedFactory(): FactoryRecommendation | null {
   }
 }
 
+function readWorkflowExtra(): WorkflowExtraPayload {
+  try {
+    const raw = sessionStorage.getItem(WORKFLOW_EXTRA_KEY)
+    if (!raw) {
+      return {
+        contract: null,
+        paymentCompleted: false,
+        inspectionApproved: false,
+        review: null,
+      }
+    }
+    const parsed: unknown = JSON.parse(raw)
+    if (!isWorkflowExtraPayload(parsed)) {
+      return {
+        contract: null,
+        paymentCompleted: false,
+        inspectionApproved: false,
+        review: null,
+      }
+    }
+    return parsed
+  } catch (error) {
+    console.error('Failed to hydrate workflow extra state from sessionStorage', error)
+    return {
+      contract: null,
+      paymentCompleted: false,
+      inspectionApproved: false,
+      review: null,
+    }
+  }
+}
+
 const StateContext = createContext<WorkflowState | undefined>(undefined)
 const DispatchContext = createContext<Dispatch<WorkflowAction> | undefined>(undefined)
 
@@ -182,11 +264,14 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
   useEffect(() => {
+    const workflowExtra = readWorkflowExtra()
+
     dispatch({
       type: 'workflow/hydrated',
       payload: {
         matchingResults: readMatchingResults(),
         selectedFactory: readSelectedFactory(),
+        ...workflowExtra,
       },
     })
   }, [])
@@ -216,6 +301,29 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       console.error('Failed to persist selected factory to sessionStorage', error)
     }
   }, [state.hydrated, state.selectedFactory])
+
+  useEffect(() => {
+    if (!state.hydrated) return
+    try {
+      sessionStorage.setItem(
+        WORKFLOW_EXTRA_KEY,
+        JSON.stringify({
+          contract: state.contract,
+          paymentCompleted: state.paymentCompleted,
+          inspectionApproved: state.inspectionApproved,
+          review: state.review,
+        }),
+      )
+    } catch (error) {
+      console.error('Failed to persist workflow extra state to sessionStorage', error)
+    }
+  }, [
+    state.contract,
+    state.hydrated,
+    state.inspectionApproved,
+    state.paymentCompleted,
+    state.review,
+  ])
 
   return (
     <StateContext.Provider value={state}>

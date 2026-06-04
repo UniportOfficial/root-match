@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+  Brain,
   CalendarDays,
   CheckCircle,
   ChevronLeft,
@@ -12,6 +13,7 @@ import {
   DollarSign,
   FileText,
   RefreshCw,
+  Search,
   Sparkles,
   Star,
   Upload,
@@ -21,8 +23,12 @@ import {
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { FactoryRecommendation, QuoteRequestDraft } from '@rootmatching/shared'
+import { mockFactoryRecommendations } from '@rootmatching/shared/fixtures/factory-data'
 import { AppBadge } from '@/components/ui/AppBadge'
+import { AppButton } from '@/components/ui/AppButton'
+import { ProcessStepper } from '@/components/ui/ProcessStepper'
 import { cn } from '@/lib/cn'
+import { useDemoMode } from '@/lib/demo-mode'
 
 const quoteRequestSchema = z.object({
   projectName: z.string().trim().min(1, '프로젝트명을 입력하세요.'),
@@ -43,6 +49,16 @@ const initialRequest: QuoteRequestDraft = {
   budgetRange: '3,000만원 ~ 4,500만원',
   detailRequirements:
     '6061 알루미늄 소재 기준으로 CNC 정밀가공과 표면 아노다이징 처리가 필요합니다. 외관 스크래치 기준이 엄격하며, 초도품 검수 후 양산 전환 예정입니다.',
+}
+
+const demoRequest: QuoteRequestDraft = {
+  projectName: '알루미늄 하우징 시제품',
+  processType: 'surface',
+  productItem: '알루미늄 하우징 시제품',
+  estimatedQuantity: '초도 5,000개',
+  desiredDeadline: '2026-04-30',
+  budgetRange: '400만원 ~ 500만원',
+  detailRequirements: 'RoHS 준수, 표면 거칠기 Ra 0.8 이하, 안정적 납기 보증 우선',
 }
 
 const initialFiles: UploadedFile[] = [
@@ -96,6 +112,16 @@ const aiCriteria: Array<{ icon: LucideIcon; label: string; description: string }
     label: '견적 경쟁력',
     description: '예산 범위 내 합리적 견적',
   },
+]
+
+const matchingLoadingSteps = [
+  { title: '요청 임베딩 생성 중...', description: '도면·공정·납기 조건을 벡터로 변환합니다.' },
+  {
+    title: '유사 공장 vector search 중...',
+    description: '수도권 공장 프로필과 거래 이력을 검색합니다.',
+  },
+  { title: 'GPT-4o 추천 분석 중...', description: '품질·납기·거리·재거래 데이터를 종합합니다.' },
+  { title: '추천 결과 정리 중...', description: '시연용 Top-N 카드와 추천 사유를 구성합니다.' },
 ]
 
 interface UploadedFile {
@@ -246,6 +272,7 @@ const errorClassName = 'mt-2 text-sm font-semibold text-danger'
 
 export default function ClientRequestPage() {
   const router = useRouter()
+  const isDemoMode = useDemoMode()
   const parsedQuantity = useMemo(() => parseQuantityDetails(initialRequest.estimatedQuantity), [])
   const parsedBudget = useMemo(() => parseBudgetRange(initialRequest.budgetRange), [])
   const [firstRunQuantity, setFirstRunQuantity] = useState(parsedQuantity.firstRun)
@@ -258,6 +285,7 @@ export default function ClientRequestPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(initialFiles)
   const [isDragging, setIsDragging] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [loadingStep, setLoadingStep] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
@@ -274,6 +302,34 @@ export default function ClientRequestPage() {
   const desiredDeadline = watch('desiredDeadline')
   const selectedQuantityUnit =
     quantityUnit === customQuantityUnitValue ? customQuantityUnit.trim() : quantityUnit
+
+  function fillDemoRequest() {
+    const quantity = parseQuantityDetails(demoRequest.estimatedQuantity)
+    const budget = parseBudgetRange(demoRequest.budgetRange)
+
+    setValue('projectName', demoRequest.projectName, { shouldDirty: true, shouldValidate: true })
+    setValue('processType', demoRequest.processType, { shouldDirty: true, shouldValidate: true })
+    setValue('productItem', demoRequest.productItem, { shouldDirty: true, shouldValidate: true })
+    setValue('desiredDeadline', demoRequest.desiredDeadline, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    setValue('detailRequirements', demoRequest.detailRequirements, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    setFirstRunQuantity(quantity.firstRun)
+    setProductionQuantity(quantity.production)
+    setQuantityCadence(quantity.cadence)
+    setQuantityUnit(quantity.unit)
+    setCustomQuantityUnit(quantity.customUnit)
+    setBudgetMin(budget.min)
+    setBudgetMax(budget.max)
+  }
+
+  function wait(ms: number) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms))
+  }
 
   function addFiles(fileList: FileList) {
     const nextFiles = Array.from(fileList).map((file) => ({
@@ -301,6 +357,7 @@ export default function ClientRequestPage() {
 
   async function submitRequest(values: QuoteRequestDraft) {
     setSubmitError(null)
+    setLoadingStep(1)
     const estimatedQuantity = buildEstimatedQuantity({
       firstRunQuantity,
       productionQuantity,
@@ -314,327 +371,391 @@ export default function ClientRequestPage() {
       budgetRange,
     })
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/matching/recommend`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
+    const matchingRequest = fetch(
+      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/matching/recommend`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      )
+        body: JSON.stringify(request),
+      },
+    )
+
+    try {
+      await wait(900)
+      setLoadingStep(2)
+      await wait(900)
+      setLoadingStep(3)
+
+      const response = await matchingRequest
 
       if (!response.ok) {
         throw new Error('AI 매칭 중 오류가 발생했습니다.')
       }
 
       const results = (await response.json()) as FactoryRecommendation[]
+      await wait(1200)
+      setLoadingStep(4)
+      await wait(500)
       sessionStorage.setItem(
         'rm:matchingResults',
         JSON.stringify({ results, request, submittedAt: Date.now() }),
       )
       router.push('/matching')
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'AI 매칭 중 오류가 발생했습니다.')
+    } catch {
+      await wait(700)
+      setLoadingStep(4)
+      await wait(500)
+      sessionStorage.setItem(
+        'rm:matchingResults',
+        JSON.stringify({ results: mockFactoryRecommendations, request, submittedAt: Date.now() }),
+      )
+      router.push('/matching?demo=true')
     }
   }
 
   return (
-    <div className="min-h-screen bg-surface-muted px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-          <AppBadge variant="blue">
-            <Sparkles className="h-4 w-4" />
-            AI 공장 매칭
-          </AppBadge>
-          <h1 className="mt-4 text-3xl font-bold tracking-normal text-ink-950 sm:text-4xl">
-            수주 의뢰 등록
-          </h1>
-          <p className="mt-3 max-w-3xl text-lg leading-8 text-ink-700">
-            제작 요구사항을 입력하면 AI가 적합한 공장을 추천합니다.
-          </p>
-        </header>
+    <>
+      <div className="min-h-screen bg-surface-muted px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+            <AppBadge variant="blue">
+              <Sparkles className="h-4 w-4" />
+              AI 공장 매칭
+            </AppBadge>
+            <h1 className="mt-4 text-3xl font-bold tracking-normal text-ink-950 sm:text-4xl">
+              수주 의뢰 등록
+            </h1>
+            <p className="mt-3 max-w-3xl text-lg leading-8 text-ink-700">
+              제작 요구사항을 입력하면 AI가 적합한 공장을 추천합니다.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-light bg-brand-light/50 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-brand">
+                  해커톤 시연 빠른 입력{isDemoMode ? ' · Demo Mode' : ''}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink-700">
+                  CNC 절삭 + 표면처리, 5,000개, 4-6주 납기 조건을 한 번에 채웁니다.
+                </p>
+              </div>
+              <AppButton type="button" variant="secondary" size="md" onClick={fillDemoRequest}>
+                <Sparkles className="h-4 w-4" />
+                예시 데이터로 채우기
+              </AppButton>
+            </div>
+          </header>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <main>
-            <form
-              onSubmit={handleSubmit(submitRequest)}
-              className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
-            >
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="projectName" className={labelClassName}>
-                    프로젝트명 <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    id="projectName"
-                    type="text"
-                    placeholder="예: 2024년 신제품 부품 제작"
-                    className={inputClassName}
-                    {...register('projectName')}
-                  />
-                  {errors.projectName && (
-                    <p className={errorClassName}>{errors.projectName.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="processType" className={labelClassName}>
-                    공정 유형 <span className="text-danger">*</span>
-                  </label>
-                  <select
-                    id="processType"
-                    className={cn(inputClassName, 'appearance-none')}
-                    {...register('processType')}
-                  >
-                    <option value="" disabled>
-                      공정 유형을 선택하세요
-                    </option>
-                    {processTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.processType && (
-                    <p className={errorClassName}>{errors.processType.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="productItem" className={labelClassName}>
-                    제작 품목 <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    id="productItem"
-                    type="text"
-                    placeholder="예: 알루미늄 케이스, 스틸 브라켓"
-                    className={inputClassName}
-                    {...register('productItem')}
-                  />
-                  {errors.productItem && (
-                    <p className={errorClassName}>{errors.productItem.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className={labelClassName}>
-                    예상 수량 <span className="text-danger">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <main>
+              <form
+                onSubmit={handleSubmit(submitRequest)}
+                className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
+              >
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="projectName" className={labelClassName}>
+                      프로젝트명 <span className="text-danger">*</span>
+                    </label>
                     <input
-                      id="firstRunQuantity"
-                      value={firstRunQuantity}
-                      onChange={(event) => setFirstRunQuantity(event.target.value)}
+                      id="projectName"
                       type="text"
-                      inputMode="numeric"
-                      required
-                      placeholder="초도 수량"
+                      placeholder="예: 2024년 신제품 부품 제작"
                       className={inputClassName}
+                      {...register('projectName')}
                     />
-                    <input
-                      id="productionQuantity"
-                      value={productionQuantity}
-                      onChange={(event) => setProductionQuantity(event.target.value)}
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="양산 수량"
-                      className={inputClassName}
-                    />
+                    {errors.projectName && (
+                      <p className={errorClassName}>{errors.projectName.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="processType" className={labelClassName}>
+                      공정 유형 <span className="text-danger">*</span>
+                    </label>
                     <select
-                      id="quantityCadence"
-                      value={quantityCadence}
-                      onChange={(event) => setQuantityCadence(event.target.value)}
+                      id="processType"
                       className={cn(inputClassName, 'appearance-none')}
-                      aria-label="양산 주기"
+                      {...register('processType')}
                     >
-                      {quantityCadenceOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      <option value="" disabled>
+                        공정 유형을 선택하세요
+                      </option>
+                      {processTypes.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
                         </option>
                       ))}
                     </select>
-                    <div className="grid gap-2">
+                    {errors.processType && (
+                      <p className={errorClassName}>{errors.processType.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="productItem" className={labelClassName}>
+                      제작 품목 <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="productItem"
+                      type="text"
+                      placeholder="예: 알루미늄 케이스, 스틸 브라켓"
+                      className={inputClassName}
+                      {...register('productItem')}
+                    />
+                    {errors.productItem && (
+                      <p className={errorClassName}>{errors.productItem.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={labelClassName}>
+                      예상 수량 <span className="text-danger">*</span>
+                    </label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                      <input
+                        id="firstRunQuantity"
+                        value={firstRunQuantity}
+                        onChange={(event) => setFirstRunQuantity(event.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        placeholder="초도 수량"
+                        className={inputClassName}
+                      />
+                      <input
+                        id="productionQuantity"
+                        value={productionQuantity}
+                        onChange={(event) => setProductionQuantity(event.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="양산 수량"
+                        className={inputClassName}
+                      />
                       <select
-                        id="quantityUnit"
-                        value={quantityUnit}
-                        onChange={(event) => setQuantityUnit(event.target.value)}
+                        id="quantityCadence"
+                        value={quantityCadence}
+                        onChange={(event) => setQuantityCadence(event.target.value)}
                         className={cn(inputClassName, 'appearance-none')}
-                        aria-label="단위"
+                        aria-label="양산 주기"
                       >
-                        {quantityUnitOptions.map((unit) => (
-                          <option key={unit} value={unit}>
-                            {unit}
+                        {quantityCadenceOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
                           </option>
                         ))}
-                        <option value={customQuantityUnitValue}>직접 입력</option>
                       </select>
-                      {quantityUnit === customQuantityUnitValue && (
-                        <input
-                          value={customQuantityUnit}
-                          onChange={(event) => setCustomQuantityUnit(event.target.value)}
-                          type="text"
-                          placeholder="단위 입력"
-                          className={inputClassName}
-                          aria-label="사용자 지정 단위"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <DeadlinePicker
-                    value={desiredDeadline}
-                    error={errors.desiredDeadline?.message}
-                    onChange={(value) =>
-                      setValue('desiredDeadline', value, {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClassName}>예산 범위</label>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                    <div className="relative">
-                      <input
-                        id="budgetMin"
-                        value={budgetMin}
-                        onChange={(event) => setBudgetMin(event.target.value)}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="하한"
-                        className={cn(inputClassName, 'pr-12')}
-                      />
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-ink-400">
-                        만원
-                      </span>
-                    </div>
-                    <span className="hidden text-center text-ink-400 sm:block">~</span>
-                    <div className="relative">
-                      <input
-                        id="budgetMax"
-                        value={budgetMax}
-                        onChange={(event) => setBudgetMax(event.target.value)}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="상한"
-                        className={cn(inputClassName, 'pr-12')}
-                      />
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-ink-400">
-                        만원
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClassName}>도면/파일 업로드</label>
-                  <div
-                    onDragOver={(event) => {
-                      event.preventDefault()
-                      setIsDragging(true)
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      'relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition',
-                      isDragging
-                        ? 'border-brand bg-brand-light'
-                        : 'border-border bg-surface-muted hover:border-brand-light',
-                    )}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept=".pdf,.dwg,.dxf,.step,.stp,.igs,.iges,.jpg,.jpeg,.png"
-                      onChange={(event) => {
-                        if (event.target.files) {
-                          addFiles(event.target.files)
-                          event.target.value = ''
-                        }
-                      }}
-                      className="sr-only"
-                    />
-                    <Upload className="mx-auto mb-3 h-10 w-10 text-ink-400" />
-                    <p className="text-sm text-ink-700">
-                      파일을 드래그하거나{' '}
-                      <span className="font-semibold text-brand">클릭하여 업로드</span>
-                    </p>
-                    <p className="mt-1 text-xs text-ink-400">
-                      PDF, DWG, DXF, STEP, IGES, JPG, PNG (최대 50MB)
-                    </p>
-                  </div>
-
-                  {uploadedFiles.length > 0 && (
-                    <ul className="mt-4 space-y-2">
-                      {uploadedFiles.map((file, index) => (
-                        <li
-                          key={`${file.name}-${file.size}-${index}`}
-                          className="flex items-center justify-between rounded-xl border border-border bg-surface-muted p-3"
+                      <div className="grid gap-2">
+                        <select
+                          id="quantityUnit"
+                          value={quantityUnit}
+                          onChange={(event) => setQuantityUnit(event.target.value)}
+                          className={cn(inputClassName, 'appearance-none')}
+                          aria-label="단위"
                         >
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-brand" />
-                            <div>
-                              <p className="text-sm font-semibold text-ink-700">{file.name}</p>
-                              <p className="text-xs text-ink-400">{formatFileSize(file.size)}</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            className="rounded-full p-1 text-ink-400 transition hover:bg-border hover:text-ink-700"
-                            aria-label={`${file.name} 삭제`}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="detailRequirements" className={labelClassName}>
-                    상세 요구사항
-                  </label>
-                  <textarea
-                    id="detailRequirements"
-                    rows={5}
-                    placeholder="추가적인 요구사항이나 특이사항을 입력하세요..."
-                    className="w-full resize-none rounded-xl border border-slate-300 bg-surface px-4 py-3 text-lg text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand focus:ring-4 focus:ring-brand-light"
-                    {...register('detailRequirements')}
-                  />
-                </div>
-
-                {submitError && (
-                  <div className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-sm font-semibold text-danger">
-                    {submitError}
+                          {quantityUnitOptions.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {unit}
+                            </option>
+                          ))}
+                          <option value={customQuantityUnitValue}>직접 입력</option>
+                        </select>
+                        {quantityUnit === customQuantityUnitValue && (
+                          <input
+                            value={customQuantityUnit}
+                            onChange={(event) => setCustomQuantityUnit(event.target.value)}
+                            type="text"
+                            placeholder="단위 입력"
+                            className={inputClassName}
+                            aria-label="사용자 지정 단위"
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-4 text-base font-bold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Sparkles className={cn('h-5 w-5', isSubmitting && 'animate-spin')} />
-                  {isSubmitting ? 'AI가 공장을 분석하는 중...' : 'AI 매칭 시작하기'}
-                </button>
-              </div>
-            </form>
-          </main>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <DeadlinePicker
+                      value={desiredDeadline}
+                      error={errors.desiredDeadline?.message}
+                      onChange={(value) =>
+                        setValue('desiredDeadline', value, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        })
+                      }
+                    />
+                  </div>
 
-          <AICriteriaPanel />
+                  <div>
+                    <label className={labelClassName}>예산 범위</label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                      <div className="relative">
+                        <input
+                          id="budgetMin"
+                          value={budgetMin}
+                          onChange={(event) => setBudgetMin(event.target.value)}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="하한"
+                          className={cn(inputClassName, 'pr-12')}
+                        />
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-ink-400">
+                          만원
+                        </span>
+                      </div>
+                      <span className="hidden text-center text-ink-400 sm:block">~</span>
+                      <div className="relative">
+                        <input
+                          id="budgetMax"
+                          value={budgetMax}
+                          onChange={(event) => setBudgetMax(event.target.value)}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="상한"
+                          className={cn(inputClassName, 'pr-12')}
+                        />
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-ink-400">
+                          만원
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClassName}>도면/파일 업로드</label>
+                    <div
+                      onDragOver={(event) => {
+                        event.preventDefault()
+                        setIsDragging(true)
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        'relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition',
+                        isDragging
+                          ? 'border-brand bg-brand-light'
+                          : 'border-border bg-surface-muted hover:border-brand-light',
+                      )}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,.dwg,.dxf,.step,.stp,.igs,.iges,.jpg,.jpeg,.png"
+                        onChange={(event) => {
+                          if (event.target.files) {
+                            addFiles(event.target.files)
+                            event.target.value = ''
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                      <Upload className="mx-auto mb-3 h-10 w-10 text-ink-400" />
+                      <p className="text-sm text-ink-700">
+                        파일을 드래그하거나{' '}
+                        <span className="font-semibold text-brand">클릭하여 업로드</span>
+                      </p>
+                      <p className="mt-1 text-xs text-ink-400">
+                        PDF, DWG, DXF, STEP, IGES, JPG, PNG (최대 50MB)
+                      </p>
+                    </div>
+
+                    {uploadedFiles.length > 0 && (
+                      <ul className="mt-4 space-y-2">
+                        {uploadedFiles.map((file, index) => (
+                          <li
+                            key={`${file.name}-${file.size}-${index}`}
+                            className="flex items-center justify-between rounded-xl border border-border bg-surface-muted p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-brand" />
+                              <div>
+                                <p className="text-sm font-semibold text-ink-700">{file.name}</p>
+                                <p className="text-xs text-ink-400">{formatFileSize(file.size)}</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="rounded-full p-1 text-ink-400 transition hover:bg-border hover:text-ink-700"
+                              aria-label={`${file.name} 삭제`}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="detailRequirements" className={labelClassName}>
+                      상세 요구사항
+                    </label>
+                    <textarea
+                      id="detailRequirements"
+                      rows={5}
+                      placeholder="추가적인 요구사항이나 특이사항을 입력하세요..."
+                      className="w-full resize-none rounded-xl border border-slate-300 bg-surface px-4 py-3 text-lg text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand focus:ring-4 focus:ring-brand-light"
+                      {...register('detailRequirements')}
+                    />
+                  </div>
+
+                  {submitError && (
+                    <div className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-sm font-semibold text-danger">
+                      {submitError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-4 text-base font-bold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Sparkles className={cn('h-5 w-5', isSubmitting && 'animate-spin')} />
+                    {isSubmitting ? 'AI가 공장을 분석하는 중...' : 'AI 매칭 시작하기'}
+                  </button>
+                </div>
+              </form>
+            </main>
+
+            <AICriteriaPanel />
+          </div>
         </div>
       </div>
+      {isSubmitting && <MatchingLoadingOverlay currentStep={loadingStep} />}
+    </>
+  )
+}
+
+function MatchingLoadingOverlay({ currentStep }: { currentStep: number }) {
+  const currentIcon = currentStep === 2 ? Search : currentStep === 3 ? Brain : Sparkles
+  const Icon = currentIcon
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 px-4 backdrop-blur-sm">
+      <section className="w-full max-w-4xl overflow-hidden rounded-3xl border border-brand-light bg-surface p-6 shadow-toss-lg sm:p-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <AppBadge variant="blue">
+              <Sparkles className="h-4 w-4" />
+              AI 매칭 엔진 실행
+            </AppBadge>
+            <h2 className="mt-3 text-2xl font-black text-ink-950 sm:text-3xl">
+              요청 조건을 분석해 최적 공장을 찾고 있습니다
+            </h2>
+            <p className="mt-2 text-base leading-7 text-ink-700">
+              벡터 검색과 GPT-4o reasoning 흐름을 시각화한 시연 모드입니다.
+            </p>
+          </div>
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-light shadow-toss-md">
+            <Icon className={cn('h-10 w-10 text-brand', currentStep > 0 && 'animate-pulse')} />
+          </div>
+        </div>
+        <ProcessStepper steps={matchingLoadingSteps} currentStep={Math.max(currentStep, 1)} />
+      </section>
     </div>
   )
 }

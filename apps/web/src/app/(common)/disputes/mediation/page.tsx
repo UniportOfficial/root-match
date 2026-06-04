@@ -23,6 +23,7 @@ const disputeMediationSchema = z.object({
     errorMap: () => ({ message: '분쟁 유형을 선택해주세요.' }),
   }),
   transactionId: z.string().min(1, '거래 ID를 입력해주세요.'),
+  projectName: z.string().optional(),
   counterparty: z.string().min(1, '거래 상대방을 입력해주세요.'),
   amount: z.string().min(1, '거래 금액을 입력해주세요.'),
   evidenceItems: z.array(z.string()).min(1, '최소 1개 이상의 증빙 항목을 체크해주세요.'),
@@ -71,6 +72,9 @@ function DisputeMediationForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const transactionId = useMemo(() => searchParams.get('txn') ?? '', [searchParams])
+  const projectName = useMemo(() => searchParams.get('projectName') ?? '', [searchParams])
+  const counterparty = useMemo(() => searchParams.get('counterparty') ?? '', [searchParams])
+  const amount = useMemo(() => searchParams.get('amount') ?? '', [searchParams])
 
   const {
     register,
@@ -82,8 +86,9 @@ function DisputeMediationForm() {
     resolver: zodResolver(disputeMediationSchema),
     defaultValues: {
       transactionId,
-      counterparty: '',
-      amount: '',
+      projectName,
+      counterparty,
+      amount,
       evidenceItems: [],
       evidenceFileNames: [],
       requestedResolution: '',
@@ -212,6 +217,19 @@ function DisputeMediationForm() {
                 {errors.counterparty && (
                   <p className={errorClassName}>{errors.counterparty.message}</p>
                 )}
+              </div>
+
+              <div>
+                <label htmlFor="projectName" className={labelClassName}>
+                  프로젝트명
+                </label>
+                <input
+                  id="projectName"
+                  type="text"
+                  placeholder="예: 알루미늄 하우징 시제품"
+                  className={inputClassName}
+                  {...register('projectName')}
+                />
               </div>
 
               <div>

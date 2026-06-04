@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   Check,
   ChevronDown,
+  ChevronUp,
   Clock,
   MapPin,
   RefreshCw,
@@ -13,25 +14,48 @@ import {
   Shield,
   Sparkles,
   TrendingUp,
+  Trophy,
+  UsersRound,
   Wallet,
   Zap,
 } from 'lucide-react'
 import type { FactoryRecommendation, QuoteRequestDraft } from '@rootmatching/shared'
+import { mockFactoryRecommendations } from '@rootmatching/shared/fixtures/factory-data'
 import { AppBadge } from '@/components/ui/AppBadge'
+import { AppButton } from '@/components/ui/AppButton'
 import { cn } from '@/lib/cn'
+import { useDemoMode } from '@/lib/demo-mode'
 
 const MATCHING_RESULTS_KEY = 'rm:matchingResults'
 const SELECTED_FACTORY_KEY = 'rm:selectedFactory'
 const STALE_AFTER_MS = 60 * 60 * 1000
 
-const PROCESS_OPTIONS = ['전체', '금형', '소성가공', '용접', '표면처리', '주조', '열처리']
+const PROCESS_OPTIONS = [
+  '전체',
+  'CNC 절삭',
+  '금형',
+  '소성가공',
+  '용접',
+  '표면처리',
+  '주조',
+  '열처리',
+]
 const REGION_OPTIONS = ['전체', '서울', '경기', '인천']
 const TRUST_SCORE_OPTIONS = ['전체', '90점 이상', '85점 이상', '80점 이상']
 
 interface MatchingResultsPayload {
-  results: FactoryRecommendation[]
+  results: DemoFactoryRecommendation[]
   request: QuoteRequestDraft
   submittedAt: number
+}
+
+type DemoFactoryRecommendation = FactoryRecommendation & {
+  matchScore?: number
+  reorderCustomerCount?: number
+  distanceKm?: number
+  employeeCount?: number
+  industrialComplex?: string
+  aiReasonBullets?: string[]
 }
 
 type LoadState = 'loading' | 'ready' | 'empty'
@@ -91,6 +115,28 @@ function isMatchingResultsPayload(value: unknown): value is MatchingResultsPaylo
 
 function formatPrice(value: number): string {
   return `${value}만원`
+}
+
+function getMatchScore(factory: DemoFactoryRecommendation): number {
+  return (
+    factory.matchScore ??
+    Math.round(
+      factory.trustScore * 0.3 +
+        factory.deliveryScore * 0.25 +
+        factory.qualityScore * 0.25 +
+        factory.priceCompetitiveness * 0.2,
+    )
+  )
+}
+
+function getDeliveryTone(rate: number): {
+  text: string
+  bg: string
+  badge: 'green' | 'amber' | 'red'
+} {
+  if (rate >= 90) return { text: 'text-success', bg: 'bg-success', badge: 'green' }
+  if (rate >= 70) return { text: 'text-warning-text', bg: 'bg-warning', badge: 'amber' }
+  return { text: 'text-danger', bg: 'bg-danger', badge: 'red' }
 }
 
 function getTrustScoreVariant(score: number): 'green' | 'blue' | 'amber' {
@@ -182,16 +228,38 @@ function FilterSelect({
 
 export default function MatchingResultPage() {
   const router = useRouter()
+  const isDemoMode = useDemoMode()
   const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [factories, setFactories] = useState<FactoryRecommendation[]>([])
+  const [factories, setFactories] = useState<DemoFactoryRecommendation[]>([])
   const [request, setRequest] = useState<QuoteRequestDraft | null>(null)
-  const [selectedFactory, setSelectedFactory] = useState<FactoryRecommendation | null>(null)
+  const [selectedFactory, setSelectedFactory] = useState<DemoFactoryRecommendation | null>(null)
+  const [expandedFactoryId, setExpandedFactoryId] = useState<string | null>('1')
   const [processFilter, setProcessFilter] = useState('전체')
   const [regionFilter, setRegionFilter] = useState('전체')
   const [trustScoreFilter, setTrustScoreFilter] = useState('전체')
   const [deliveryFilter, setDeliveryFilter] = useState(false)
 
   useEffect(() => {
+    function showDemoFactories() {
+      setFactories(mockFactoryRecommendations as DemoFactoryRecommendation[])
+      setRequest({
+        projectName: '알루미늄 하우징 시제품',
+        processType: 'CNC 절삭 + 표면처리',
+        productItem: '알루미늄 하우징 시제품',
+        estimatedQuantity: '초도 5,000개',
+        desiredDeadline: '2026년 4월말',
+        budgetRange: '400만원 ~ 500만원',
+        detailRequirements: 'RoHS 준수, 표면 거칠기 Ra 0.8 이하, 안정적 납기 보증 우선',
+      })
+      setSelectedFactory((mockFactoryRecommendations as DemoFactoryRecommendation[])[0] ?? null)
+      setLoadState('ready')
+    }
+
+    if (isDemoMode) {
+      showDemoFactories()
+      return
+    }
+
     const storedValue = window.sessionStorage.getItem(MATCHING_RESULTS_KEY)
 
     if (!storedValue) {
@@ -219,7 +287,7 @@ export default function MatchingResultPage() {
     } catch {
       setLoadState('empty')
     }
-  }, [])
+  }, [isDemoMode])
 
   const filteredFactories = useMemo(() => {
     const minimumTrustScore = parseMinimumTrustScore(trustScoreFilter)
@@ -237,7 +305,7 @@ export default function MatchingResultPage() {
     router.push(`/factories/${id}`)
   }
 
-  function requestQuote(factory?: FactoryRecommendation) {
+  function requestQuote(factory?: DemoFactoryRecommendation) {
     const factoryToStore = factory ?? selectedFactory ?? filteredFactories[0]
 
     if (factoryToStore) {
@@ -247,6 +315,26 @@ export default function MatchingResultPage() {
 
     router.push('/contract')
   }
+
+  function showExampleRecommendations() {
+    setFactories(mockFactoryRecommendations as DemoFactoryRecommendation[])
+    setSelectedFactory((mockFactoryRecommendations as DemoFactoryRecommendation[])[0] ?? null)
+    setRequest({
+      projectName: '알루미늄 하우징 시제품',
+      processType: 'CNC 절삭 + 표면처리',
+      productItem: '알루미늄 하우징 시제품',
+      estimatedQuantity: '초도 5,000개',
+      desiredDeadline: '2026년 4월말',
+      budgetRange: '400만원 ~ 500만원',
+      detailRequirements: 'RoHS 준수, 표면 거칠기 Ra 0.8 이하, 안정적 납기 보증 우선',
+    })
+    setLoadState('ready')
+  }
+
+  const averageMatchScore = useMemo(() => {
+    if (factories.length === 0) return 0
+    return factories.reduce((sum, factory) => sum + getMatchScore(factory), 0) / factories.length
+  }, [factories])
 
   if (loadState === 'loading') {
     return (
@@ -270,16 +358,27 @@ export default function MatchingResultPage() {
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-light">
               <Settings className="h-8 w-8 text-brand" />
             </div>
-            <h1 className="text-2xl font-bold text-ink-950">추천 결과가 없습니다</h1>
+            <h1 className="text-2xl font-bold text-ink-950">최근 매칭 결과가 없습니다</h1>
             <p className="mt-3 text-base leading-7 text-ink-700">
               저장된 추천 결과가 없거나 1시간이 지나 만료되었습니다.
             </p>
-            <Link
-              href="/request"
-              className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-brand/90 focus:outline-none focus:ring-4 focus:ring-brand-light"
-            >
-              견적 요청부터 시작해 주세요
-            </Link>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <AppButton
+                type="button"
+                variant="primary"
+                size="lg"
+                onClick={showExampleRecommendations}
+              >
+                <Sparkles className="h-5 w-5" />
+                예시 추천 보기
+              </AppButton>
+              <Link
+                href="/request?demo=true"
+                className="inline-flex min-h-tap-primary items-center justify-center rounded-xl border border-border bg-white px-5 py-3 text-sm font-bold text-ink-700 transition hover:border-brand-light hover:bg-surface-muted hover:text-brand"
+              >
+                견적 요청부터 시작
+              </Link>
+            </div>
           </section>
         </div>
       </div>
@@ -297,10 +396,11 @@ export default function MatchingResultPage() {
                 AI 추천 공장
               </AppBadge>
               <h1 className="mt-4 text-3xl font-bold tracking-normal text-ink-950 sm:text-4xl">
-                AI 추천 공장
+                AI 매칭 추천 Top {Math.min(filteredFactories.length, 5)}
               </h1>
               <p className="mt-3 max-w-3xl text-lg leading-8 text-ink-700">
-                입력한 요구사항을 기반으로 가장 적합한 공장을 추천했습니다.
+                총 {factories.length}개 공장 매칭 · 평균 매칭 점수 {averageMatchScore.toFixed(1)} ·
+                추천 Top {Math.min(filteredFactories.length, 5)}
               </p>
             </div>
 
@@ -364,17 +464,21 @@ export default function MatchingResultPage() {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <main className="space-y-4">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <main className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
             {filteredFactories.map((factory) => {
               const isSelected = selectedFactory?.id === factory.id
+              const matchScore = getMatchScore(factory)
+              const deliveryTone = getDeliveryTone(factory.deliveryRate)
+              const isExpanded = expandedFactoryId === factory.id
+              const reasons = factory.aiReasonBullets ?? [factory.aiReason]
 
               return (
                 <article
                   key={factory.id}
                   onClick={() => setSelectedFactory(factory)}
                   className={cn(
-                    'cursor-pointer rounded-2xl border bg-white p-5 shadow-sm transition hover:border-brand-light hover:shadow-md sm:p-6',
+                    'cursor-pointer rounded-2xl border bg-white p-5 shadow-toss-sm transition hover:border-brand-light hover:shadow-toss-md sm:p-6',
                     isSelected ? 'border-brand shadow-md ring-4 ring-brand-light' : 'border-border',
                   )}
                 >
@@ -390,7 +494,8 @@ export default function MatchingResultPage() {
                             getTrustScoreTextClass(factory.trustScore),
                           )}
                         >
-                          신뢰 {factory.trustScore}점
+                          <Trophy className="h-4 w-4" />
+                          신뢰 {factory.trustScore}
                         </AppBadge>
                       </div>
                       <p className="flex items-center gap-1.5 text-sm text-ink-400">
@@ -408,14 +513,29 @@ export default function MatchingResultPage() {
                     </div>
                   </div>
 
-                  <dl className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="mb-4 rounded-2xl border border-brand-light bg-brand-light/40 p-4">
+                    <div className="mb-2 flex items-end justify-between">
+                      <span className="text-sm font-bold text-brand">AI 매칭 점수</span>
+                      <span className="text-3xl font-black tabular-nums text-ink-950">
+                        {matchScore}
+                      </span>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-pill bg-white ring-1 ring-brand-light">
+                      <div
+                        className="h-full rounded-pill bg-brand transition-all duration-700"
+                        style={{ width: `${matchScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <dl className="mb-4 grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50">
-                        <Clock className="h-4 w-4 text-success" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-success-bg">
+                        <Clock className={cn('h-4 w-4', deliveryTone.text)} />
                       </div>
                       <div>
                         <dt className="text-xs text-ink-400">납기 준수율</dt>
-                        <dd className="text-sm font-semibold text-ink-950">
+                        <dd className={cn('text-sm font-black', deliveryTone.text)}>
                           {factory.deliveryRate}%
                         </dd>
                       </div>
@@ -427,11 +547,33 @@ export default function MatchingResultPage() {
                       <div>
                         <dt className="text-xs text-ink-400">재거래율</dt>
                         <dd className="text-sm font-semibold text-ink-950">
-                          {factory.reorderRate}%
+                          {factory.reorderRate}% · {factory.reorderCustomerCount ?? '-'}곳
                         </dd>
                       </div>
                     </div>
-                    <div className="col-span-2 flex items-center gap-2 sm:col-span-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted">
+                        <MapPin className="h-4 w-4 text-ink-700" />
+                      </div>
+                      <div>
+                        <dt className="text-xs text-ink-400">거리</dt>
+                        <dd className="text-sm font-semibold text-ink-950">
+                          {factory.distanceKm ?? '-'}km
+                        </dd>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted">
+                        <UsersRound className="h-4 w-4 text-ink-700" />
+                      </div>
+                      <div>
+                        <dt className="text-xs text-ink-400">규모</dt>
+                        <dd className="text-sm font-semibold text-ink-950">
+                          {factory.employeeCount ?? '-'}명
+                        </dd>
+                      </div>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50">
                         <Wallet className="h-4 w-4 text-warning" />
                       </div>
@@ -448,6 +590,33 @@ export default function MatchingResultPage() {
                     <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
                     <p className="text-sm leading-6 text-brand">{factory.aiReason}</p>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setExpandedFactoryId(isExpanded ? null : factory.id)
+                    }}
+                    className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-light bg-white px-4 py-3 text-sm font-bold text-brand transition hover:bg-brand-light"
+                  >
+                    AI 추천 이유 {isExpanded ? '접기' : '자세히 보기'}
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+
+                  {isExpanded && (
+                    <ul className="mb-4 space-y-2 rounded-2xl border border-border bg-surface-muted p-4">
+                      {reasons.slice(0, 5).map((reason) => (
+                        <li key={reason} className="flex gap-2 text-sm leading-6 text-ink-800">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   <div className="flex gap-3">
                     <button
@@ -476,7 +645,7 @@ export default function MatchingResultPage() {
             })}
 
             {filteredFactories.length === 0 && (
-              <section className="rounded-2xl border border-border bg-white p-12 text-center shadow-sm">
+              <section className="rounded-2xl border border-border bg-white p-12 text-center shadow-sm lg:col-span-2 2xl:col-span-3">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-muted">
                   <Settings className="h-8 w-8 text-ink-400" />
                 </div>

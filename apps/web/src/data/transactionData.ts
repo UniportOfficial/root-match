@@ -20,7 +20,7 @@ export const transactionCases: TransactionCase[] = [
     id: 'TXN-2026-018',
     projectName: '알루미늄 하우징 시제품 제작',
     myRole: 'client',
-    client: '루트테크',
+    client: '테크솔루션 주식회사',
     factory: '문래정밀가공',
     amount: '4,200,000원',
     dueDate: '2026.05.20',

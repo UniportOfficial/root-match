@@ -4,7 +4,7 @@ export const mockReceivedQuoteRequests: ReceivedQuoteRequest[] = [
   {
     id: 'req-001',
     projectName: '알루미늄 하우징 시제품 제작',
-    clientName: '루트테크',
+    clientName: '테크솔루션 주식회사',
     processType: '금형 / CNC 정밀가공',
     productItem: '전장 모듈용 알루미늄 케이스',
     quantity: '1차 500개, 양산 월 3,000개',

@@ -76,3 +76,55 @@ __v0_jsx-dev-runtime.ts
 
 # Project docs — local-only (PRD/specs/handoffs/decisions/vendor-inquiries)
 docs/
+
+# Editor / formatter caches
+.eslintcache
+.prettiercache
+.swc/
+.parcel-cache/
+.history/
+
+# Temp / backup files
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*~
+
+# Database (Prisma / Postgres / SQLite — Phase 1.W2 대비)
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db
+*.db-journal
+prisma/*.db*
+pgdata/
+postgres-data/
+
+# AI coding tools (per-developer local state)
+.cursor/
+.cursorrules.local.md
+.windsurfrules
+.claude/
+.aider*
+.continue/
+.codeium/
+.qodo/
+*.local.md
+
+# Cert/key safety net (Better Auth / UCanSign / TLS)
+*.pem
+*.key
+*.crt
+.cert/
+certs/
+
+# macOS extras
+._*
+.AppleDouble
+.LSOverride
+
+# Foreign lockfiles (pnpm-only project — prevent accidental commits)
+package-lock.json
+yarn.lock

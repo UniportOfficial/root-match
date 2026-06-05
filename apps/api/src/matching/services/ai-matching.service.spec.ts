@@ -90,14 +90,15 @@ describe('AiMatchingService', () => {
       expect(moldFactory?.aiReason).toMatch(/^\[Mock · 금형 공정 매칭\]/);
     });
 
-    // TODO: fixture or matching algorithm changed so id='3' factory no longer
-    // appears in the top-N result. Re-enable after auditing sampleRequest
-    // against the current fixture set and reason-prefix invariants.
-    it.skip('Oracle #3b: non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
+    it('Oracle #3b: non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
       const result = await service.matchFactories(sampleRequest);
-      const castingFactory = result.find((r) => r.id === '3');
-      expect(castingFactory).toBeDefined();
-      expect(castingFactory?.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
+      const nonMatching = result.filter(
+        (r) => !r.processes.some((p) => p.includes('금형')),
+      );
+      expect(nonMatching.length).toBeGreaterThan(0);
+      for (const rec of nonMatching) {
+        expect(rec.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
+      }
     });
 
     it('logs Logger.warn() exactly once per matchFactories call (observability)', async () => {

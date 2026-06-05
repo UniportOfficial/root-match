@@ -8,6 +8,10 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { auth } from '../src/auth/auth.config';
+import {
+  CONTRACT_GATEWAY,
+  type ContractGateway,
+} from '../src/contracts/gateway/contract-gateway.interface';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 const SEED_PASSWORD = 'TempPass!2026';
@@ -296,7 +300,7 @@ describe('Contracts e2e (STEP 6)', () => {
       .expect(401);
   });
 
-  it('POST /contracts/:id/send with { resend: true } on in_progress contract returns 201 (reminder)', async () => {
+  it('POST /contracts/:id/send with { resend: true } on in_progress contract returns 201 + actually invokes vendor reminder', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
     const sent = await createAndSend(
       sessionCookie,
@@ -321,12 +325,22 @@ describe('Contracts e2e (STEP 6)', () => {
       .expect(200);
     expect(detail.body.status).toBe('in_progress');
 
-    const reminded = await sendContract(sessionCookie, sent.body.id, {
-      resend: true,
-    });
+    const gateway = app.get<ContractGateway>(CONTRACT_GATEWAY);
+    const reminderSpy = jest.spyOn(gateway, 'requestReminder');
 
-    expect(reminded.body.status).toBe('in_progress');
-    expect(reminded.body.ucansignDocumentId).toBe(sent.body.ucansignDocumentId);
+    try {
+      const reminded = await sendContract(sessionCookie, sent.body.id, {
+        resend: true,
+      });
+
+      expect(reminded.body.status).toBe('in_progress');
+      expect(reminded.body.ucansignDocumentId).toBe(
+        sent.body.ucansignDocumentId,
+      );
+      expect(reminderSpy).toHaveBeenCalledWith(sent.body.ucansignDocumentId);
+    } finally {
+      reminderSpy.mockRestore();
+    }
   });
 
   it('POST /contracts/:id/send with { resend: true } on pending contract missing vendor document returns 404', async () => {

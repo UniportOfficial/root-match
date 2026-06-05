@@ -238,7 +238,7 @@ model Contract {
   id                 String         @id @default(cuid())
   ownerUserId        String         @map("owner_user_id")
   title              String
-  status             ContractStatus @default(pending)
+  status             ContractStatus @default(draft)
   ucansignDocumentId String?        @unique @map("ucansign_document_id")
   ucansignTemplateId String         @map("ucansign_template_id")
   ucansignFolderId   String?        @map("ucansign_folder_id")

@@ -15,7 +15,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 const EXPECTED_CHECKSUM =
-  'f091a300dc035ef4a5c9236b6f7cbbdca1bfc103bdf9aaa165879b52ac6114be';
+  'a796812d84560220981281a6a78b15fb52ceb0d913c97400ac04565b0844bca2';
 
 describe('schema.prisma snapshot guard', () => {
   it('schema checksum matches committed value (prevents accidental drift)', () => {

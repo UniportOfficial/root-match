@@ -132,7 +132,7 @@ describe('VectorSearchService', () => {
     it('preserves every input item exactly once', async () => {
       const items = ['x', 'y', 'z'];
       const result = await service.rankByEmbedding('any', items, () => 'desc');
-      const got = result.map((r) => r.item).sort();
+      const got = result.map((r) => r.item).sort((a, b) => a.localeCompare(b));
       expect(got).toEqual(['x', 'y', 'z']);
     });
   });

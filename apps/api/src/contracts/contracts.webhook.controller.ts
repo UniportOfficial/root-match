@@ -40,10 +40,10 @@ export class ContractsWebhookController {
 
   @Post()
   @HttpCode(200)
-  handle(
+  async handle(
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Body() rawBody: unknown,
-  ): { matched: boolean; contractId?: string } {
+  ): Promise<{ matched: boolean; contractId?: string }> {
     const secret = this.config.get<string>('UCANSIGN_WEBHOOK_SECRET');
     if (secret) {
       this.verifySignature(headers, rawBody, secret);

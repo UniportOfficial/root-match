@@ -196,4 +196,26 @@ export class UCanSignClient {
       UCanSignCancelResultSchema,
     );
   }
+
+  async createSignEmbedding(documentId: string, redirectUrl?: string) {
+    return this.request(
+      {
+        method: 'POST',
+        url: `${this.baseUrl}/embedding/sign-creating`,
+        data: { documentId, ...(redirectUrl ? { redirectUrl } : {}) },
+      },
+      UCanSignDocumentFileSchema,
+    );
+  }
+
+  async createViewEmbedding(documentId: string, redirectUrl?: string) {
+    return this.request(
+      {
+        method: 'POST',
+        url: `${this.baseUrl}/embedding/view/${documentId}`,
+        data: redirectUrl ? { redirectUrl } : {},
+      },
+      UCanSignDocumentFileSchema,
+    );
+  }
 }

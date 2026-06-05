@@ -92,9 +92,13 @@ describe('AiMatchingService', () => {
 
     it('Oracle #3b: non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
       const result = await service.matchFactories(sampleRequest);
-      const castingFactory = result.find((r) => r.id === '3');
-      expect(castingFactory).toBeDefined();
-      expect(castingFactory?.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
+      const nonMatching = result.filter(
+        (r) => !r.processes.some((p) => p.includes('금형')),
+      );
+      expect(nonMatching.length).toBeGreaterThan(0);
+      for (const rec of nonMatching) {
+        expect(rec.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
+      }
     });
 
     it('logs Logger.warn() exactly once per matchFactories call (observability)', async () => {

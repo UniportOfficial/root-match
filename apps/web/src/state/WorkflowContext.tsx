@@ -40,6 +40,7 @@ interface WorkflowState {
   hydrated: boolean
   matchingResults: MatchingResultsPayload | null
   selectedFactory: FactoryRecommendation | null
+  contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
   inspectionApproved: boolean
@@ -52,6 +53,7 @@ type WorkflowAction =
       payload: {
         matchingResults: MatchingResultsPayload | null
         selectedFactory: FactoryRecommendation | null
+        contractId: string | null
         contract: WorkflowContract | null
         paymentCompleted: boolean
         inspectionApproved: boolean
@@ -60,6 +62,7 @@ type WorkflowAction =
     }
   | { type: 'workflow/setMatchingResults'; payload: MatchingResultsPayload | null }
   | { type: 'workflow/setSelectedFactory'; payload: FactoryRecommendation | null }
+  | { type: 'workflow/setContractId'; payload: string | null }
   | { type: 'workflow/setContract'; payload: WorkflowContract | null }
   | { type: 'workflow/completePayment' }
   | { type: 'workflow/approveInspection' }
@@ -69,6 +72,7 @@ const initialState: WorkflowState = {
   hydrated: false,
   matchingResults: null,
   selectedFactory: null,
+  contractId: null,
   contract: null,
   paymentCompleted: false,
   inspectionApproved: false,
@@ -83,6 +87,7 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
         hydrated: true,
         matchingResults: action.payload.matchingResults,
         selectedFactory: action.payload.selectedFactory,
+        contractId: action.payload.contractId,
         contract: action.payload.contract,
         paymentCompleted: action.payload.paymentCompleted,
         inspectionApproved: action.payload.inspectionApproved,
@@ -92,6 +97,8 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
       return { ...state, matchingResults: action.payload }
     case 'workflow/setSelectedFactory':
       return { ...state, selectedFactory: action.payload }
+    case 'workflow/setContractId':
+      return { ...state, contractId: action.payload }
     case 'workflow/setContract':
       return { ...state, contract: action.payload }
     case 'workflow/completePayment':
@@ -182,6 +189,7 @@ function isWorkflowReview(value: unknown): value is WorkflowReview {
 }
 
 interface WorkflowExtraPayload {
+  contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
   inspectionApproved: boolean
@@ -192,6 +200,7 @@ function isWorkflowExtraPayload(value: unknown): value is WorkflowExtraPayload {
   if (!isRecord(value)) return false
 
   return (
+    (value.contractId === null || typeof value.contractId === 'string') &&
     (value.contract === null || isWorkflowContract(value.contract)) &&
     typeof value.paymentCompleted === 'boolean' &&
     typeof value.inspectionApproved === 'boolean' &&
@@ -230,6 +239,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
     const raw = sessionStorage.getItem(WORKFLOW_EXTRA_KEY)
     if (!raw) {
       return {
+        contractId: null,
         contract: null,
         paymentCompleted: false,
         inspectionApproved: false,
@@ -239,6 +249,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
     const parsed: unknown = JSON.parse(raw)
     if (!isWorkflowExtraPayload(parsed)) {
       return {
+        contractId: null,
         contract: null,
         paymentCompleted: false,
         inspectionApproved: false,
@@ -249,6 +260,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
   } catch (error) {
     console.error('Failed to hydrate workflow extra state from sessionStorage', error)
     return {
+      contractId: null,
       contract: null,
       paymentCompleted: false,
       inspectionApproved: false,
@@ -309,6 +321,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         WORKFLOW_EXTRA_KEY,
         JSON.stringify({
           contract: state.contract,
+          contractId: state.contractId,
           paymentCompleted: state.paymentCompleted,
           inspectionApproved: state.inspectionApproved,
           review: state.review,
@@ -319,6 +332,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     }
   }, [
     state.contract,
+    state.contractId,
     state.hydrated,
     state.inspectionApproved,
     state.paymentCompleted,

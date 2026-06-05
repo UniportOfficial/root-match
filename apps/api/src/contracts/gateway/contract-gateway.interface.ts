@@ -37,6 +37,11 @@ export interface GatewayDocumentFile {
   expiresAt?: string;
 }
 
+export interface CreateEmbeddingInput {
+  documentId: string;
+  redirectUrl?: string;
+}
+
 /**
  * Vendor-neutral contract gateway.
  *
@@ -52,4 +57,10 @@ export interface ContractGateway {
   cancelDocument(documentId: string, reason?: string): Promise<void>;
   getDocumentFile(documentId: string): Promise<GatewayDocumentFile>;
   getAuditTrail(documentId: string): Promise<GatewayDocumentFile>;
+  createSignEmbedding(
+    input: CreateEmbeddingInput,
+  ): Promise<GatewayDocumentFile>;
+  createViewEmbedding(
+    input: CreateEmbeddingInput,
+  ): Promise<GatewayDocumentFile>;
 }

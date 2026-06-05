@@ -239,6 +239,48 @@ describe('Contracts e2e (STEP 6)', () => {
     expect(persisted?.status).toBe('cancelled');
   });
 
+  it('GET /contracts/:id/embed/sign returns the mock sign-embedding URL with redirectUrl honored', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const created = await request(app.getHttpServer())
+      .post('/contracts')
+      .set('Cookie', sessionCookie)
+      .send(buildCreateContractBody('STEP 6 — embed sign'))
+      .expect(201);
+
+    const embed = await request(app.getHttpServer())
+      .get(`/contracts/${created.body.id}/embed/sign`)
+      .query({ redirectUrl: 'https://example.com/contracts/done' })
+      .set('Cookie', sessionCookie)
+      .expect(200);
+
+    expect(embed.body.url).toMatch(
+      new RegExp(
+        `^https://mock\\.rootmatching\\.local/contracts/.+/embed/sign$`,
+      ),
+    );
+    expect(typeof embed.body.expiresAt).toBe('string');
+  });
+
+  it('GET /contracts/:id/embed/view returns the mock view-embedding URL', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const created = await request(app.getHttpServer())
+      .post('/contracts')
+      .set('Cookie', sessionCookie)
+      .send(buildCreateContractBody('STEP 6 — embed view'))
+      .expect(201);
+
+    const embed = await request(app.getHttpServer())
+      .get(`/contracts/${created.body.id}/embed/view`)
+      .set('Cookie', sessionCookie)
+      .expect(200);
+
+    expect(embed.body.url).toMatch(
+      new RegExp(
+        `^https://mock\\.rootmatching\\.local/contracts/.+/embed/view$`,
+      ),
+    );
+  });
+
   it('POST /webhooks/ucansign signing_completed_all marks the contract completed', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
     const created = await request(app.getHttpServer())

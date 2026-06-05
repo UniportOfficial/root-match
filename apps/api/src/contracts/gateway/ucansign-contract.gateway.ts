@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UCanSignClient } from '../ucansign.client';
 import type {
   ContractGateway,
+  CreateEmbeddingInput,
   CreateGatewayDocumentInput,
   GatewayDocumentCreated,
   GatewayDocumentFile,
@@ -50,6 +51,26 @@ export class UCanSignContractGateway implements ContractGateway {
 
   async getAuditTrail(documentId: string): Promise<GatewayDocumentFile> {
     const file = await this.client.getAuditTrail(documentId);
+    return { url: file.url, expiresAt: file.expiresAt };
+  }
+
+  async createSignEmbedding(
+    input: CreateEmbeddingInput,
+  ): Promise<GatewayDocumentFile> {
+    const file = await this.client.createSignEmbedding(
+      input.documentId,
+      input.redirectUrl,
+    );
+    return { url: file.url, expiresAt: file.expiresAt };
+  }
+
+  async createViewEmbedding(
+    input: CreateEmbeddingInput,
+  ): Promise<GatewayDocumentFile> {
+    const file = await this.client.createViewEmbedding(
+      input.documentId,
+      input.redirectUrl,
+    );
     return { url: file.url, expiresAt: file.expiresAt };
   }
 }

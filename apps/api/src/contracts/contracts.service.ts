@@ -183,6 +183,42 @@ export class ContractsService {
     return { url: file.url };
   }
 
+  async getSignEmbeddingUrl(
+    userId: string,
+    id: string,
+    redirectUrl?: string,
+  ): Promise<{ url: string; expiresAt?: string }> {
+    const record = await this.get(userId, id);
+    if (!record.ucansignDocumentId) {
+      throw new NotFoundException(
+        'Vendor document not yet provisioned for this contract',
+      );
+    }
+    const file = await this.gateway.createSignEmbedding({
+      documentId: record.ucansignDocumentId,
+      redirectUrl,
+    });
+    return { url: file.url, expiresAt: file.expiresAt };
+  }
+
+  async getViewEmbeddingUrl(
+    userId: string,
+    id: string,
+    redirectUrl?: string,
+  ): Promise<{ url: string; expiresAt?: string }> {
+    const record = await this.get(userId, id);
+    if (!record.ucansignDocumentId) {
+      throw new NotFoundException(
+        'Vendor document not yet provisioned for this contract',
+      );
+    }
+    const file = await this.gateway.createViewEmbedding({
+      documentId: record.ucansignDocumentId,
+      redirectUrl,
+    });
+    return { url: file.url, expiresAt: file.expiresAt };
+  }
+
   async handleWebhook(
     payload: UCanSignWebhookPayload,
   ): Promise<{ matched: boolean; contractId?: string }> {

@@ -1055,7 +1055,7 @@ function MatchingLoadingOverlay({ currentStep }: { currentStep: number }) {
                             <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60" />
                             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                           </span>
-                          진행 중
+                          <span>진행 중</span>
                         </span>
                       )}
                       {isDone && (

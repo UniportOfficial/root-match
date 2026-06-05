@@ -16,7 +16,7 @@ jobs:
     name: SonarCloud Scan
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.repository == 'B-oxygen/root-match'
+    if: github.repository == 'UniportOfficial/root-match'
 
     steps:
       - name: Checkout

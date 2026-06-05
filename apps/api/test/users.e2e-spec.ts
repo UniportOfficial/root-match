@@ -21,6 +21,7 @@ function runPrisma(args: string[]): void {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       execFileSync('pnpm', ['exec', 'prisma', ...args], {
+        // NOSONAR S4036 — trusted CI dev command, args are constant string literals
         cwd: apiRoot,
         stdio: 'inherit',
         env: process.env,

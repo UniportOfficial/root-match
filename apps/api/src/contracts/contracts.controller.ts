@@ -61,6 +61,14 @@ export class ContractsController {
     return this.contracts.getPdfUrl(user.id, id);
   }
 
+  @Get(':id/audit-trail')
+  getAuditTrail(
+    @CurrentUser() user: AuthSession['user'],
+    @Param('id') id: string,
+  ): Promise<{ url: string; expiresAt?: string }> {
+    return this.contracts.getAuditTrailUrl(user.id, id);
+  }
+
   @Get(':id/embed/sign')
   getSignEmbedding(
     @CurrentUser() user: AuthSession['user'],

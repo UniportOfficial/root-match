@@ -215,6 +215,25 @@ describe('Contracts e2e (STEP 6)', () => {
     expect(pdf.body.url).toMatch(/^https:\/\/mock\.rootmatching\.local\//);
   });
 
+  it('GET /contracts/:id/audit-trail returns the mock audit-trail URL with expiry', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const created = await request(app.getHttpServer())
+      .post('/contracts')
+      .set('Cookie', sessionCookie)
+      .send(buildCreateContractBody('STEP 6 — audit-trail'))
+      .expect(201);
+
+    const auditTrail = await request(app.getHttpServer())
+      .get(`/contracts/${created.body.id}/audit-trail`)
+      .set('Cookie', sessionCookie)
+      .expect(200);
+
+    expect(auditTrail.body.url).toMatch(
+      /^https:\/\/mock\.rootmatching\.local\/contracts\/.+-audit\.pdf$/,
+    );
+    expect(typeof auditTrail.body.expiresAt).toBe('string');
+  });
+
   it('POST /contracts/:id/cancel transitions status to cancelled and persists reason', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
     const created = await request(app.getHttpServer())

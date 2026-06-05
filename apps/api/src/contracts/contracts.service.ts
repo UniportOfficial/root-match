@@ -183,6 +183,20 @@ export class ContractsService {
     return { url: file.url };
   }
 
+  async getAuditTrailUrl(
+    userId: string,
+    id: string,
+  ): Promise<{ url: string; expiresAt?: string }> {
+    const record = await this.get(userId, id);
+    if (!record.ucansignDocumentId) {
+      throw new NotFoundException(
+        'Vendor document not yet provisioned for this contract',
+      );
+    }
+    const file = await this.gateway.getAuditTrail(record.ucansignDocumentId);
+    return { url: file.url, expiresAt: file.expiresAt };
+  }
+
   async getSignEmbeddingUrl(
     userId: string,
     id: string,

@@ -49,6 +49,14 @@ enum MatchingSource {
   MANUAL_ADMIN
 }
 
+enum ContractStatus {
+  draft // rootmatching pre-vendor (rarely persisted; create() short-circuits to pending after vendor call)
+  pending // UCanSign "need_signing" / "wait_for_signing" aggregate
+  in_progress // 1+ participant signed, not all
+  completed // signing_completed_all event received
+  cancelled // request_cancelled
+}
+
 // ─────────────────────────────────────────────
 // Better Auth 1.6 core models
 // Source: bg_607b471d librarian snippet (§7.1.3 sub-step 1)
@@ -215,4 +223,61 @@ model FactoryEmbedding {
   embedding Unsupported("vector(1536)")?
 
   @@map("factory_embeddings")
+}
+
+// ─────────────────────────────────────────────
+// Contracts (STEP 6 — Prisma persistence for e-sign integration)
+// Source: docs/specs/ucansign-api-reference.md §4.1
+//
+// quoteRequestId / acceptedQuoteId / *CompanyId are kept as plain String? for
+// now because the upstream Quote/accept flow lands in Phase 2. Once those land,
+// add @relation references without breaking the wire shape.
+// ─────────────────────────────────────────────
+
+model Contract {
+  id                 String         @id @default(cuid())
+  ownerUserId        String         @map("owner_user_id")
+  title              String
+  status             ContractStatus @default(pending)
+  ucansignDocumentId String?        @unique @map("ucansign_document_id")
+  ucansignTemplateId String         @map("ucansign_template_id")
+  ucansignFolderId   String?        @map("ucansign_folder_id")
+  quoteRequestId     String?        @map("quote_request_id")
+  acceptedQuoteId    String?        @map("accepted_quote_id")
+  clientCompanyId    String?        @map("client_company_id")
+  factoryCompanyId   String?        @map("factory_company_id")
+  sentAt             DateTime?      @map("sent_at")
+  completedAt        DateTime?      @map("completed_at")
+  cancelledAt        DateTime?      @map("cancelled_at")
+  cancelledReason    String?        @map("cancelled_reason")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  participants ContractParticipant[]
+
+  @@index([ownerUserId, createdAt])
+  @@index([status, createdAt])
+  @@map("contracts")
+}
+
+model ContractParticipant {
+  id                    String    @id @default(cuid())
+  contractId            String    @map("contract_id")
+  role                  String // 'client' | 'factory' (validated at the DTO layer)
+  name                  String
+  email                 String?
+  phone                 String?
+  signingOrder          Int       @map("signing_order")
+  signingMethodType     String    @map("signing_method_type") // 'email' | 'kakao' | 'none'
+  authType              String?   @map("auth_type") // 'password' | 'mobile_identification' | 'mobile_otp'
+  ucansignParticipantId String?   @map("ucansign_participant_id")
+  status                String    @default("need_signing") // 'need_signing' | 'completed'
+  signedAt              DateTime? @map("signed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, signingOrder])
+  @@map("contract_participants")
 }

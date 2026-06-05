@@ -22,7 +22,9 @@ export class ContractsController {
   }
 
   @Get('me')
-  listMine(@CurrentUser() user: AuthSession['user']): ContractRecord[] {
+  listMine(
+    @CurrentUser() user: AuthSession['user'],
+  ): Promise<ContractRecord[]> {
     return this.contracts.list(user.id);
   }
 
@@ -30,7 +32,7 @@ export class ContractsController {
   getOne(
     @CurrentUser() user: AuthSession['user'],
     @Param('id') id: string,
-  ): ContractRecord {
+  ): Promise<ContractRecord> {
     return this.contracts.get(user.id, id);
   }
 

@@ -157,35 +157,59 @@ export class ContractsService {
       },
     });
 
+    let updateResult: { count: number };
     try {
-      const updated = await this.prisma.contract.update({
-        where: { id: record.id },
+      updateResult = await this.prisma.contract.updateMany({
+        where: { id: record.id, status: 'draft' },
         data: {
           status: 'pending',
           ucansignDocumentId: document.documentId,
           sentAt: new Date(),
         },
-        include: CONTRACT_INCLUDE,
       });
-      this.logger.log(
-        `Contract ${record.id} sent (documentId=${document.documentId})`,
-      );
-      return updated;
     } catch (error) {
       this.logger.error(
         `DB persistence failed after vendor send for contract ${record.id}; attempting best-effort cancellation of vendor document ${document.documentId}`,
       );
-      try {
-        await this.gateway.cancelDocument(
-          document.documentId,
-          'rollback after local persistence failure',
-        );
-      } catch (cancelError) {
-        this.logger.error(
-          `Best-effort cancellation also failed for vendor document ${document.documentId}: ${(cancelError as Error).message}`,
-        );
-      }
+      await this.safeCancelVendorDocument(document.documentId);
       throw error;
+    }
+
+    if (updateResult.count === 0) {
+      this.logger.warn(
+        `Concurrent send detected for contract ${record.id}; rolling back vendor document ${document.documentId}`,
+      );
+      await this.safeCancelVendorDocument(document.documentId);
+      throw new ConflictException(
+        `Contract ${record.id} already sent by another request`,
+      );
+    }
+
+    const updated = await this.prisma.contract.findUnique({
+      where: { id: record.id },
+      include: CONTRACT_INCLUDE,
+    });
+    if (!updated) {
+      throw new NotFoundException(
+        `Contract ${record.id} disappeared after send`,
+      );
+    }
+    this.logger.log(
+      `Contract ${record.id} sent (documentId=${document.documentId})`,
+    );
+    return updated;
+  }
+
+  private async safeCancelVendorDocument(documentId: string): Promise<void> {
+    try {
+      await this.gateway.cancelDocument(
+        documentId,
+        'rollback after local persistence failure or send conflict',
+      );
+    } catch (cancelError) {
+      this.logger.error(
+        `Best-effort cancellation also failed for vendor document ${documentId}: ${(cancelError as Error).message}`,
+      );
     }
   }
 

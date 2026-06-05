@@ -296,6 +296,58 @@ describe('Contracts e2e (STEP 6)', () => {
       .expect(401);
   });
 
+  it('POST /contracts/:id/send with { resend: true } on in_progress contract returns 201 (reminder)', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — in_progress reminder',
+    );
+
+    await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send({
+        eventType: 'signing_completed',
+        documentId: sent.body.ucansignDocumentId,
+        customValue5: sent.body.id,
+        participantId: 'mock-participant-1',
+        participantSigningOrder: 1,
+        participantName: '홍길동',
+      })
+      .expect(200);
+
+    const detail = await request(app.getHttpServer())
+      .get(`/contracts/${sent.body.id}`)
+      .set('Cookie', sessionCookie)
+      .expect(200);
+    expect(detail.body.status).toBe('in_progress');
+
+    const reminded = await sendContract(sessionCookie, sent.body.id, {
+      resend: true,
+    });
+
+    expect(reminded.body.status).toBe('in_progress');
+    expect(reminded.body.ucansignDocumentId).toBe(sent.body.ucansignDocumentId);
+  });
+
+  it('POST /contracts/:id/send with { resend: true } on pending contract missing vendor document returns 404', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — missing vendor doc reminder',
+    );
+
+    await prisma.contract.update({
+      where: { id: sent.body.id },
+      data: { ucansignDocumentId: null },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/contracts/${sent.body.id}/send`)
+      .set('Cookie', sessionCookie)
+      .send({ resend: true })
+      .expect(404);
+  });
+
   it('GET /contracts/:id/pdf returns the mock gateway signed URL after send', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
     const sent = await createAndSend(sessionCookie, 'STEP 6 — pdf');

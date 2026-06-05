@@ -55,6 +55,7 @@ export interface ContractGateway {
     input: CreateGatewayDocumentInput,
   ): Promise<GatewayDocumentCreated>;
   cancelDocument(documentId: string, reason?: string): Promise<void>;
+  requestReminder(documentId: string): Promise<void>;
   getDocumentFile(documentId: string): Promise<GatewayDocumentFile>;
   getAuditTrail(documentId: string): Promise<GatewayDocumentFile>;
   createSignEmbedding(

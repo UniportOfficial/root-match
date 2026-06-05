@@ -53,3 +53,10 @@ export const CancelContractSchema = z
   })
   .meta({ id: 'CancelContract' })
 export type CancelContractInput = z.infer<typeof CancelContractSchema>
+
+export const SendContractSchema = z
+  .object({
+    resend: z.boolean().default(false),
+  })
+  .meta({ id: 'SendContract' })
+export type SendContractInput = z.infer<typeof SendContractSchema>

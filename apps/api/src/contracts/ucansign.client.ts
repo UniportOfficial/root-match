@@ -197,6 +197,17 @@ export class UCanSignClient {
     );
   }
 
+  async requestReminder(documentId: string) {
+    return this.request(
+      {
+        method: 'POST',
+        url: `${this.baseUrl}/documents/${documentId}/request/reminder`,
+        data: {},
+      },
+      z.unknown(),
+    );
+  }
+
   async createSignEmbedding(documentId: string, redirectUrl?: string) {
     return this.request(
       {

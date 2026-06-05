@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -41,6 +42,10 @@ jobs:
 
       - name: Build shared package
         run: pnpm --filter @rootmatching/shared run build
+
+      - name: Generate API test coverage (lcov)
+        run: pnpm --filter @rootmatching/api exec jest --coverage --coverageReporters=lcov --coverageReporters=text-summary
+        continue-on-error: true
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0

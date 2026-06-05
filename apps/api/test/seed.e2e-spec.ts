@@ -52,15 +52,19 @@ async function counts(): Promise<{
   throw new Error('unreachable seed count retry state');
 }
 
+/**
+ * Seed idempotency check.
+ *
+ * Note: destructive migrate reset moved to jest-e2e.globalSetup.ts.
+ * This spec verifies db seed can run repeatedly against an already-seeded
+ * DB without changing counts (upsert semantics).
+ */
 describe('Prisma seed e2e (W2-4)', () => {
   afterAll(async () => {
     await prisma.$disconnect();
   });
 
   it('seeds mock users, companies, quote requests idempotently', async () => {
-    runPrisma(['migrate', 'reset', '--force', '--skip-seed']);
-    runPrisma(['db', 'seed']);
-
     await expect(counts()).resolves.toEqual({
       users: 2,
       companies: 2,

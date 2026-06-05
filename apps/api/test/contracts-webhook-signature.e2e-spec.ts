@@ -80,6 +80,7 @@ describe('Contracts webhook HMAC signature verification', () => {
   beforeAll(async () => {
     originalSecretEnv = process.env.UCANSIGN_WEBHOOK_SECRET;
     process.env.UCANSIGN_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    process.env.CONTRACT_GATEWAY = 'mock';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

@@ -118,6 +118,8 @@ describe('Contracts e2e (STEP 6)', () => {
   }
 
   beforeAll(async () => {
+    process.env.CONTRACT_GATEWAY = 'mock';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -532,6 +534,30 @@ describe('Contracts e2e (STEP 6)', () => {
     });
     expect(events).toHaveLength(1);
     expect(events[0]?.eventType).toBe('signing_completed_all');
+  });
+
+  it('POST /webhooks/ucansign accepts unquoted bigint documentId without precision loss', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — bigint webhook');
+
+    const bigVendorId = '9007199254740993';
+    const rawJson = `{"eventType":"signing_completed_all","documentId":${bigVendorId},"customValue5":"${sent.body.id}"}`;
+
+    const webhookResponse = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .set('Content-Type', 'application/json')
+      .send(rawJson)
+      .expect(200);
+
+    expect(webhookResponse.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const events = await prisma.webhookEvent.findMany({
+      where: { contractId: sent.body.id },
+    });
+    expect(events.some((e) => e.documentId === bigVendorId)).toBe(true);
   });
 
   it('GET /contracts/me without a session cookie returns 401', async () => {

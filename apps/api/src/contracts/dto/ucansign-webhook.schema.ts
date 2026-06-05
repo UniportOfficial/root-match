@@ -24,9 +24,9 @@ const customValueFields = {
 } as const;
 
 const baseEventFields = {
-  documentId: z.string(),
+  documentId: z.union([z.string(), z.number()]).transform(String),
   documentName: z.string().optional(),
-  folderId: z.string().optional(),
+  folderId: z.union([z.string(), z.number()]).transform(String).optional(),
   occurredAt: z.string().optional(),
   ...customValueFields,
 } as const;

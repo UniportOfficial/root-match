@@ -19,11 +19,12 @@ import {
 
 describe('auth.config — enum drift guard (Q6)', () => {
   it('exports the canonical Prisma-mirrored tuples', () => {
-    expect([...USER_ROLE_VALUES].sort()).toEqual(
-      ['admin', 'member', 'operator'].sort(),
+    const byLocale = (a: string, b: string): number => a.localeCompare(b);
+    expect([...USER_ROLE_VALUES].sort(byLocale)).toEqual(
+      ['admin', 'member', 'operator'].sort(byLocale),
     );
-    expect([...ACCOUNT_TYPE_VALUES].sort()).toEqual(
-      ['client', 'factory'].sort(),
+    expect([...ACCOUNT_TYPE_VALUES].sort(byLocale)).toEqual(
+      ['client', 'factory'].sort(byLocale),
     );
   });
 

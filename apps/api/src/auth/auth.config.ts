@@ -26,8 +26,8 @@ export function assertSameSet(
   prismaValues: readonly string[],
   authValues: readonly string[],
 ): void {
-  const a = [...prismaValues].sort();
-  const b = [...authValues].sort();
+  const a = [...prismaValues].sort((x, y) => x.localeCompare(y));
+  const b = [...authValues].sort((x, y) => x.localeCompare(y));
   if (a.length !== b.length || a.some((v, i) => v !== b[i])) {
     throw new Error(
       `${name} enum drift: Prisma=[${a.join(',')}] BetterAuth=[${b.join(',')}]. ` +

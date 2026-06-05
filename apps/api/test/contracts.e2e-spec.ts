@@ -8,6 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { auth } from '../src/auth/auth.config';
+import { captureRawBodyForWebhooks } from '../src/bootstrap';
 import {
   CONTRACT_GATEWAY,
   type ContractGateway,
@@ -130,7 +131,7 @@ describe('Contracts e2e (STEP 6)', () => {
       .getHttpAdapter()
       .getInstance();
     expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
-    app.use(json({ limit: '10mb' }));
+    app.use(json({ limit: '10mb', verify: captureRawBodyForWebhooks }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
     await app.init();
 
@@ -483,6 +484,54 @@ describe('Contracts e2e (STEP 6)', () => {
       .expect(200);
 
     expect(webhookResponse.body).toEqual({ matched: false });
+  });
+
+  it('POST /webhooks/ucansign duplicate payload is idempotent (state mutates once)', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — idempotent webhook',
+    );
+    const payload = {
+      eventType: 'signing_completed_all' as const,
+      documentId: sent.body.ucansignDocumentId,
+      customValue5: sent.body.id,
+    };
+
+    const first = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send(payload)
+      .expect(200);
+    expect(first.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const afterFirst = await prisma.contract.findUnique({
+      where: { id: sent.body.id },
+    });
+    const completedAtSnapshot = afterFirst?.completedAt?.toISOString();
+    expect(completedAtSnapshot).toBeDefined();
+
+    const second = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send(payload)
+      .expect(200);
+    expect(second.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const afterSecond = await prisma.contract.findUnique({
+      where: { id: sent.body.id },
+    });
+    expect(afterSecond?.completedAt?.toISOString()).toBe(completedAtSnapshot);
+
+    const events = await prisma.webhookEvent.findMany({
+      where: { contractId: sent.body.id },
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.eventType).toBe('signing_completed_all');
   });
 
   it('GET /contracts/me without a session cookie returns 401', async () => {

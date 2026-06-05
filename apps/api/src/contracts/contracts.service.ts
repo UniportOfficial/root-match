@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import type {
   Contract,
   ContractParticipant,
   ContractStatus,
-  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -330,6 +330,47 @@ export class ContractsService {
     return { url: file.url, expiresAt: file.expiresAt };
   }
 
+  async handleWebhookIdempotent(
+    payload: UCanSignWebhookPayload,
+    payloadHash: string,
+  ): Promise<{ matched: boolean; contractId?: string }> {
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          source: 'ucansign',
+          payloadHash,
+          eventType: payload.eventType,
+          documentId: payload.documentId,
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        const prior = await this.prisma.webhookEvent.findUnique({
+          where: { payloadHash },
+        });
+        this.logger.log(
+          `Idempotent webhook skip payloadHash=${payloadHash.slice(0, 12)} priorContractId=${prior?.contractId ?? 'n/a'}`,
+        );
+        return {
+          matched: !!prior?.contractId,
+          contractId: prior?.contractId ?? undefined,
+        };
+      }
+      throw error;
+    }
+
+    const result = await this.handleWebhook(payload);
+
+    if (result.matched && result.contractId) {
+      await this.prisma.webhookEvent.update({
+        where: { payloadHash },
+        data: { contractId: result.contractId },
+      });
+    }
+
+    return result;
+  }
+
   async handleWebhook(
     payload: UCanSignWebhookPayload,
   ): Promise<{ matched: boolean; contractId?: string }> {
@@ -354,6 +395,13 @@ export class ContractsService {
       `Webhook ${payload.eventType} applied to contract ${record.id}`,
     );
     return { matched: true, contractId: record.id };
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
   }
 
   private async findByWebhookPayload(

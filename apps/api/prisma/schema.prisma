@@ -281,3 +281,30 @@ model ContractParticipant {
   @@index([contractId, signingOrder])
   @@map("contract_participants")
 }
+
+// ─────────────────────────────────────────────
+// Webhook events (vendor inbound — idempotency + audit)
+//
+// One row per unique inbound webhook, keyed by sha256(raw body bytes).
+// The UNIQUE constraint on payload_hash enforces at-most-once processing:
+// a duplicate vendor retry attempting to insert collides, the handler
+// detects P2002, and skips state mutation while still returning 200 OK.
+//
+// `source` is reserved for future expansion (e.g. payment vendors).
+// Currently only 'ucansign' is written by ContractsWebhookController.
+// ─────────────────────────────────────────────
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  source      String // 'ucansign' (extendable)
+  payloadHash String   @unique @map("payload_hash") // sha256 hex of raw body
+  eventType   String   @map("event_type")
+  documentId  String?  @map("document_id")
+  contractId  String?  @map("contract_id")
+  receivedAt  DateTime @default(now()) @map("received_at")
+
+  @@index([documentId])
+  @@index([contractId])
+  @@index([receivedAt])
+  @@map("webhook_events")
+}

@@ -5,11 +5,30 @@ import { Logger } from 'nestjs-pino';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { json, urlencoded } from 'express';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import helmet from 'helmet';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth/auth.config';
 import { swaggerExtraModels } from './openapi/swagger-extra-models';
+
+/**
+ * Preserves raw request bytes on `req.rawBody` for /webhooks/* only.
+ *
+ * Required because vendor HMAC schemes (UCanSign §2.8) sign raw bytes —
+ * re-stringifying parsed JSON diverges from the signed payload and breaks
+ * verification. Scoped to webhooks to keep Buffers off non-webhook routes.
+ */
+export function captureRawBodyForWebhooks(
+  req: IncomingMessage,
+  _res: ServerResponse,
+  buf: Buffer,
+): void {
+  const reqLike = req as { url?: string; rawBody?: Buffer };
+  if (reqLike.url?.startsWith('/webhooks/')) {
+    reqLike.rawBody = buf;
+  }
+}
 
 const AUTH_STRICT_WINDOW_MS = 60_000;
 const AUTH_STRICT_LIMIT = 5;
@@ -237,6 +256,6 @@ export function configureApp(app: NestExpressApplication): void {
   expressApp.use(serveAuthReferenceFallback);
   expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
 
-  app.use(json({ limit: '10mb' }));
+  app.use(json({ limit: '10mb', verify: captureRawBodyForWebhooks }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 }

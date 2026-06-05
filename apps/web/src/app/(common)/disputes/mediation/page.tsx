@@ -26,7 +26,7 @@ import { cn } from '@/lib/cn'
 
 const disputeMediationSchema = z.object({
   disputeType: z.enum(['quality', 'delivery', 'payment', 'contract'], {
-    errorMap: () => ({ message: '분쟁 유형을 선택해주세요.' }),
+    error: '분쟁 유형을 선택해주세요.',
   }),
   transactionId: z.string().min(1, '거래 ID를 입력해주세요.'),
   projectName: z.string().optional(),

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   WalletCards,
 } from 'lucide-react'
+import { CreateContractSchema, type CreateContractInput } from '@rootmatching/shared/schemas'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { Button } from '@/components/ui/button'
@@ -71,40 +72,49 @@ export default function ContractPage() {
     const fallbackTransactionId = 'TXN-2026-018'
 
     if (isAuthenticated) {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-        const templateId = process.env.NEXT_PUBLIC_CONTRACT_TEMPLATE_ID ?? 'mock-template'
-        const response = await fetch(`${apiUrl}/contracts`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            templateId,
-            title: projectName,
-            participants: [
-              {
-                role: 'client',
-                name: clientCompanyName,
-                signingOrder: 1,
-                signingMethodType: 'email',
-              },
-              {
-                role: 'factory',
-                name: factoryName,
-                signingOrder: 2,
-                signingMethodType: 'email',
-              },
-            ],
-            factoryCompanyId: selectedFactory.id,
-          }),
-        })
-        if (!response.ok) {
-          console.warn(
-            `Backend contract creation returned ${response.status}; continuing with demo flow`,
-          )
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+      const templateId = process.env.NEXT_PUBLIC_CONTRACT_TEMPLATE_ID ?? 'mock-template'
+      const requestBody: CreateContractInput = {
+        templateId,
+        title: projectName,
+        participants: [
+          {
+            role: 'client',
+            name: clientCompanyName,
+            signingOrder: 1,
+            signingMethodType: 'email',
+          },
+          {
+            role: 'factory',
+            name: factoryName,
+            signingOrder: 2,
+            signingMethodType: 'email',
+          },
+        ],
+        factoryCompanyId: selectedFactory.id,
+      }
+      const parsed = CreateContractSchema.safeParse(requestBody)
+      if (!parsed.success) {
+        console.warn(
+          'Contract payload failed client-side schema validation; skipping backend call',
+          parsed.error.issues,
+        )
+      } else {
+        try {
+          const response = await fetch(`${apiUrl}/contracts`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsed.data),
+          })
+          if (!response.ok) {
+            console.warn(
+              `Backend contract creation returned ${response.status}; continuing with demo flow`,
+            )
+          }
+        } catch (error) {
+          console.warn('Backend contract API unreachable, continuing with demo flow', error)
         }
-      } catch (error) {
-        console.warn('Backend contract API unreachable, continuing with demo flow', error)
       }
     }
 

@@ -62,8 +62,7 @@ export type UCanSignPointBalance = z.infer<typeof UCanSignPointBalanceSchema>;
 
 export const UCanSignParticipantInputSchema = z.object({
   name: z.string(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  signingContactInfo: z.string().optional(),
   signingOrder: z.number().int().positive(),
   signingMethodType: z.enum(['email', 'kakao', 'none']).default('email'),
   authentications: z

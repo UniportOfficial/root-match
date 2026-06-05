@@ -24,8 +24,7 @@ export class UCanSignContractGateway implements ContractGateway {
       configExpireMinute: input.expiryMinutes,
       participants: input.participants.map((p) => ({
         name: p.name,
-        email: p.email,
-        phone: p.phone,
+        signingContactInfo: p.email ?? p.phone,
         signingOrder: p.signingOrder,
         signingMethodType: p.signingMethodType,
         authentications: p.authType ? [p.authType] : [],

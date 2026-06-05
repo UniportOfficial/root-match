@@ -83,7 +83,8 @@ export class ContractsWebhookController {
       );
     }
 
-    const parsed = UCanSignWebhookSchema.safeParse(body);
+    const safeBody = this.reparsePreservingBigIntStrings(rawBuffer, body);
+    const parsed = UCanSignWebhookSchema.safeParse(safeBody);
     if (!parsed.success) {
       this.logger.warn(
         `Unparseable UCanSign webhook payload: ${parsed.error.message}`,
@@ -134,5 +135,27 @@ export class ContractsWebhookController {
       (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV) ===
       'production'
     );
+  }
+
+  /**
+   * UCanSign sends IDs as unquoted JSON numbers exceeding 2^53; native
+   * JSON.parse (which express.json already ran) silently loses precision.
+   * Re-parse the raw bytes after quoting 16+ digit integers so IDs survive
+   * as strings. Falls back to the express-parsed body on parse failure.
+   */
+  private reparsePreservingBigIntStrings(
+    rawBuffer: Buffer,
+    fallback: unknown,
+  ): unknown {
+    try {
+      const text = rawBuffer.toString('utf8');
+      const safeText = text.replace(/:\s*(\d{16,})(?=[,\s}\]])/g, ':"$1"');
+      return JSON.parse(safeText);
+    } catch (error) {
+      this.logger.warn(
+        `Bigint-safe re-parse failed, using express-parsed body: ${(error as Error).message}`,
+      );
+      return fallback;
+    }
   }
 }

@@ -44,6 +44,10 @@ export class UCanSignContractGateway implements ContractGateway {
     await this.client.cancelDocument(documentId, reason);
   }
 
+  async requestReminder(documentId: string): Promise<void> {
+    await this.client.requestReminder(documentId);
+  }
+
   async getDocumentFile(documentId: string): Promise<GatewayDocumentFile> {
     const file = await this.client.getDocumentFile(documentId);
     return { url: file.url, expiresAt: file.expiresAt };

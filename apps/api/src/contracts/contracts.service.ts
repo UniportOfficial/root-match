@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -14,11 +15,15 @@ import type {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateContractInput } from './dto/create-contract.dto';
+import type {
+  CreateContractInput,
+  SendContractInput,
+} from './dto/create-contract.dto';
 import type { UCanSignWebhookPayload } from './dto/ucansign-webhook.schema';
 import {
   CONTRACT_GATEWAY,
   type ContractGateway,
+  type GatewayParticipant,
 } from './gateway/contract-gateway.interface';
 
 export type ContractParticipantStatus = 'need_signing' | 'completed';
@@ -52,48 +57,18 @@ export class ContractsService {
     input: CreateContractInput,
   ): Promise<ContractRecord> {
     const contractId = randomUUID();
-    const now = new Date();
-
-    const defaultExpiryMinutes = Number(
-      this.config.get<string>('UCANSIGN_DEFAULT_EXPIRY_MINUTES') ?? '20160',
-    );
-
-    const document = await this.gateway.createDocument({
-      templateId: input.templateId,
-      documentName: input.title,
-      isSequential: true,
-      isSendMessage: true,
-      expiryMinutes: input.expiryMinutes ?? defaultExpiryMinutes,
-      participants: input.participants.map((p) => ({
-        name: p.name,
-        email: p.email,
-        phone: p.phone,
-        signingOrder: p.signingOrder,
-        signingMethodType: p.signingMethodType,
-        authType: p.authType,
-      })),
-      customValues: {
-        customValue: input.quoteRequestId,
-        customValue1: input.acceptedQuoteId,
-        customValue2: input.clientCompanyId,
-        customValue3: input.factoryCompanyId,
-        customValue5: contractId,
-      },
-    });
 
     const record = await this.prisma.contract.create({
       data: {
         id: contractId,
         ownerUserId: userId,
         title: input.title,
-        status: 'pending',
-        ucansignDocumentId: document.documentId,
+        status: 'draft',
         ucansignTemplateId: input.templateId,
         quoteRequestId: input.quoteRequestId,
         acceptedQuoteId: input.acceptedQuoteId,
         clientCompanyId: input.clientCompanyId,
         factoryCompanyId: input.factoryCompanyId,
-        sentAt: now,
         participants: {
           create: input.participants.map((p) => ({
             role: p.role,
@@ -111,9 +86,107 @@ export class ContractsService {
     });
 
     this.logger.log(
-      `Contract ${record.id} created (documentId=${document.documentId}, participants=${record.participants.length})`,
+      `Contract ${record.id} created as draft (participants=${record.participants.length})`,
     );
     return record;
+  }
+
+  async send(
+    userId: string,
+    id: string,
+    input: SendContractInput = { resend: false },
+  ): Promise<ContractRecord> {
+    const record = await this.get(userId, id);
+
+    if (record.status === 'completed' || record.status === 'cancelled') {
+      throw new ConflictException(
+        `Cannot send contract in terminal status '${record.status}'`,
+      );
+    }
+
+    if (record.status === 'draft') {
+      return this.dispatchDraft(record);
+    }
+
+    if (!input.resend) {
+      throw new ConflictException(
+        `Contract already sent (status='${record.status}'). Pass { resend: true } to nudge participants.`,
+      );
+    }
+
+    if (!record.ucansignDocumentId) {
+      throw new NotFoundException(
+        'Vendor document not provisioned; cannot send reminder',
+      );
+    }
+    await this.gateway.requestReminder(record.ucansignDocumentId);
+    this.logger.log(
+      `Contract ${record.id} reminder sent (documentId=${record.ucansignDocumentId}, status=${record.status})`,
+    );
+    return record;
+  }
+
+  private async dispatchDraft(record: ContractRecord): Promise<ContractRecord> {
+    const defaultExpiryMinutes = Number(
+      this.config.get<string>('UCANSIGN_DEFAULT_EXPIRY_MINUTES') ?? '20160',
+    );
+
+    const document = await this.gateway.createDocument({
+      templateId: record.ucansignTemplateId,
+      documentName: record.title,
+      isSequential: true,
+      isSendMessage: true,
+      expiryMinutes: defaultExpiryMinutes,
+      participants: record.participants.map(
+        (p): GatewayParticipant => ({
+          name: p.name,
+          email: p.email ?? undefined,
+          phone: p.phone ?? undefined,
+          signingOrder: p.signingOrder,
+          signingMethodType:
+            p.signingMethodType as GatewayParticipant['signingMethodType'],
+          authType: (p.authType ?? undefined) as GatewayParticipant['authType'],
+        }),
+      ),
+      customValues: {
+        customValue: record.quoteRequestId ?? undefined,
+        customValue1: record.acceptedQuoteId ?? undefined,
+        customValue2: record.clientCompanyId ?? undefined,
+        customValue3: record.factoryCompanyId ?? undefined,
+        customValue5: record.id,
+      },
+    });
+
+    try {
+      const updated = await this.prisma.contract.update({
+        where: { id: record.id },
+        data: {
+          status: 'pending',
+          ucansignDocumentId: document.documentId,
+          sentAt: new Date(),
+        },
+        include: CONTRACT_INCLUDE,
+      });
+      this.logger.log(
+        `Contract ${record.id} sent (documentId=${document.documentId})`,
+      );
+      return updated;
+    } catch (error) {
+      this.logger.error(
+        `DB persistence failed after vendor send for contract ${record.id}; attempting best-effort cancellation of vendor document ${document.documentId}`,
+      );
+      try {
+        await this.gateway.cancelDocument(
+          document.documentId,
+          'rollback after local persistence failure',
+        );
+      } catch (cancelError) {
+        this.logger.error(
+          `Best-effort cancellation also failed for vendor document ${document.documentId}: ${(cancelError as Error).message}`,
+        );
+      }
+      throw error;
+    }
   }
 
   async list(userId: string): Promise<ContractRecord[]> {

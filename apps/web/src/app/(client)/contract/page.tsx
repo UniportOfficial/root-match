@@ -101,16 +101,31 @@ export default function ContractPage() {
         )
       } else {
         try {
-          const response = await fetch(`${apiUrl}/contracts`, {
+          const createResponse = await fetch(`${apiUrl}/contracts`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsed.data),
           })
-          if (!response.ok) {
+          if (!createResponse.ok) {
             console.warn(
-              `Backend contract creation returned ${response.status}; continuing with demo flow`,
+              `Backend contract creation returned ${createResponse.status}; continuing with demo flow`,
             )
+          } else {
+            const created = (await createResponse.json()) as { id?: string }
+            if (created?.id) {
+              const sendResponse = await fetch(`${apiUrl}/contracts/${created.id}/send`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resend: false }),
+              })
+              if (!sendResponse.ok) {
+                console.warn(
+                  `Backend contract send returned ${sendResponse.status}; continuing with demo flow`,
+                )
+              }
+            }
           }
         } catch (error) {
           console.warn('Backend contract API unreachable, continuing with demo flow', error)

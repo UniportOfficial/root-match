@@ -13,6 +13,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import {
   CancelContractDto,
   CreateContractDto,
+  SendContractDto,
 } from './dto/create-contract.dto';
 import { ContractsService, type ContractRecord } from './contracts.service';
 
@@ -42,6 +43,15 @@ export class ContractsController {
     @Param('id') id: string,
   ): Promise<ContractRecord> {
     return this.contracts.get(user.id, id);
+  }
+
+  @Post(':id/send')
+  send(
+    @CurrentUser() user: AuthSession['user'],
+    @Param('id') id: string,
+    @Body() body: SendContractDto,
+  ): Promise<ContractRecord> {
+    return this.contracts.send(user.id, id, body);
   }
 
   @Post(':id/cancel')

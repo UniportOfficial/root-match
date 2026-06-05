@@ -39,6 +39,11 @@ export class MockContractGateway implements ContractGateway {
     return Promise.resolve();
   }
 
+  async requestReminder(documentId: string): Promise<void> {
+    this.logger.log(`[mock] requestReminder ${documentId}`);
+    return Promise.resolve();
+  }
+
   async getDocumentFile(documentId: string): Promise<GatewayDocumentFile> {
     return Promise.resolve({
       url: `https://mock.rootmatching.local/contracts/${documentId}.pdf`,

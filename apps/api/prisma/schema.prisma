@@ -188,6 +188,8 @@ model Profile {
 model FactoryProfile {
   id                   String   @id @default(cuid())
   companyId            String   @unique @map("company_id")
+  // Display location (richer than Company.region which stays as the search filter token).
+  location             String?
   // Core matching fields
   processes            String[]
   trustScore           Int      @map("trust_score")

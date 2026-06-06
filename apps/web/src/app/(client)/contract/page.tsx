@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -85,15 +85,19 @@ export default function ContractPage() {
   )
   const [clientContact, setClientContact] = useState<ParticipantContactValue>(clientDefault)
   const [factoryContact, setFactoryContact] = useState<ParticipantContactValue>(factoryDefault)
+  const clientHasOverrideRef = useRef(false)
+  const factoryHasOverrideRef = useRef(false)
   const [clientContactValid, setClientContactValid] = useState(true)
   const [factoryContactValid, setFactoryContactValid] = useState(true)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (clientHasOverrideRef.current) return
     setClientContact(clientDefault)
   }, [clientDefault])
 
   useEffect(() => {
+    if (factoryHasOverrideRef.current) return
     setFactoryContact(factoryDefault)
   }, [factoryDefault])
 
@@ -341,7 +345,10 @@ export default function ContractPage() {
                       companyName={clientCompanyName}
                       defaultValue={clientContact}
                       helperText="이 정보는 이번 계약에만 적용됩니다. 회사 기본 정보는 마이페이지에서 수정하세요."
-                      onChange={setClientContact}
+                      onChange={(value) => {
+                        clientHasOverrideRef.current = true
+                        setClientContact(value)
+                      }}
                       onValidityChange={setClientContactValid}
                     />
                     <ParticipantContactCard
@@ -350,7 +357,10 @@ export default function ContractPage() {
                       companyName={selectedFactory.name}
                       defaultValue={factoryContact}
                       helperText="이 정보는 이번 계약에만 적용됩니다."
-                      onChange={setFactoryContact}
+                      onChange={(value) => {
+                        factoryHasOverrideRef.current = true
+                        setFactoryContact(value)
+                      }}
                       onValidityChange={setFactoryContactValid}
                     />
                   </div>

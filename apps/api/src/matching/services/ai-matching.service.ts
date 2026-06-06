@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MatchingSource } from '@prisma/client';
 import type {
   Company,
   FactoryProfile as FactoryProfileRow,
@@ -87,30 +88,117 @@ export class AiMatchingService {
     );
     const topIds = ranked.slice(0, TOP_K).map((r) => r.item);
 
-    if (this.vectorSearch.shouldUseMockFallback()) {
+    // Compute fallback decision ONCE so source assignment matches the branch used.
+    const useMockFallback = this.vectorSearch.shouldUseMockFallback();
+    let recommendations: FactoryRecommendation[];
+
+    if (useMockFallback) {
       this.logger.warn(
         `Returning ${topIds.length} mock recommendations (OPENAI_API_KEY missing, NODE_ENV=${process.env.NODE_ENV ?? 'undefined'})`,
       );
-      return this.buildMockRecommendations(topIds, factoryById, request);
+      recommendations = this.buildMockRecommendations(
+        topIds,
+        factoryById,
+        request,
+      );
+    } else {
+      const gptResults = await this.callGPT4o(request, topIds, factoryById);
+      recommendations = gptResults
+        .map((gpt): FactoryRecommendation | null => {
+          const factory = factoryById.get(gpt.id);
+          if (!factory) return null;
+          return this.toRecommendation(factory, {
+            aiReason: gpt.aiReason,
+            qualityScore: gpt.qualityScore,
+            deliveryScore: gpt.deliveryScore,
+            priceCompetitiveness: gpt.priceCompetitiveness,
+            trustScore: gpt.trustScore,
+            estimateMin: gpt.estimateMin,
+            estimateMax: gpt.estimateMax,
+          });
+        })
+        .filter((r): r is FactoryRecommendation => r !== null);
     }
 
-    const gptResults = await this.callGPT4o(request, topIds, factoryById);
+    if (request.quoteRequestId) {
+      const source = useMockFallback
+        ? MatchingSource.DETERMINISTIC_MOCK
+        : MatchingSource.OPENAI_ADAPTER;
+      return this.persistRecommendations(
+        request.quoteRequestId,
+        recommendations,
+        source,
+      );
+    }
 
-    return gptResults
-      .map((gpt): FactoryRecommendation | null => {
-        const factory = factoryById.get(gpt.id);
-        if (!factory) return null;
-        return this.toRecommendation(factory, {
-          aiReason: gpt.aiReason,
-          qualityScore: gpt.qualityScore,
-          deliveryScore: gpt.deliveryScore,
-          priceCompetitiveness: gpt.priceCompetitiveness,
-          trustScore: gpt.trustScore,
-          estimateMin: gpt.estimateMin,
-          estimateMax: gpt.estimateMax,
+    return recommendations;
+  }
+
+  // Order must be preserved: FE first-card auto-selection depends on it.
+  private async persistRecommendations(
+    quoteRequestId: string,
+    recommendations: FactoryRecommendation[],
+    source: MatchingSource,
+  ): Promise<FactoryRecommendation[]> {
+    const owner = await this.prisma.quoteRequest.findUnique({
+      where: { id: quoteRequestId },
+      select: { id: true },
+    });
+    if (!owner) {
+      this.logger.warn(
+        `Skipping MatchRecommendation persist: quoteRequestId=${quoteRequestId} not found`,
+      );
+      return recommendations;
+    }
+
+    return Promise.all(
+      recommendations.map(async (rec) => {
+        const score =
+          rec.matchScore ??
+          Math.round(
+            (rec.qualityScore +
+              rec.deliveryScore +
+              rec.priceCompetitiveness +
+              rec.trustScore) /
+              4,
+          );
+        const persisted = await this.prisma.matchRecommendation.upsert({
+          where: {
+            quoteRequestId_factoryId_source: {
+              quoteRequestId,
+              factoryId: rec.id,
+              source,
+            },
+          },
+          create: {
+            quoteRequestId,
+            factoryId: rec.id,
+            source,
+            score,
+            qualityScore: rec.qualityScore,
+            deliveryScore: rec.deliveryScore,
+            priceScore: rec.priceCompetitiveness,
+            trustScore: rec.trustScore,
+            reason: rec.aiReason,
+            estimateMin: rec.estimateMin,
+            estimateMax: rec.estimateMax,
+          },
+          // Refresh stored scores so the row matches the response the FE just saw —
+          // otherwise the recommendationId in acceptedQuoteId points at stale data.
+          update: {
+            score,
+            qualityScore: rec.qualityScore,
+            deliveryScore: rec.deliveryScore,
+            priceScore: rec.priceCompetitiveness,
+            trustScore: rec.trustScore,
+            reason: rec.aiReason,
+            estimateMin: rec.estimateMin,
+            estimateMax: rec.estimateMax,
+          },
         });
-      })
-      .filter((r): r is FactoryRecommendation => r !== null);
+        return { ...rec, recommendationId: persisted.id };
+      }),
+    );
   }
 
   private buildMockRecommendations(

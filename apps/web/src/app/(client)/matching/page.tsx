@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/cn'
 import { useDemoMode } from '@/lib/demo-mode'
+import { useWorkflowDispatch } from '@/state/WorkflowContext'
 
 const MATCHING_RESULTS_KEY = 'rm:matchingResults'
 const SELECTED_FACTORY_KEY = 'rm:selectedFactory'
@@ -242,6 +243,7 @@ function FilterSelect({
 export default function MatchingResultPage() {
   const router = useRouter()
   const isDemoMode = useDemoMode()
+  const workflowDispatch = useWorkflowDispatch()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [factories, setFactories] = useState<DemoFactoryRecommendation[]>([])
   const [request, setRequest] = useState<QuoteRequestDraft | null>(null)
@@ -332,6 +334,11 @@ export default function MatchingResultPage() {
       setSelectedFactory(factoryToStore)
       window.sessionStorage.setItem(SELECTED_FACTORY_KEY, JSON.stringify(factoryToStore))
     }
+
+    workflowDispatch({
+      type: 'workflow/setSelectedRecommendationId',
+      payload: factoryToStore?.recommendationId ?? null,
+    })
 
     router.push('/contract')
   }

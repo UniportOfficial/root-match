@@ -126,11 +126,18 @@ describe('AiMatchingService', () => {
   let envSnapshot: Record<EnvKey, string | undefined>;
   let findManyMock: jest.Mock;
 
+  let quoteRequestFindUniqueMock: jest.Mock;
+  let matchRecommendationUpsertMock: jest.Mock;
+
   beforeEach(async () => {
     envSnapshot = snapshotEnv();
     findManyMock = jest.fn().mockResolvedValue(TEST_FACTORIES);
+    quoteRequestFindUniqueMock = jest.fn();
+    matchRecommendationUpsertMock = jest.fn();
     const prismaStub = {
       factoryProfile: { findMany: findManyMock },
+      quoteRequest: { findUnique: quoteRequestFindUniqueMock },
+      matchRecommendation: { upsert: matchRecommendationUpsertMock },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -264,6 +271,128 @@ describe('AiMatchingService', () => {
       const firstCallUrl = String(fetchSpy.mock.calls[0]?.[0] ?? '');
       expect(firstCallUrl).toContain('api.openai.com');
       expect(firstCallUrl).toContain('embeddings');
+    });
+  });
+
+  describe('matchFactories (conditional persistence)', () => {
+    beforeEach(() => {
+      delete process.env.OPENAI_API_KEY;
+      process.env.NODE_ENV = 'test';
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    });
+
+    it('skips persistence when quoteRequestId is absent', async () => {
+      const result = await service.matchFactories(sampleRequest);
+
+      expect(quoteRequestFindUniqueMock).not.toHaveBeenCalled();
+      expect(matchRecommendationUpsertMock).not.toHaveBeenCalled();
+      for (const rec of result) {
+        expect(rec.recommendationId).toBeUndefined();
+      }
+    });
+
+    it('skips persistence when quoteRequestId is provided but not found', async () => {
+      quoteRequestFindUniqueMock.mockResolvedValue(null);
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+
+      const result = await service.matchFactories({
+        ...sampleRequest,
+        quoteRequestId: 'qr-missing',
+      });
+
+      expect(quoteRequestFindUniqueMock).toHaveBeenCalledWith({
+        where: { id: 'qr-missing' },
+        select: { id: true },
+      });
+      expect(matchRecommendationUpsertMock).not.toHaveBeenCalled();
+      for (const rec of result) {
+        expect(rec.recommendationId).toBeUndefined();
+      }
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('qr-missing'),
+      );
+    });
+
+    it('persists each recommendation and attaches recommendationId when quoteRequestId resolves', async () => {
+      quoteRequestFindUniqueMock.mockResolvedValue({ id: 'qr-real' });
+      matchRecommendationUpsertMock.mockImplementation(
+        ({
+          create,
+        }: {
+          create: { quoteRequestId: string; factoryId: string };
+        }) =>
+          Promise.resolve({
+            id: `mr-${create.factoryId}`,
+            quoteRequestId: create.quoteRequestId,
+            factoryId: create.factoryId,
+          }),
+      );
+
+      const result = await service.matchFactories({
+        ...sampleRequest,
+        quoteRequestId: 'qr-real',
+      });
+
+      expect(result).toHaveLength(4);
+      expect(matchRecommendationUpsertMock).toHaveBeenCalledTimes(4);
+
+      for (const rec of result) {
+        expect(rec.recommendationId).toBe(`mr-${rec.id}`);
+        expect(TEST_FACTORIES.map((f) => f.companyId)).toContain(rec.id);
+      }
+
+      const firstRec = result[0];
+      if (!firstRec) throw new Error('expected at least one recommendation');
+      const firstCall = matchRecommendationUpsertMock.mock.calls[0][0];
+      expect(firstCall.where).toEqual({
+        quoteRequestId_factoryId_source: {
+          quoteRequestId: 'qr-real',
+          factoryId: firstRec.id,
+          source: 'DETERMINISTIC_MOCK',
+        },
+      });
+      expect(firstCall.create).toEqual(
+        expect.objectContaining({
+          quoteRequestId: 'qr-real',
+          factoryId: firstRec.id,
+          source: 'DETERMINISTIC_MOCK',
+          qualityScore: expect.any(Number),
+          deliveryScore: expect.any(Number),
+          priceScore: expect.any(Number),
+          trustScore: expect.any(Number),
+          score: expect.any(Number),
+        }),
+      );
+      expect(firstCall.update).toEqual(
+        expect.objectContaining({
+          score: firstCall.create.score,
+          qualityScore: firstCall.create.qualityScore,
+        }),
+      );
+    });
+
+    it('preserves recommendation order after persistence', async () => {
+      quoteRequestFindUniqueMock.mockResolvedValue({ id: 'qr-real' });
+      matchRecommendationUpsertMock.mockImplementation(
+        ({
+          create,
+        }: {
+          create: { factoryId: string; quoteRequestId: string };
+        }) =>
+          Promise.resolve({
+            id: `mr-${create.factoryId}`,
+            quoteRequestId: create.quoteRequestId,
+            factoryId: create.factoryId,
+          }),
+      );
+
+      const baseline = await service.matchFactories(sampleRequest);
+      const persisted = await service.matchFactories({
+        ...sampleRequest,
+        quoteRequestId: 'qr-real',
+      });
+
+      expect(persisted.map((r) => r.id)).toEqual(baseline.map((r) => r.id));
     });
   });
 

@@ -436,6 +436,9 @@ export default function ClientRequestPage() {
   async function submitRequest(values: QuoteRequestDraft) {
     setSubmitError(null)
     setLoadingStep(1)
+    workflowDispatch({ type: 'workflow/setQuoteRequestId', payload: null })
+    workflowDispatch({ type: 'workflow/setSelectedRecommendationId', payload: null })
+
     const estimatedQuantity = buildEstimatedQuantity({
       firstRunQuantity,
       productionQuantity,
@@ -449,16 +452,40 @@ export default function ClientRequestPage() {
       budgetRange,
     })
 
-    const matchingRequest = fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/matching/recommend`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      },
-    )
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+
+    let quoteRequestId: string | undefined
+    if (isAuthenticated) {
+      try {
+        const quoteResponse = await fetch(`${apiBase}/quote-requests`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        })
+        if (quoteResponse.ok) {
+          const persisted = (await quoteResponse.json()) as { id?: string }
+          if (persisted?.id) {
+            quoteRequestId = persisted.id
+            workflowDispatch({
+              type: 'workflow/setQuoteRequestId',
+              payload: persisted.id,
+            })
+          }
+        } else {
+          console.warn('Quote request persistence skipped: HTTP', quoteResponse.status)
+        }
+      } catch (quoteError) {
+        console.warn('Quote request persistence skipped: network error', quoteError)
+      }
+    }
+
+    const matchingBody = quoteRequestId ? { ...request, quoteRequestId } : request
+    const matchingRequest = fetch(`${apiBase}/matching/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(matchingBody),
+    })
 
     try {
       await wait(900)
@@ -473,30 +500,6 @@ export default function ClientRequestPage() {
       }
 
       const results = (await response.json()) as FactoryRecommendation[]
-
-      if (isAuthenticated) {
-        try {
-          const quoteResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/quote-requests`,
-            {
-              method: 'POST',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(request),
-            },
-          )
-          if (quoteResponse.ok) {
-            const persisted = (await quoteResponse.json()) as { id?: string }
-            if (persisted?.id) {
-              workflowDispatch({ type: 'workflow/setQuoteRequestId', payload: persisted.id })
-            }
-          } else {
-            console.warn('Quote request persistence skipped: HTTP', quoteResponse.status)
-          }
-        } catch (quoteError) {
-          console.warn('Quote request persistence skipped: network error', quoteError)
-        }
-      }
 
       await wait(1200)
       setLoadingStep(4)

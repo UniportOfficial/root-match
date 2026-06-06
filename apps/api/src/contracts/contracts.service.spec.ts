@@ -212,6 +212,39 @@ describe('ContractsService', () => {
         }),
       );
     });
+
+    it('persists acceptedQuoteId when provided', async () => {
+      const record = makeContractRecord({ acceptedQuoteId: 'mr-rec-001' });
+      (prisma.contract.create as jest.Mock).mockResolvedValue(record);
+
+      await service.create('user-test', {
+        templateId: 'tmpl-test',
+        title: 'Test Contract',
+        participants: [
+          {
+            role: 'client',
+            name: '참여자 1',
+            email: 'p1@example.kr',
+            signingOrder: 1,
+            signingMethodType: 'email',
+          },
+          {
+            role: 'factory',
+            name: '참여자 2',
+            email: 'p2@example.kr',
+            signingOrder: 2,
+            signingMethodType: 'email',
+          },
+        ],
+        acceptedQuoteId: 'mr-rec-001',
+      });
+
+      expect(prisma.contract.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ acceptedQuoteId: 'mr-rec-001' }),
+        }),
+      );
+    });
   });
 
   describe('dispatchDraft (via send())', () => {
@@ -258,6 +291,21 @@ describe('ContractsService', () => {
 
       expect(gateway.createDocument).toHaveBeenCalledWith(
         expect.objectContaining({ expiryMinutes: 480 }),
+      );
+    });
+
+    it('maps acceptedQuoteId onto vendor customValue1', async () => {
+      const draft = mockDraftRecord({ acceptedQuoteId: 'mr-rec-007' });
+      setupSendMocks(draft);
+
+      await service.send('user-test', 'ctr-test');
+
+      expect(gateway.createDocument).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customValues: expect.objectContaining({
+            customValue1: 'mr-rec-007',
+          }),
+        }),
       );
     });
   });

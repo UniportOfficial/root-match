@@ -166,6 +166,9 @@ export default function ContractPage() {
         ],
         factoryCompanyId: selectedFactory.id,
         ...(workflowState.quoteRequestId ? { quoteRequestId: workflowState.quoteRequestId } : {}),
+        ...(workflowState.selectedRecommendationId
+          ? { acceptedQuoteId: workflowState.selectedRecommendationId }
+          : {}),
         ...(currentUser?.company?.id ? { clientCompanyId: currentUser.company.id } : {}),
         ...(envExpiryMinutes ? { expiryMinutes: envExpiryMinutes } : {}),
       }

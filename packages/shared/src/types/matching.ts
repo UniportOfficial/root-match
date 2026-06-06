@@ -6,6 +6,7 @@ export interface QuoteRequestDraft {
   desiredDeadline: string
   budgetRange: string
   detailRequirements: string
+  quoteRequestId?: string
 }
 
 export interface FactoryRecommendation {
@@ -30,6 +31,7 @@ export interface FactoryRecommendation {
   priceCompetitiveness: number
   contactEmail?: string
   contactPhone?: string
+  recommendationId?: string
 }
 
 export interface FactoryPortfolioItem {

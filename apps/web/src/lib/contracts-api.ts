@@ -58,19 +58,28 @@ export interface CancelContractParams {
   apiUrl: string
   contractId: string
   reason?: string
+  timeoutMs?: number
 }
 
 export async function cancelContract({
   apiUrl,
   contractId,
   reason,
+  timeoutMs = 10000,
 }: CancelContractParams): Promise<Response> {
-  return fetch(`${apiUrl}/contracts/${contractId}/cancel`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(reason ? { reason } : {}),
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(`${apiUrl}/contracts/${contractId}/cancel`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reason ? { reason } : {}),
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 export async function listMyContracts({

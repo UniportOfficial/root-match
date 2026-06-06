@@ -354,11 +354,11 @@ export default function DashboardPage() {
                 활동 유형 비율
               </CardTitle>
               <CardDescription className="text-kr-pretty text-[14px]">
-                <span>전체 </span>
+                전체{' '}
                 <span className="font-semibold tabular-nums text-foreground">
                   {totalActivityCount.toLocaleString('ko-KR')}
-                </span>
-                <span>건</span>
+                </span>{' '}
+                건
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,10 +1,17 @@
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app.module';
-import { configureApp, setupSwagger } from './bootstrap';
+import { validateProdEnv } from './config/env-validator';
 
 async function bootstrap() {
+  validateProdEnv();
+
+  const [{ NestFactory }, { AppModule }, { configureApp, setupSwagger }] =
+    await Promise.all([
+      import('@nestjs/core'),
+      import('./app.module.js'),
+      import('./bootstrap.js'),
+    ]);
+
   // bodyParser:false is mandatory: Better Auth's handler reads the raw request
   // stream and would hang if NestJS' default JSON parser consumed it first
   // (Better Auth docs `integrations/express.mdx:14-35` + `integrations/nestjs.mdx:28-43`).

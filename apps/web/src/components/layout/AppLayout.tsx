@@ -42,6 +42,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/factory/onboarding': '공장 프로필 등록',
   '/factory/requests': '받은 견적 요청',
   '/contract': '계약 및 결제',
+  '/contracts': '계약 현황',
   '/transactions': '거래 진행 현황',
   '/transaction/review': '거래 완료 및 리뷰',
   '/transaction/progress': '거래 진행 상세',

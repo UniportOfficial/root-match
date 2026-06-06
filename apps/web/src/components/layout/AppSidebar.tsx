@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   Factory,
+  FileSignature,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -68,6 +69,7 @@ const navGroups: NavGroup[] = [
   {
     title: '거래/분쟁',
     items: [
+      { href: '/contracts', label: '계약 현황', icon: FileSignature },
       { href: '/transactions', label: '거래 현황', icon: PackageCheck },
       { href: '/disputes', label: '분쟁 중재', icon: AlertTriangle },
     ],

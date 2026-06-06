@@ -40,6 +40,7 @@ interface WorkflowState {
   hydrated: boolean
   matchingResults: MatchingResultsPayload | null
   selectedFactory: FactoryRecommendation | null
+  quoteRequestId: string | null
   contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
@@ -53,6 +54,7 @@ type WorkflowAction =
       payload: {
         matchingResults: MatchingResultsPayload | null
         selectedFactory: FactoryRecommendation | null
+        quoteRequestId: string | null
         contractId: string | null
         contract: WorkflowContract | null
         paymentCompleted: boolean
@@ -62,6 +64,7 @@ type WorkflowAction =
     }
   | { type: 'workflow/setMatchingResults'; payload: MatchingResultsPayload | null }
   | { type: 'workflow/setSelectedFactory'; payload: FactoryRecommendation | null }
+  | { type: 'workflow/setQuoteRequestId'; payload: string | null }
   | { type: 'workflow/setContractId'; payload: string | null }
   | { type: 'workflow/setContract'; payload: WorkflowContract | null }
   | { type: 'workflow/completePayment' }
@@ -72,6 +75,7 @@ const initialState: WorkflowState = {
   hydrated: false,
   matchingResults: null,
   selectedFactory: null,
+  quoteRequestId: null,
   contractId: null,
   contract: null,
   paymentCompleted: false,
@@ -87,6 +91,7 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
         hydrated: true,
         matchingResults: action.payload.matchingResults,
         selectedFactory: action.payload.selectedFactory,
+        quoteRequestId: action.payload.quoteRequestId,
         contractId: action.payload.contractId,
         contract: action.payload.contract,
         paymentCompleted: action.payload.paymentCompleted,
@@ -97,6 +102,8 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
       return { ...state, matchingResults: action.payload }
     case 'workflow/setSelectedFactory':
       return { ...state, selectedFactory: action.payload }
+    case 'workflow/setQuoteRequestId':
+      return { ...state, quoteRequestId: action.payload }
     case 'workflow/setContractId':
       return { ...state, contractId: action.payload }
     case 'workflow/setContract':
@@ -189,6 +196,7 @@ function isWorkflowReview(value: unknown): value is WorkflowReview {
 }
 
 interface WorkflowExtraPayload {
+  quoteRequestId: string | null
   contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
@@ -200,6 +208,7 @@ function isWorkflowExtraPayload(value: unknown): value is WorkflowExtraPayload {
   if (!isRecord(value)) return false
 
   return (
+    (value.quoteRequestId === null || typeof value.quoteRequestId === 'string') &&
     (value.contractId === null || typeof value.contractId === 'string') &&
     (value.contract === null || isWorkflowContract(value.contract)) &&
     typeof value.paymentCompleted === 'boolean' &&
@@ -239,6 +248,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
     const raw = sessionStorage.getItem(WORKFLOW_EXTRA_KEY)
     if (!raw) {
       return {
+        quoteRequestId: null,
         contractId: null,
         contract: null,
         paymentCompleted: false,
@@ -249,6 +259,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
     const parsed: unknown = JSON.parse(raw)
     if (!isWorkflowExtraPayload(parsed)) {
       return {
+        quoteRequestId: null,
         contractId: null,
         contract: null,
         paymentCompleted: false,
@@ -260,6 +271,7 @@ function readWorkflowExtra(): WorkflowExtraPayload {
   } catch (error) {
     console.error('Failed to hydrate workflow extra state from sessionStorage', error)
     return {
+      quoteRequestId: null,
       contractId: null,
       contract: null,
       paymentCompleted: false,
@@ -320,6 +332,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem(
         WORKFLOW_EXTRA_KEY,
         JSON.stringify({
+          quoteRequestId: state.quoteRequestId,
           contract: state.contract,
           contractId: state.contractId,
           paymentCompleted: state.paymentCompleted,
@@ -336,6 +349,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     state.hydrated,
     state.inspectionApproved,
     state.paymentCompleted,
+    state.quoteRequestId,
     state.review,
   ])
 

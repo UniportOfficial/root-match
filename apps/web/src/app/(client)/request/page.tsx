@@ -42,6 +42,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/cn'
 import { useDemoMode } from '@/lib/demo-mode'
 import { useSidebarLayout } from '@/components/layout/AppLayout'
+import { useUserState } from '@/state/UserContext'
+import { useWorkflowDispatch } from '@/state/WorkflowContext'
 
 const quoteRequestSchema = z.object({
   projectName: z.string().trim().min(1, '프로젝트명을 입력하세요.'),
@@ -326,6 +328,8 @@ export default function ClientRequestPage() {
   const router = useRouter()
   const isDemoMode = useDemoMode()
   const sidebarLayout = useSidebarLayout()
+  const { isAuthenticated } = useUserState()
+  const workflowDispatch = useWorkflowDispatch()
   const parsedQuantity = useMemo(() => parseQuantityDetails(initialRequest.estimatedQuantity), [])
   const parsedBudget = useMemo(() => parseBudgetRange(initialRequest.budgetRange), [])
   const [firstRunQuantity, setFirstRunQuantity] = useState(parsedQuantity.firstRun)
@@ -469,6 +473,31 @@ export default function ClientRequestPage() {
       }
 
       const results = (await response.json()) as FactoryRecommendation[]
+
+      if (isAuthenticated) {
+        try {
+          const quoteResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/quote-requests`,
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(request),
+            },
+          )
+          if (quoteResponse.ok) {
+            const persisted = (await quoteResponse.json()) as { id?: string }
+            if (persisted?.id) {
+              workflowDispatch({ type: 'workflow/setQuoteRequestId', payload: persisted.id })
+            }
+          } else {
+            console.warn('Quote request persistence skipped: HTTP', quoteResponse.status)
+          }
+        } catch (quoteError) {
+          console.warn('Quote request persistence skipped: network error', quoteError)
+        }
+      }
+
       await wait(1200)
       setLoadingStep(4)
       await wait(500)

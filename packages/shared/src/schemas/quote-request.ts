@@ -12,3 +12,10 @@ export const CreateQuoteRequestSchema = z
   })
   .meta({ id: 'CreateQuoteRequest' })
 export type CreateQuoteRequestInput = z.infer<typeof CreateQuoteRequestSchema>
+
+export const UpdateQuoteRequestSchema = CreateQuoteRequestSchema.partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided',
+  })
+  .meta({ id: 'UpdateQuoteRequest' })
+export type UpdateQuoteRequestInput = z.infer<typeof UpdateQuoteRequestSchema>

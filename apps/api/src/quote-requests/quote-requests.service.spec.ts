@@ -4,9 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { Prisma, type QuoteRequest } from '@prisma/client';
+import {
+  MatchingSource,
+  Prisma,
+  type MatchRecommendation,
+  type QuoteRequest,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuoteRequestsService } from './quote-requests.service';
+import {
+  QuoteRequestsService,
+  type RecommendationCompanyInfo,
+} from './quote-requests.service';
 
 const NOW = new Date('2026-06-06T00:00:00Z');
 
@@ -29,6 +37,39 @@ function makeRecord(overrides: Partial<QuoteRequest> = {}): QuoteRequest {
   };
 }
 
+function makeRecommendation(
+  overrides: Partial<MatchRecommendation> = {},
+): MatchRecommendation {
+  return {
+    id: 'rec-test',
+    quoteRequestId: 'qr-test',
+    factoryId: 'factory-a',
+    score: 90,
+    qualityScore: 85,
+    deliveryScore: 80,
+    priceScore: 75,
+    trustScore: 92,
+    reason: 'Good match',
+    estimateMin: 1000,
+    estimateMax: 2000,
+    source: MatchingSource.DETERMINISTIC_MOCK,
+    createdAt: NOW,
+    ...overrides,
+  };
+}
+
+function makeCompany(
+  overrides: Partial<RecommendationCompanyInfo> = {},
+): RecommendationCompanyInfo {
+  return {
+    id: 'factory-a',
+    name: 'Acme Manufacturing',
+    region: 'Seoul',
+    industry: 'CNC Machining',
+    ...overrides,
+  };
+}
+
 describe('QuoteRequestsService', () => {
   let service: QuoteRequestsService;
   let prisma: {
@@ -38,6 +79,9 @@ describe('QuoteRequestsService', () => {
       update: jest.Mock;
       updateMany: jest.Mock;
       upsert: jest.Mock;
+    };
+    company: {
+      findMany: jest.Mock;
     };
   };
 
@@ -49,6 +93,9 @@ describe('QuoteRequestsService', () => {
         update: jest.fn(),
         updateMany: jest.fn(),
         upsert: jest.fn(),
+      },
+      company: {
+        findMany: jest.fn(),
       },
     };
 
@@ -82,7 +129,7 @@ describe('QuoteRequestsService', () => {
   });
 
   describe('get()', () => {
-    it('returns the record with recommendations when owner matches', async () => {
+    it('returns the record with empty recommendations and skips Company lookup', async () => {
       const record = { ...makeRecord(), recommendations: [] };
       prisma.quoteRequest.findUnique.mockResolvedValue(record);
 
@@ -92,7 +139,72 @@ describe('QuoteRequestsService', () => {
         where: { id: 'qr-test' },
         include: { recommendations: { orderBy: { score: 'desc' } } },
       });
-      expect(result).toBe(record);
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
+      expect(result).toEqual({ ...record, recommendations: [] });
+    });
+
+    it('attaches Company info to each recommendation by factoryId', async () => {
+      const recommendation = makeRecommendation({ factoryId: 'factory-a' });
+      const record = {
+        ...makeRecord(),
+        recommendations: [recommendation],
+      };
+      const company = makeCompany({ id: 'factory-a' });
+      prisma.quoteRequest.findUnique.mockResolvedValue(record);
+      prisma.company.findMany.mockResolvedValue([company]);
+
+      const result = await service.get('user-owner', 'qr-test');
+
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['factory-a'] } },
+        select: { id: true, name: true, region: true, industry: true },
+      });
+      expect(result.recommendations).toEqual([{ ...recommendation, company }]);
+    });
+
+    it('attaches company=null when factory is not found in the Company table', async () => {
+      const recommendation = makeRecommendation({
+        factoryId: 'factory-missing',
+      });
+      const record = {
+        ...makeRecord(),
+        recommendations: [recommendation],
+      };
+      prisma.quoteRequest.findUnique.mockResolvedValue(record);
+      prisma.company.findMany.mockResolvedValue([]);
+
+      const result = await service.get('user-owner', 'qr-test');
+
+      expect(result.recommendations).toEqual([
+        { ...recommendation, company: null },
+      ]);
+    });
+
+    it('batches Company lookup with a single findMany call (N+1 prevention)', async () => {
+      const recommendations = [
+        makeRecommendation({ id: 'rec-a', factoryId: 'factory-a' }),
+        makeRecommendation({ id: 'rec-b', factoryId: 'factory-b' }),
+        makeRecommendation({ id: 'rec-c', factoryId: 'factory-c' }),
+      ];
+      const record = { ...makeRecord(), recommendations };
+      prisma.quoteRequest.findUnique.mockResolvedValue(record);
+      prisma.company.findMany.mockResolvedValue([
+        makeCompany({ id: 'factory-a', name: 'Alpha' }),
+        makeCompany({ id: 'factory-b', name: 'Beta', region: null }),
+      ]);
+
+      const result = await service.get('user-owner', 'qr-test');
+
+      expect(prisma.company.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.company.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['factory-a', 'factory-b', 'factory-c'] } },
+        select: { id: true, name: true, region: true, industry: true },
+      });
+      expect(result.recommendations).toHaveLength(3);
+      expect(result.recommendations[0]?.company?.name).toBe('Alpha');
+      expect(result.recommendations[1]?.company?.name).toBe('Beta');
+      expect(result.recommendations[1]?.company?.region).toBeNull();
+      expect(result.recommendations[2]?.company).toBeNull();
     });
 
     it('throws NotFoundException when the record is missing', async () => {

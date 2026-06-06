@@ -669,42 +669,54 @@ function CancelRequestDialog({
 function RecommendationGrid({ recommendations }: { recommendations: MatchRecommendation[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      {recommendations.map((factory, index) => (
-        <article
-          key={factory.id}
-          className="rounded-2xl border border-border p-5 transition hover:border-brand-light hover:shadow-sm"
-        >
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-kr-pretty text-[16px] font-bold text-foreground">
-                공장 매칭 결과 #{index + 1}
-              </h3>
-              <p className="text-kr-keep mt-1 text-[15px] text-muted-foreground">
-                추천 점수 {factory.score}점
-              </p>
+      {recommendations.map((factory, index) => {
+        const fallbackTitle = `공장 매칭 결과 #${index + 1}`
+        const displayTitle = factory.company?.name ?? fallbackTitle
+        const companyDetails = [factory.company?.region, factory.company?.industry].filter(
+          (part): part is string => Boolean(part),
+        )
+        return (
+          <article
+            key={factory.id}
+            className="rounded-2xl border border-border p-5 transition hover:border-brand-light hover:shadow-sm"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-kr-pretty truncate text-[17px] font-bold text-foreground">
+                  {displayTitle}
+                </h3>
+                {companyDetails.length > 0 ? (
+                  <p className="text-kr-keep mt-1 text-[15px] font-semibold text-muted-foreground">
+                    {companyDetails.join(' · ')}
+                  </p>
+                ) : null}
+                <p className="text-kr-keep mt-1 text-[15px] text-muted-foreground">
+                  추천 점수 {factory.score}점
+                </p>
+              </div>
+              <Badge variant="info" size="sm" className="text-kr-keep shrink-0 text-[13px]">
+                신뢰 {factory.trustScore}점
+              </Badge>
             </div>
-            <Badge variant="info" size="sm" className="text-kr-keep text-[12px]">
-              신뢰 {factory.trustScore}점
-            </Badge>
-          </div>
-          <Separator className="mb-4" />
-          <dl className="grid grid-cols-2 gap-3 text-[15px]">
-            <div className="rounded-xl bg-surface-muted p-3">
-              <dt className="text-kr-keep font-semibold text-muted-foreground">예상 견적</dt>
-              <dd className="mt-1 font-bold text-ink-950">
-                {formatPrice(factory.estimateMin)} ~ {formatPrice(factory.estimateMax)}
-              </dd>
-            </div>
-            <div className="rounded-xl bg-surface-muted p-3">
-              <dt className="text-kr-keep font-semibold text-muted-foreground">납기 점수</dt>
-              <dd className="mt-1 font-bold text-ink-950">{factory.deliveryScore}점</dd>
-            </div>
-          </dl>
-          <p className="text-kr-pretty mt-4 rounded-xl bg-brand-light p-3 text-[15px] leading-6 text-blue-800">
-            {factory.reason}
-          </p>
-        </article>
-      ))}
+            <Separator className="mb-4" />
+            <dl className="grid grid-cols-2 gap-3 text-[15px]">
+              <div className="rounded-xl bg-surface-muted p-3">
+                <dt className="text-kr-keep font-semibold text-muted-foreground">예상 견적</dt>
+                <dd className="mt-1 font-bold text-ink-950">
+                  {formatPrice(factory.estimateMin)} ~ {formatPrice(factory.estimateMax)}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-surface-muted p-3">
+                <dt className="text-kr-keep font-semibold text-muted-foreground">납기 점수</dt>
+                <dd className="mt-1 font-bold text-ink-950">{factory.deliveryScore}점</dd>
+              </div>
+            </dl>
+            <p className="text-kr-pretty mt-4 rounded-xl bg-brand-light p-3 text-[15px] leading-6 text-blue-800">
+              {factory.reason}
+            </p>
+          </article>
+        )
+      })}
     </div>
   )
 }

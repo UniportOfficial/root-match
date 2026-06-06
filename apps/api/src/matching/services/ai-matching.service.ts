@@ -87,6 +87,8 @@ export class AiMatchingService {
         qualityScore: gpt.qualityScore,
         deliveryScore: gpt.deliveryScore,
         priceCompetitiveness: gpt.priceCompetitiveness,
+        contactEmail: rec?.contactEmail,
+        contactPhone: rec?.contactPhone,
       } satisfies FactoryRecommendation;
     });
   }

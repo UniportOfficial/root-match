@@ -1,3 +1,35 @@
+import { z } from 'zod'
+import { ContractStatusSchema } from '@rootmatching/shared/schemas'
+
+export const ContractListParticipantSchema = z.object({
+  role: z.string(),
+  name: z.string(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  status: z.string().optional(),
+})
+
+export const ContractListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: ContractStatusSchema,
+  factoryCompanyId: z.string().nullable().optional(),
+  createdAt: z.string(),
+  cancelledAt: z.string().nullable().optional(),
+  cancelledReason: z.string().nullable().optional(),
+  participants: z.array(ContractListParticipantSchema),
+})
+
+export type ContractListItem = z.infer<typeof ContractListItemSchema>
+
+export interface ListMyContractsParams {
+  apiUrl: string
+}
+
+export type ListMyContractsResult =
+  | { ok: true; data: ContractListItem[] }
+  | { ok: false; message: string }
+
 export async function mapContractError(response: Response): Promise<string> {
   const status = response.status
   let bodyText = ''
@@ -39,4 +71,30 @@ export async function cancelContract({
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reason ? { reason } : {}),
   })
+}
+
+export async function listMyContracts({
+  apiUrl,
+}: ListMyContractsParams): Promise<ListMyContractsResult> {
+  try {
+    const response = await fetch(`${apiUrl}/contracts/me`, {
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const message = await mapContractError(response)
+      return { ok: false, message }
+    }
+
+    const json = (await response.json()) as unknown
+    const parsed = z.array(ContractListItemSchema).safeParse(json)
+    if (!parsed.success) {
+      return { ok: false, message: '계약 정보를 불러올 수 없어요. 잠시 후 다시 시도해주세요' }
+    }
+
+    return { ok: true, data: parsed.data }
+  } catch (error) {
+    console.warn('Contract list fetch failed', error)
+    return { ok: false, message: '서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요' }
+  }
 }

@@ -6,13 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Bell, LockKeyhole, Save, Settings, UserRound } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import type { User } from '@rootmatching/shared'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { mockCurrentUser } from '@/data/users'
 import { useUserDispatch, useUserState } from '@/state/UserContext'
 
 const profileSchema = z.object({
@@ -35,19 +35,19 @@ const labelClassName = 'text-kr-keep text-[16px] font-semibold text-foreground'
 const errorClassName = 'mt-2 text-[15px] font-semibold text-destructive'
 const successClassName = 'text-kr-pretty text-[15px] font-semibold text-success'
 
-function buildDefaultValues(currentUser: typeof mockCurrentUser): ProfileFormValues {
+function buildDefaultValues(currentUser: User | null): ProfileFormValues {
   return {
-    name: currentUser.name,
-    position: currentUser.position ?? '',
-    email: currentUser.email,
-    phone: currentUser.phone ?? '',
+    name: currentUser?.name ?? '',
+    position: currentUser?.position ?? '',
+    email: currentUser?.email ?? '',
+    phone: currentUser?.phone ?? '',
   }
 }
 
 export default function MyPageSettingsPage() {
   const { currentUser } = useUserState()
   const dispatch = useUserDispatch()
-  const user = currentUser ?? mockCurrentUser
+  const user = currentUser
   const [profileSaved, setProfileSaved] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')

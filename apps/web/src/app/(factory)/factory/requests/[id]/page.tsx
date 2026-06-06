@@ -121,7 +121,9 @@ export default function FactoryRequestDetailPage() {
     const newMessageId = `msg-quote-${Date.now()}`
     const senderName = currentUser?.accountType === 'factory' ? currentUser.name : '박공장'
     const senderCompany =
-      currentUser?.accountType === 'factory' ? currentUser.company.name : '문래정밀가공'
+      currentUser?.accountType === 'factory' && currentUser.company
+        ? currentUser.company.name
+        : '문래정밀가공'
     const newMessage: Message = {
       id: newMessageId,
       senderId: currentUser?.accountType === 'factory' ? currentUser.id : 'factory-user1',

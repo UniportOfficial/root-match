@@ -72,7 +72,7 @@ export default function ContractPage() {
     () => ({
       name: currentUser?.name ?? '담당자',
       email: currentUser?.email ?? '',
-      phone: currentUser?.phone ?? currentUser?.company.contactPhone ?? '',
+      phone: currentUser?.phone ?? currentUser?.company?.contactPhone ?? '',
     }),
     [currentUser],
   )
@@ -104,7 +104,7 @@ export default function ContractPage() {
 
   const projectName = request?.projectName ?? '신규 프로젝트'
   const clientCompanyName =
-    isAuthenticated && currentUser ? currentUser.company.name : '테크솔루션 주식회사'
+    isAuthenticated && currentUser?.company ? currentUser.company.name : '테크솔루션 주식회사'
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
   const completeWorkflowForTransaction = useCallback(() => {

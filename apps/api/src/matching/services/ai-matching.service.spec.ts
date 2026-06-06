@@ -1,6 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import type {
+  Company,
+  FactoryProfile as FactoryProfileRow,
+} from '@prisma/client';
 import type { QuoteRequestDraft } from '@rootmatching/shared';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AiMatchingService } from './ai-matching.service';
 import { VectorSearchService } from './vector-search.service';
 
@@ -28,6 +33,84 @@ function restoreEnv(snapshot: Record<EnvKey, string | undefined>): void {
   }
 }
 
+type FactoryRow = FactoryProfileRow & { company: Company };
+
+const NOW = new Date('2026-06-06T00:00:00Z');
+
+function makeCompany(
+  overrides: Partial<Company> & Pick<Company, 'id' | 'name'>,
+): Company {
+  return {
+    userId: `user-${overrides.id}`,
+    industry: '제조/생산',
+    region: '서울',
+    size: '중소기업',
+    description: null,
+    contactEmail: `${overrides.id}@example.kr`,
+    contactPhone: '02-0000-0000',
+    website: null,
+    establishedYear: null,
+    employeeCount: 20,
+    revenue: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+function makeFactory(
+  id: string,
+  processes: string[],
+  overrides: Partial<FactoryProfileRow> = {},
+  companyName = `공장-${id}`,
+): FactoryRow {
+  const profile: FactoryProfileRow = {
+    id: `profile-${id}`,
+    companyId: id,
+    location: '서울',
+    processes,
+    trustScore: 90,
+    deliveryRate: 95,
+    reorderRate: 80,
+    qualityScore: 90,
+    deliveryScore: 90,
+    priceCompetitiveness: 85,
+    estimateMin: 300,
+    estimateMax: 400,
+    industrialComplex: null,
+    reorderCustomerCount: null,
+    verified: false,
+    specialty: processes,
+    equipment: ['장비'],
+    products: ['부품'],
+    monthlyCapacity: '월 3,000개',
+    clients: ['고객사'],
+    qualitySatisfaction: null,
+    avgResponseTime: null,
+    locationLat: null,
+    locationLng: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+  return {
+    ...profile,
+    company: makeCompany({ id, name: companyName }),
+  };
+}
+
+const TEST_FACTORIES: FactoryRow[] = [
+  makeFactory('factory-mold', ['금형', 'CNC 절삭'], {
+    specialty: ['금형 정밀가공', '알루미늄 하우징', 'CNC 절삭'],
+    equipment: ['5축 CNC', '머시닝센터'],
+    products: ['알루미늄 하우징', '정밀 케이스'],
+  }),
+  makeFactory('factory-cast', ['주조', '표면처리']),
+  makeFactory('factory-weld', ['용접', '소성가공']),
+  makeFactory('factory-surf', ['표면처리', '열처리']),
+  makeFactory('factory-heat', ['열처리']),
+];
+
 const sampleRequest: QuoteRequestDraft = {
   projectName: '알루미늄 하우징 시제품',
   processType: 'mold',
@@ -41,11 +124,21 @@ const sampleRequest: QuoteRequestDraft = {
 describe('AiMatchingService', () => {
   let service: AiMatchingService;
   let envSnapshot: Record<EnvKey, string | undefined>;
+  let findManyMock: jest.Mock;
 
   beforeEach(async () => {
     envSnapshot = snapshotEnv();
+    findManyMock = jest.fn().mockResolvedValue(TEST_FACTORIES);
+    const prismaStub = {
+      factoryProfile: { findMany: findManyMock },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AiMatchingService, VectorSearchService],
+      providers: [
+        AiMatchingService,
+        VectorSearchService,
+        { provide: PrismaService, useValue: prismaStub },
+      ],
     }).compile();
 
     service = module.get(AiMatchingService);
@@ -63,7 +156,7 @@ describe('AiMatchingService', () => {
       jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     });
 
-    it('Oracle #1: returns 4 mock recommendations without calling fetch', async () => {
+    it('returns 4 recommendations without calling fetch', async () => {
       const fetchSpy = jest.spyOn(global, 'fetch');
 
       const result = await service.matchFactories(sampleRequest);
@@ -77,20 +170,36 @@ describe('AiMatchingService', () => {
       }
     });
 
-    it('Oracle #2: ranked id order is deterministic across calls', async () => {
+    it('returns Company.id as recommendation id (D2 mapping)', async () => {
+      const result = await service.matchFactories(sampleRequest);
+      const ids = result.map((r) => r.id);
+      for (const id of ids) {
+        expect(TEST_FACTORIES.map((f) => f.companyId)).toContain(id);
+      }
+    });
+
+    it('queries factory profiles with company include once per call', async () => {
+      await service.matchFactories(sampleRequest);
+      expect(findManyMock).toHaveBeenCalledTimes(1);
+      expect(findManyMock).toHaveBeenCalledWith({
+        include: { company: true },
+      });
+    });
+
+    it('ranks deterministically across repeated calls', async () => {
       const first = await service.matchFactories(sampleRequest);
       const second = await service.matchFactories(sampleRequest);
       expect(second.map((r) => r.id)).toEqual(first.map((r) => r.id));
     });
 
-    it('Oracle #3a: process-matching factories carry "[Mock · {label} 공정 매칭]" prefix', async () => {
+    it('process-matching factories carry "[Mock · {label} 공정 매칭]" prefix', async () => {
       const result = await service.matchFactories(sampleRequest);
-      const moldFactory = result.find((r) => r.id === '1');
-      expect(moldFactory).toBeDefined();
-      expect(moldFactory?.aiReason).toMatch(/^\[Mock · 금형 공정 매칭\]/);
+      const moldMatch = result.find((r) => r.processes.includes('금형'));
+      expect(moldMatch).toBeDefined();
+      expect(moldMatch?.aiReason).toMatch(/^\[Mock · 금형 공정 매칭\]/);
     });
 
-    it('Oracle #3b: non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
+    it('non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
       const result = await service.matchFactories(sampleRequest);
       const nonMatching = result.filter(
         (r) => !r.processes.some((p) => p.includes('금형')),
@@ -101,7 +210,7 @@ describe('AiMatchingService', () => {
       }
     });
 
-    it('logs Logger.warn() exactly once per matchFactories call (observability)', async () => {
+    it('logs Logger.warn() exactly once per matchFactories call', async () => {
       const warnSpy = jest.spyOn(Logger.prototype, 'warn');
       warnSpy.mockClear();
       await service.matchFactories(sampleRequest);
@@ -111,7 +220,7 @@ describe('AiMatchingService', () => {
       );
     });
 
-    it('uses Korean label fallback (request.processType) for unknown process types', async () => {
+    it('uses Korean label fallback for unknown process types', async () => {
       const requestWithUnknown: QuoteRequestDraft = {
         ...sampleRequest,
         processType: 'unknown-process',
@@ -121,10 +230,27 @@ describe('AiMatchingService', () => {
         expect(rec.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
       }
     });
+
+    it('throws when factoryProfile.findMany returns empty', async () => {
+      findManyMock.mockResolvedValueOnce([]);
+      await expect(service.matchFactories(sampleRequest)).rejects.toThrow(
+        /No factory profiles available/,
+      );
+    });
+
+    it('maps DB columns into FactoryRecommendation contract', async () => {
+      const result = await service.matchFactories(sampleRequest);
+      const moldMatch = result.find((r) => r.processes.includes('금형'));
+      expect(moldMatch).toBeDefined();
+      expect(moldMatch?.location).toBeTruthy();
+      expect(moldMatch?.contactEmail).toMatch(/@/);
+      expect(moldMatch?.deliveryRate).toBeGreaterThan(0);
+      expect(moldMatch?.reorderRate).toBeGreaterThan(0);
+    });
   });
 
   describe('matchFactories (OpenAI path)', () => {
-    it('Oracle #4: hits api.openai.com/v1/embeddings when OPENAI_API_KEY is present', async () => {
+    it('hits api.openai.com/v1/embeddings when OPENAI_API_KEY is present', async () => {
       process.env.OPENAI_API_KEY = 'sk-test-fake-key';
       process.env.NODE_ENV = 'test';
 
@@ -142,7 +268,7 @@ describe('AiMatchingService', () => {
   });
 
   describe('matchFactories (production safety)', () => {
-    it('Oracle #5: production without API key throws instead of silently mocking', async () => {
+    it('production without API key throws instead of silently mocking', async () => {
       delete process.env.OPENAI_API_KEY;
       process.env.NODE_ENV = 'production';
       delete process.env.MATCHING_MOCK_FALLBACK;
@@ -157,7 +283,7 @@ describe('AiMatchingService', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('Oracle #5b: production with MATCHING_MOCK_FALLBACK="true" allows mock path', async () => {
+    it('production with MATCHING_MOCK_FALLBACK="true" allows mock path', async () => {
       delete process.env.OPENAI_API_KEY;
       process.env.NODE_ENV = 'production';
       process.env.MATCHING_MOCK_FALLBACK = 'true';

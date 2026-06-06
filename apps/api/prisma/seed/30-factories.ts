@@ -4,6 +4,7 @@ import { auth } from '../../src/auth/auth.config';
 const SEED_PASSWORD = 'TempPass!2026';
 
 type FactoryProfileSeed = {
+  location?: string;
   processes: string[];
   trustScore: number;
   deliveryRate: number;
@@ -49,6 +50,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       'CNC 정밀가공과 표면처리 양쪽 공정을 보유한 영등포 문래 기계금속 집적지의 중소 가공소.',
     employeeCount: 18,
     profile: {
+      location: '서울 영등포구 문래동 · 안산/시화 23km 대응권',
       processes: ['CNC 절삭', '표면처리', '금형'],
       trustScore: 95,
       deliveryRate: 97,
@@ -90,6 +92,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '인천 남동국가산업단지 내 CNC·아노다이징 협력망이 촘촘한 정밀가공 업체.',
     employeeCount: 32,
     profile: {
+      location: '인천 남동구 고잔동 · 남동국가산업단지',
       processes: ['CNC 절삭', '표면처리', '열처리'],
       trustScore: 93,
       deliveryRate: 94,
@@ -121,6 +124,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '안산·시화권 근접성이 높고 알루미늄 케이스류 가공 후 후처리까지 통제 가능한 업체.',
     employeeCount: 27,
     profile: {
+      location: '경기 안산시 단원구 · 안산 시화MTV',
       processes: ['CNC 절삭', '용접', '표면처리'],
       trustScore: 90,
       deliveryRate: 92,
@@ -152,6 +156,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '표면 거칠기와 외관 기준이 까다로운 요청에 강점을 보유한 시화공단 업체.',
     employeeCount: 21,
     profile: {
+      location: '경기 시흥시 정왕동 · 시화국가산업단지',
       processes: ['표면처리', '열처리', 'CNC 절삭'],
       trustScore: 88,
       deliveryRate: 89,
@@ -183,6 +188,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '알루미늄 주조 기반 대량화에 강한 검단산업단지 다이캐스팅 전문 업체.',
     employeeCount: 45,
     profile: {
+      location: '인천 서구 오류동 · 검단산업단지',
       processes: ['주조', '금형', '표면처리'],
       trustScore: 84,
       deliveryRate: 86,
@@ -214,6 +220,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '안산 반월공단 근접성과 금형·프레스 역량을 보유한 양산 부품 업체.',
     employeeCount: 16,
     profile: {
+      location: '경기 안산시 단원구 · 반월국가산업단지',
       processes: ['소성가공', '금형', '용접'],
       trustScore: 81,
       deliveryRate: 83,
@@ -245,6 +252,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
       '후처리 전문성을 보유한 남동공단 내 열처리·표면처리 전문 업체.',
     employeeCount: 12,
     profile: {
+      location: '인천 남동구 논현동 · 남동국가산업단지',
       processes: ['열처리', '표면처리'],
       trustScore: 76,
       deliveryRate: 78,
@@ -275,6 +283,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
     description: '소형 용접·판금 구조물에 특화된 김포 양촌산업단지 중소 공장.',
     employeeCount: 9,
     profile: {
+      location: '경기 김포시 양촌읍 · 양촌산업단지',
       processes: ['용접', '소성가공', '표면처리'],
       trustScore: 72,
       deliveryRate: 69,
@@ -301,6 +310,7 @@ const FACTORY_SEED: FactorySeedEntry[] = [
 // User/company already seeded by 00-users + 10-companies; W3 only attaches a
 // baseline FactoryProfile so 박공장 joins the matching candidate pool.
 const PARK_FACTORY_PROFILE: FactoryProfileSeed = {
+  location: '경기 (수도권 산업단지)',
   processes: ['CNC 절삭', '용접', '표면처리'],
   trustScore: 80,
   deliveryRate: 90,

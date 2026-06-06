@@ -58,6 +58,7 @@ const paymentMethods = [
 ]
 
 const fallbackTransactionId = 'TXN-2026-018'
+const envExpiryMinutes = Number(process.env.NEXT_PUBLIC_CONTRACT_EXPIRY_MINUTES) || undefined
 
 export default function ContractPage() {
   const router = useRouter()
@@ -164,6 +165,8 @@ export default function ContractPage() {
           },
         ],
         factoryCompanyId: selectedFactory.id,
+        ...(currentUser?.company?.id ? { clientCompanyId: currentUser.company.id } : {}),
+        ...(envExpiryMinutes ? { expiryMinutes: envExpiryMinutes } : {}),
       }
       const parsed = CreateContractSchema.safeParse(requestBody)
       if (!parsed.success) {

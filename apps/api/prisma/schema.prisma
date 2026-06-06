@@ -305,6 +305,7 @@ model Contract {
   acceptedQuoteId    String?        @map("accepted_quote_id")
   clientCompanyId    String?        @map("client_company_id")
   factoryCompanyId   String?        @map("factory_company_id")
+  expiryMinutes      Int?           @map("expiry_minutes")
   sentAt             DateTime?      @map("sent_at")
   completedAt        DateTime?      @map("completed_at")
   cancelledAt        DateTime?      @map("cancelled_at")

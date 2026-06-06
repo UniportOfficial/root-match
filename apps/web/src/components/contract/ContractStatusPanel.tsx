@@ -249,10 +249,12 @@ export function ContractStatusPanel({
       if (!response.ok) {
         const message = await mapContractError(response)
         setCancelDialogError(message)
+        setErrorMessage(message)
         return
       }
       setStatus('cancelled')
       setActionMessage('계약이 취소되었습니다.')
+      setErrorMessage(null)
       setCancelDialogError(null)
       setCancelDialogOpen(false)
     } catch (error) {
@@ -262,6 +264,7 @@ export function ContractStatusPanel({
           ? '요청 시간이 너무 오래 걸려요. 다시 시도해주세요'
           : '서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요'
       setCancelDialogError(message)
+      setErrorMessage(message)
     } finally {
       setCancelLoading(false)
     }
@@ -335,6 +338,7 @@ export function ContractStatusPanel({
                     onClick={() => {
                       setCancelDialogOpen(true)
                       setCancelDialogError(null)
+                      setErrorMessage(null)
                     }}
                   >
                     계약 취소

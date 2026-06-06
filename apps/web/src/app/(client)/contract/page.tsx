@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -12,6 +12,10 @@ import {
   WalletCards,
 } from 'lucide-react'
 import { CreateContractSchema, type CreateContractInput } from '@rootmatching/shared/schemas'
+import {
+  ParticipantContactCard,
+  type ParticipantContactValue,
+} from '@/components/contract/ParticipantContactCard'
 import { ContractStatusPanel } from '@/components/contract/ContractStatusPanel'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
@@ -58,10 +62,36 @@ export default function ContractPage() {
   const workflowState = useWorkflowState()
   const workflowDispatch = useWorkflowDispatch()
   const { currentUser, isAuthenticated } = useUserState()
-  const [paymentMethod, setPaymentMethod] = useState('escrow')
-
   const request = workflowState.matchingResults?.request
   const selectedFactory = workflowState.selectedFactory
+  const [paymentMethod, setPaymentMethod] = useState('escrow')
+  const clientDefault = useMemo<ParticipantContactValue>(
+    () => ({
+      name: currentUser?.name ?? '담당자',
+      email: currentUser?.email ?? '',
+      phone: currentUser?.phone ?? currentUser?.company.contactPhone ?? '',
+    }),
+    [currentUser],
+  )
+  const factoryDefault = useMemo<ParticipantContactValue>(
+    () => ({
+      name: selectedFactory?.name ?? '',
+      email: selectedFactory?.contactEmail ?? '',
+      phone: selectedFactory?.contactPhone ?? '',
+    }),
+    [selectedFactory],
+  )
+  const [clientContact, setClientContact] = useState<ParticipantContactValue>(clientDefault)
+  const [factoryContact, setFactoryContact] = useState<ParticipantContactValue>(factoryDefault)
+
+  useEffect(() => {
+    setClientContact(clientDefault)
+  }, [clientDefault])
+
+  useEffect(() => {
+    setFactoryContact(factoryDefault)
+  }, [factoryDefault])
+
   const projectName = request?.projectName ?? '신규 프로젝트'
   const clientCompanyName =
     isAuthenticated && currentUser ? currentUser.company.name : '테크솔루션 주식회사'
@@ -103,13 +133,17 @@ export default function ContractPage() {
         participants: [
           {
             role: 'client',
-            name: clientCompanyName,
+            name: clientContact.name,
+            ...(clientContact.email ? { email: clientContact.email } : {}),
+            ...(clientContact.phone ? { phone: clientContact.phone } : {}),
             signingOrder: 1,
             signingMethodType: 'email',
           },
           {
             role: 'factory',
-            name: factoryName,
+            name: factoryContact.name,
+            ...(factoryContact.email ? { email: factoryContact.email } : {}),
+            ...(factoryContact.phone ? { phone: factoryContact.phone } : {}),
             signingOrder: 2,
             signingMethodType: 'email',
           },
@@ -280,6 +314,38 @@ export default function ContractPage() {
             </>
           ) : (
             <>
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
+                  <CardTitle className="text-kr-pretty flex items-center gap-2 text-[18px] font-bold text-foreground sm:text-[20px]">
+                    <FileSignature className="h-5 w-5 text-primary" />
+                    담당자 연락처 확인
+                  </CardTitle>
+                  <CardDescription className="text-kr-pretty text-[15px]">
+                    전자서명 알림이 발송되는 연락처를 확인하세요.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
+                  <div className="grid gap-4">
+                    <ParticipantContactCard
+                      role="client"
+                      title="발주처 담당자 연락처"
+                      companyName={clientCompanyName}
+                      defaultValue={clientContact}
+                      helperText="이 정보는 이번 계약에만 적용됩니다. 회사 기본 정보는 마이페이지에서 수정하세요."
+                      onChange={setClientContact}
+                    />
+                    <ParticipantContactCard
+                      role="factory"
+                      title="공장 담당자 연락처"
+                      companyName={selectedFactory.name}
+                      defaultValue={factoryContact}
+                      helperText="이 정보는 이번 계약에만 적용됩니다."
+                      onChange={setFactoryContact}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border-border bg-card shadow-ct-soft">
                 <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
                   <CardTitle className="text-kr-pretty flex items-center gap-2 text-[18px] font-bold text-foreground sm:text-[20px]">

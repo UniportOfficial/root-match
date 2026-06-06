@@ -28,6 +28,8 @@ export interface FactoryRecommendation {
   qualityScore: number
   deliveryScore: number
   priceCompetitiveness: number
+  contactEmail?: string
+  contactPhone?: string
 }
 
 export interface FactoryPortfolioItem {

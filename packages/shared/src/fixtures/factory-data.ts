@@ -28,6 +28,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 96,
     deliveryScore: 97,
     priceCompetitiveness: 88,
+    contactEmail: 'contact@munlae-precision.co.kr',
+    contactPhone: '02-2630-1471',
   },
   {
     id: '2',
@@ -55,6 +57,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 93,
     deliveryScore: 94,
     priceCompetitiveness: 84,
+    contactEmail: 'sales@namdong-alpha.co.kr',
+    contactPhone: '032-815-3320',
   },
   {
     id: '3',
@@ -82,6 +86,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 91,
     deliveryScore: 92,
     priceCompetitiveness: 90,
+    contactEmail: 'info@sihwa-housing.co.kr',
+    contactPhone: '031-498-7211',
   },
   {
     id: '4',
@@ -109,6 +115,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 90,
     deliveryScore: 89,
     priceCompetitiveness: 86,
+    contactEmail: 'info@jungwang-surface.co.kr',
+    contactPhone: '031-431-5882',
   },
   {
     id: '5',
@@ -136,6 +144,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 86,
     deliveryScore: 84,
     priceCompetitiveness: 78,
+    contactEmail: 'sales@daesung-diecasting.co.kr',
+    contactPhone: '032-580-4421',
   },
   {
     id: '6',
@@ -163,6 +173,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 80,
     deliveryScore: 82,
     priceCompetitiveness: 91,
+    contactEmail: 'contact@banwol-press.co.kr',
+    contactPhone: '031-419-2308',
   },
   {
     id: '7',
@@ -190,6 +202,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 78,
     deliveryScore: 76,
     priceCompetitiveness: 92,
+    contactEmail: 'info@younghung-ht.co.kr',
+    contactPhone: '032-822-7196',
   },
   {
     id: '8',
@@ -217,6 +231,8 @@ export const mockFactoryRecommendations: FactoryRecommendation[] = [
     qualityScore: 70,
     deliveryScore: 66,
     priceCompetitiveness: 87,
+    contactEmail: 'sales@hangang-welding.co.kr',
+    contactPhone: '031-988-4150',
   },
 ]
 

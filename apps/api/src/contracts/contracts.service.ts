@@ -256,15 +256,30 @@ export class ContractsService {
     );
 
     const now = new Date();
-    const updated = await this.prisma.contract.update({
-      where: { id },
+    const result = await this.prisma.contract.updateMany({
+      where: {
+        id,
+        status: { notIn: ['completed', 'cancelled'] },
+      },
       data: {
         status: 'cancelled',
         cancelledAt: now,
         cancelledReason: options.reason ?? null,
       },
+    });
+    if (result.count === 0) {
+      this.logger.warn(
+        `Contract ${id} reached terminal state during cancel; vendor cancel may be redundant`,
+      );
+      return this.get(userId, id);
+    }
+    const updated = await this.prisma.contract.findUnique({
+      where: { id },
       include: CONTRACT_INCLUDE,
     });
+    if (!updated) {
+      throw new NotFoundException(`Contract ${id} not found`);
+    }
     this.logger.log(`Contract ${id} cancelled`);
     return updated;
   }
@@ -431,6 +446,8 @@ export class ContractsService {
         return { status: 'pending' satisfies ContractStatus };
 
       case 'signing_canceled':
+        if (record.status === 'completed') return null;
+        if (record.status === 'cancelled') return null;
         return {
           status: 'cancelled' satisfies ContractStatus,
           cancelledAt: now,
@@ -438,6 +455,8 @@ export class ContractsService {
         };
 
       case 'signing_completed':
+        if (record.status === 'cancelled') return null;
+        if (record.status === 'completed') return null;
         return {
           status: 'in_progress' satisfies ContractStatus,
           participants: {
@@ -456,6 +475,8 @@ export class ContractsService {
         };
 
       case 'signing_completed_all':
+        if (record.status === 'cancelled') return null;
+        if (record.status === 'completed') return null;
         return {
           status: 'completed' satisfies ContractStatus,
           completedAt: now,

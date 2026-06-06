@@ -58,6 +58,30 @@ const paymentMethods = [
 
 const fallbackTransactionId = 'TXN-2026-018'
 
+async function mapContractError(response: Response): Promise<string> {
+  const status = response.status
+  let bodyText = ''
+  try {
+    const body = (await response.json()) as { message?: unknown; error?: unknown }
+    const msg = typeof body.message === 'string' ? body.message : ''
+    const err = typeof body.error === 'string' ? body.error : ''
+    bodyText = `${msg} ${err}`.toLowerCase()
+  } catch {
+    bodyText = ''
+  }
+
+  if (status === 401) return '다시 로그인이 필요합니다'
+  if (status === 403) return '이 작업을 수행할 권한이 없습니다'
+  if (status === 404) return '계약 정보를 찾을 수 없어요'
+  if (status === 409) return '이미 발송된 계약입니다. 잠시 후 다시 확인해주세요'
+  if (status === 400 && bodyText.includes('signingcontactinfo')) {
+    return '참여자 연락처를 확인하고 다시 시도해주세요'
+  }
+  if (status === 400) return '입력값을 확인해주세요'
+  if (status >= 500) return '서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요'
+  return '요청을 처리할 수 없어요. 잠시 후 다시 시도해주세요'
+}
+
 export default function ContractPage() {
   const router = useRouter()
   const workflowState = useWorkflowState()
@@ -162,44 +186,42 @@ export default function ContractPage() {
       }
       const parsed = CreateContractSchema.safeParse(requestBody)
       if (!parsed.success) {
-        console.warn(
-          'Contract payload failed client-side schema validation; skipping backend call',
-          parsed.error.issues,
-        )
-      } else {
-        try {
-          const createResponse = await fetch(`${apiUrl}/contracts`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(parsed.data),
-          })
-          if (!createResponse.ok) {
-            console.warn(
-              `Backend contract creation returned ${createResponse.status}; continuing with demo flow`,
-            )
-          } else {
-            const created = (await createResponse.json()) as { id?: string }
-            if (created?.id) {
-              const sendResponse = await fetch(`${apiUrl}/contracts/${created.id}/send`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resend: false }),
-              })
-              if (!sendResponse.ok) {
-                console.warn(
-                  `Backend contract send returned ${sendResponse.status}; continuing with demo flow`,
-                )
-              } else {
-                workflowDispatch({ type: 'workflow/setContractId', payload: created.id })
-                return
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Backend contract API unreachable, continuing with demo flow', error)
+        console.warn('Contract payload failed client-side schema validation', parsed.error.issues)
+        setSubmitError('입력값 형식을 확인해주세요')
+        return
+      }
+      try {
+        const createResponse = await fetch(`${apiUrl}/contracts`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed.data),
+        })
+        if (!createResponse.ok) {
+          setSubmitError(await mapContractError(createResponse))
+          return
         }
+        const created = (await createResponse.json()) as { id?: string }
+        if (!created?.id) {
+          setSubmitError('계약 생성 결과를 확인할 수 없어요. 잠시 후 다시 시도해주세요')
+          return
+        }
+        const sendResponse = await fetch(`${apiUrl}/contracts/${created.id}/send`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resend: false }),
+        })
+        if (!sendResponse.ok) {
+          setSubmitError(await mapContractError(sendResponse))
+          return
+        }
+        workflowDispatch({ type: 'workflow/setContractId', payload: created.id })
+        return
+      } catch (error) {
+        console.warn('Backend contract API unreachable', error)
+        setSubmitError('서버 연결을 확인해주세요. 잠시 후 다시 시도해주세요')
+        return
       }
     }
 

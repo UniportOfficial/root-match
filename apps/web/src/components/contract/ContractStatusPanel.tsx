@@ -5,7 +5,19 @@ import { ArrowRight, ExternalLink, RefreshCw, RotateCcw } from 'lucide-react'
 import { ContractStatusSchema, type ContractStatus } from '@rootmatching/shared/schemas'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cancelContract, mapContractError } from '@/lib/contracts-api'
 
 const statusCopy: Record<
   ContractStatus,
@@ -78,6 +90,7 @@ export function ContractStatusPanel({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [signLoading, setSignLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
   const completedNotifiedRef = useRef(false)
 
   const refreshStatus = useCallback(async () => {
@@ -224,6 +237,27 @@ export function ContractStatusPanel({
     }
   }
 
+  const handleCancel = useCallback(async () => {
+    setCancelLoading(true)
+    setErrorMessage(null)
+    setActionMessage(null)
+    try {
+      const response = await cancelContract({ apiUrl, contractId })
+      if (!response.ok) {
+        const message = await mapContractError(response)
+        setErrorMessage(message)
+        return
+      }
+      setStatus('cancelled')
+      setActionMessage('계약이 취소되었습니다.')
+    } catch (error) {
+      console.warn('Contract cancel failed', error)
+      setErrorMessage('서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요')
+    } finally {
+      setCancelLoading(false)
+    }
+  }, [apiUrl, contractId])
+
   const copy = statusCopy[status]
   const showSigningActions = status === 'pending' || status === 'in_progress'
 
@@ -264,7 +298,7 @@ export function ContractStatusPanel({
                 size="lg"
                 fullWidth
                 loading={signLoading}
-                disabled={resendLoading}
+                disabled={resendLoading || cancelLoading}
                 onClick={() => void openSigningUrl()}
               >
                 <ExternalLink className="h-5 w-5" aria-hidden="true" />
@@ -275,12 +309,46 @@ export function ContractStatusPanel({
                 size="md"
                 fullWidth
                 loading={resendLoading}
-                disabled={signLoading}
+                disabled={signLoading || cancelLoading}
                 onClick={() => void resendSigningNotice()}
               >
                 <RotateCcw className="h-5 w-5" aria-hidden="true" />
                 서명 재발송 알림
               </AppButton>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <AppButton
+                    variant="danger"
+                    size="md"
+                    fullWidth
+                    loading={cancelLoading}
+                    disabled={signLoading || resendLoading}
+                  >
+                    계약 취소
+                  </AppButton>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>이 계약을 취소하시겠어요?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-[15px] leading-7">
+                      취소된 계약은 되돌릴 수 없습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={cancelLoading}>닫기</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(event) => {
+                        event.preventDefault()
+                        void handleCancel()
+                      }}
+                      disabled={cancelLoading}
+                      className="bg-danger text-white hover:bg-danger/90"
+                    >
+                      계약 취소하기
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           ) : null}
 

@@ -21,3 +21,22 @@ export async function mapContractError(response: Response): Promise<string> {
   if (status >= 500) return '서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요'
   return '요청을 처리할 수 없어요. 잠시 후 다시 시도해주세요'
 }
+
+export interface CancelContractParams {
+  apiUrl: string
+  contractId: string
+  reason?: string
+}
+
+export async function cancelContract({
+  apiUrl,
+  contractId,
+  reason,
+}: CancelContractParams): Promise<Response> {
+  return fetch(`${apiUrl}/contracts/${contractId}/cancel`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reason ? { reason } : {}),
+  })
+}

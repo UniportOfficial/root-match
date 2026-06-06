@@ -79,9 +79,8 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
 
   React.useEffect(() => {
     const validation = validateParticipantContact(defaultValue)
-    onChange(defaultValue)
     onValidityChange?.(validation.valid)
-  }, [defaultValue, onChange, onValidityChange])
+  }, [defaultValue, onValidityChange])
 
   const clearErrors = React.useCallback(() => {
     setNameError(undefined)

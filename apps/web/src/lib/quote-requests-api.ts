@@ -3,15 +3,9 @@ import {
   UpdateQuoteRequestSchema,
   type UpdateQuoteRequestInput,
 } from '@rootmatching/shared/schemas'
+import { QUOTE_REQUEST_STATUS_VALUES } from './quote-request-status'
 
-const QuoteRequestStatusSchema = z.enum([
-  'NEW',
-  'REVIEWING',
-  'MATCHED',
-  'QUOTED',
-  'CONTRACTED',
-  'CANCELLED',
-])
+const QuoteRequestStatusSchema = z.enum(QUOTE_REQUEST_STATUS_VALUES)
 
 const MatchingSourceSchema = z.enum(['DETERMINISTIC_MOCK', 'OPENAI_ADAPTER', 'MANUAL_ADMIN'])
 
@@ -52,10 +46,10 @@ export const QuoteRequestDetailSchema = QuoteRequestSchema.extend({
 })
 
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>
-export type QuoteRequestStatus = z.infer<typeof QuoteRequestStatusSchema>
 export type MatchRecommendation = z.infer<typeof MatchRecommendationSchema>
 export type QuoteRequestDetail = z.infer<typeof QuoteRequestDetailSchema>
 export type { UpdateQuoteRequestInput }
+export type { QuoteRequestStatus } from './quote-request-status'
 
 interface BaseQuoteRequestParams {
   apiUrl: string

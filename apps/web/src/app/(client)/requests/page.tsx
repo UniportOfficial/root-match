@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 import { AppBadge } from '@/components/ui/AppBadge'
-import { Badge, type BadgeProps } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -26,59 +26,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { listMyQuoteRequests, type QuoteRequest } from '@/lib/quote-requests-api'
 import {
-  listMyQuoteRequests,
-  type QuoteRequest,
+  QUOTE_REQUEST_APP_BADGE_VARIANTS as appBadgeVariants,
+  QUOTE_REQUEST_BADGE_VARIANTS as badgeVariants,
+  QUOTE_REQUEST_STATUS_LABELS as statusLabels,
+  QUOTE_REQUEST_STATUS_VALUES,
+  formatKoreanDate,
   type QuoteRequestStatus,
-} from '@/lib/quote-requests-api'
+} from '@/lib/quote-request-status'
 import { useUserState } from '@/state/UserContext'
 
 type StatusFilter = QuoteRequestStatus | 'all'
 
-const statusLabels: Record<QuoteRequestStatus, string> = {
-  NEW: '공장 검토 전',
-  REVIEWING: '공장 검토 중',
-  MATCHED: '매칭 완료',
-  QUOTED: '견적 도착',
-  CONTRACTED: '계약 체결',
-  CANCELLED: '요청 취소됨',
-}
-
-const badgeVariants: Record<QuoteRequestStatus, BadgeProps['variant']> = {
-  NEW: 'info',
-  REVIEWING: 'warning',
-  MATCHED: 'success',
-  QUOTED: 'success',
-  CONTRACTED: 'success',
-  CANCELLED: 'destructive',
-}
-
-const appBadgeVariants: Record<QuoteRequestStatus, 'blue' | 'amber' | 'green' | 'red'> = {
-  NEW: 'blue',
-  REVIEWING: 'amber',
-  MATCHED: 'green',
-  QUOTED: 'green',
-  CONTRACTED: 'green',
-  CANCELLED: 'red',
-}
-
 function isStatusFilter(value: string): value is StatusFilter {
-  return (
-    value === 'all' ||
-    value === 'NEW' ||
-    value === 'REVIEWING' ||
-    value === 'MATCHED' ||
-    value === 'QUOTED' ||
-    value === 'CONTRACTED' ||
-    value === 'CANCELLED'
-  )
-}
-
-function formatKoreanDate(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-
-  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(date)
+  return value === 'all' || (QUOTE_REQUEST_STATUS_VALUES as readonly string[]).includes(value)
 }
 
 export default function ClientRequestListPage() {

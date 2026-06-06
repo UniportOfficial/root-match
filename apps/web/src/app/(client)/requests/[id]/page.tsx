@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Badge, type BadgeProps } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -52,8 +52,15 @@ import {
   type MatchRecommendation,
   type QuoteRequest,
   type QuoteRequestDetail,
-  type QuoteRequestStatus,
 } from '@/lib/quote-requests-api'
+import {
+  QUOTE_REQUEST_APP_BADGE_VARIANTS as appBadgeVariants,
+  QUOTE_REQUEST_BADGE_VARIANTS as badgeVariants,
+  QUOTE_REQUEST_STATUS_LABELS as statusLabels,
+  formatKoreanDateTime as formatKoreanDate,
+  isTerminalQuoteRequestStatus as isTerminalStatus,
+  terminalQuoteRequestEditMessage as terminalEditMessage,
+} from '@/lib/quote-request-status'
 import { useUserState } from '@/state/UserContext'
 
 type RequestFormValues = UpdateQuoteRequestInput
@@ -69,53 +76,10 @@ const fieldNames = [
   'detailRequirements',
 ] as const
 
-const statusLabels: Record<QuoteRequestStatus, string> = {
-  NEW: '공장 검토 대기',
-  REVIEWING: '공장 검토 중',
-  MATCHED: '매칭 완료',
-  QUOTED: '견적 도착',
-  CONTRACTED: '계약 체결',
-  CANCELLED: '요청 취소됨',
-}
-
-const badgeVariants: Record<QuoteRequestStatus, BadgeProps['variant']> = {
-  NEW: 'info',
-  REVIEWING: 'warning',
-  MATCHED: 'success',
-  QUOTED: 'success',
-  CONTRACTED: 'success',
-  CANCELLED: 'destructive',
-}
-
-const appBadgeVariants: Record<QuoteRequestStatus, 'blue' | 'amber' | 'green' | 'red'> = {
-  NEW: 'blue',
-  REVIEWING: 'amber',
-  MATCHED: 'green',
-  QUOTED: 'green',
-  CONTRACTED: 'green',
-  CANCELLED: 'red',
-}
-
 const inputClassName = 'h-11 bg-card text-[15px] disabled:bg-muted'
 const textareaClassName = 'min-h-32 resize-none bg-card text-[15px] disabled:bg-muted'
 const labelClassName = 'text-kr-keep text-[16px] font-semibold text-foreground'
 const errorClassName = 'text-kr-pretty mt-1 text-[14px] font-semibold text-destructive'
-
-function isTerminalStatus(status: QuoteRequestStatus) {
-  return status === 'CANCELLED' || status === 'CONTRACTED'
-}
-
-function terminalEditMessage(status: QuoteRequestStatus): string | null {
-  if (status === 'CANCELLED') return '취소된 요청은 수정할 수 없습니다'
-  if (status === 'CONTRACTED') return '체결된 요청은 수정할 수 없습니다'
-  return null
-}
-
-function formatKoreanDate(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
-}
 
 function formatPrice(value: number): string {
   return `${new Intl.NumberFormat('ko-KR').format(value)}만원`

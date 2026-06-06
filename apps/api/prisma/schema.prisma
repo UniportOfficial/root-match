@@ -57,6 +57,17 @@ enum ContractStatus {
   cancelled // request_cancelled
 }
 
+// Source provenance tier for Company directory entries (docs/datasets/ppuri/HANDOFF_dataset.md §2).
+// A: KPIC root-tech certified (highest trust). B: Kakao score≥8 + inside industrial polygon.
+// C: borderline 4≤score<8 + inside polygon. D: factory registry only, low confidence.
+// Existing claimed companies (pre-Ppuri) have null tier; seed populates A+B first.
+enum ConfidenceTier {
+  A_CERTIFIED_ROOT
+  B_LOCAL_STRONG_INSIDE
+  C_BORDERLINE_INSIDE
+  D_LOW_CONFIDENCE
+}
+
 // ─────────────────────────────────────────────
 // Better Auth 1.6 core models
 // Source: bg_607b471d librarian snippet (§7.1.3 sub-step 1)
@@ -131,24 +142,41 @@ model Verification {
 // ─────────────────────────────────────────────
 
 model Company {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
+  id              String          @id @default(cuid())
+  // Nullable to accommodate unclaimed Ppuri directory entries. Postgres UNIQUE treats
+  // NULL as distinct, so multiple unclaimed rows are allowed while claimed users
+  // remain 1:1. Existing companies.service.ts findUnique/update calls unaffected.
+  userId          String?         @unique @map("user_id")
   name            String
   industry        String?
   region          String?
   size            String?
-  description     String?  @db.Text
-  contactEmail    String?  @map("contact_email")
-  contactPhone    String?  @map("contact_phone")
+  description     String?         @db.Text
+  contactEmail    String?         @map("contact_email")
+  contactPhone    String?         @map("contact_phone")
   website         String?
-  establishedYear Int?     @map("established_year")
-  employeeCount   Int?     @map("employee_count")
+  establishedYear Int?            @map("established_year")
+  employeeCount   Int?            @map("employee_count")
   revenue         String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  // ─── Ppuri directory fields (see docs/datasets/ppuri/HANDOFF_dataset.md). ───
+  // externalId = source CSV company_id (C0000001…). Acts as idempotency key for seed upsert.
+  externalId      String?         @unique @map("external_id")
+  confidenceTier  ConfidenceTier? @map("confidence_tier")
+  processHint     String?         @map("process_hint")
+  address         String?
+  lat             Float?
+  lng             Float?
+  kakaoId         String?         @map("kakao_id")
+  representative  String?
+  sourceTypes     String[]        @default([]) @map("source_types")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   factoryProfile FactoryProfile?
 
+  // Composite index supports Phase 4 pre-filter (region + process_hint exact → top 20).
+  @@index([region, processHint])
+  @@index([confidenceTier])
   @@map("company")
 }
 

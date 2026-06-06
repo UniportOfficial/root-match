@@ -6,13 +6,26 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { MatchRecommendation, QuoteRequest } from '@prisma/client';
+import type {
+  Company,
+  MatchRecommendation,
+  QuoteRequest,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateQuoteRequestInput } from './dto/create-quote-request.dto';
 import type { UpdateQuoteRequestInput } from './dto/update-quote-request.dto';
 
+export type RecommendationCompanyInfo = Pick<
+  Company,
+  'id' | 'name' | 'region' | 'industry'
+>;
+
+export type MatchRecommendationWithCompany = MatchRecommendation & {
+  company: RecommendationCompanyInfo | null;
+};
+
 export type QuoteRequestWithRecommendations = QuoteRequest & {
-  recommendations: MatchRecommendation[];
+  recommendations: MatchRecommendationWithCompany[];
 };
 
 const TERMINAL_STATUSES = ['CANCELLED', 'CONTRACTED'] as const;
@@ -77,7 +90,29 @@ export class QuoteRequestsService {
     if (record.clientUserId !== userId) {
       throw new ForbiddenException();
     }
-    return record;
+
+    // MatchRecommendation.factoryId is a raw String column (no @relation),
+    // so batch-load Company once to attach (avoids N+1).
+    const factoryIds = Array.from(
+      new Set(record.recommendations.map((rec) => rec.factoryId)),
+    );
+    const companies: RecommendationCompanyInfo[] = factoryIds.length
+      ? await this.prisma.company.findMany({
+          where: { id: { in: factoryIds } },
+          select: { id: true, name: true, region: true, industry: true },
+        })
+      : [];
+    const companyById = new Map<string, RecommendationCompanyInfo>(
+      companies.map((company) => [company.id, company]),
+    );
+
+    return {
+      ...record,
+      recommendations: record.recommendations.map((rec) => ({
+        ...rec,
+        company: companyById.get(rec.factoryId) ?? null,
+      })),
+    };
   }
 
   async update(
@@ -85,7 +120,7 @@ export class QuoteRequestsService {
     id: string,
     input: UpdateQuoteRequestInput,
   ): Promise<QuoteRequest> {
-    const existing = await this.get(userId, id);
+    const existing = await this.ensureOwnership(userId, id);
     if (
       TERMINAL_STATUSES.includes(existing.status as 'CANCELLED' | 'CONTRACTED')
     ) {
@@ -113,7 +148,7 @@ export class QuoteRequestsService {
   }
 
   async cancel(userId: string, id: string): Promise<QuoteRequest> {
-    const existing = await this.get(userId, id);
+    const existing = await this.ensureOwnership(userId, id);
     if (existing.status === 'CANCELLED') {
       return existing;
     }
@@ -133,7 +168,7 @@ export class QuoteRequestsService {
     });
     if (result.count === 0) {
       // Concurrent transition raced us into a terminal state — return current view.
-      return this.get(userId, id);
+      return this.ensureOwnership(userId, id);
     }
 
     const updated = await this.prisma.quoteRequest.findUnique({
@@ -146,6 +181,22 @@ export class QuoteRequestsService {
     }
     this.logger.log(`QuoteRequest ${id} cancelled (user=${userId})`);
     return updated;
+  }
+
+  private async ensureOwnership(
+    userId: string,
+    id: string,
+  ): Promise<QuoteRequest> {
+    const record = await this.prisma.quoteRequest.findUnique({
+      where: { id },
+    });
+    if (!record) {
+      throw new NotFoundException(`QuoteRequest ${id} not found`);
+    }
+    if (record.clientUserId !== userId) {
+      throw new ForbiddenException();
+    }
+    return record;
   }
 
   private isUniqueViolation(error: unknown): boolean {

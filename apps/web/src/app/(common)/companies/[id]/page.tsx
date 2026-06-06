@@ -80,7 +80,7 @@ export default function CompanyDetailPage() {
       id: newId,
       senderId: userState.currentUser?.id ?? 'user1',
       senderName: userState.currentUser?.name ?? '홍길동',
-      senderCompany: userState.currentUser?.company.name ?? '테크솔루션 주식회사',
+      senderCompany: userState.currentUser?.company?.name ?? '테크솔루션 주식회사',
       receiverId: 'company-' + company.id,
       receiverName: company.name,
       receiverCompany: company.name,

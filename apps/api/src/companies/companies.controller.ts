@@ -1,15 +1,22 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import type { Company } from '@prisma/client';
+import type { CompanyListResponse } from '@rootmatching/shared';
 import type { AuthSession } from '../auth/auth.config';
 import { BetterAuthGuard } from '../auth/better-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CompaniesService } from './companies.service';
+import { ListCompaniesDto } from './dto/list-companies.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @Controller('companies')
 @UseGuards(BetterAuthGuard)
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
+
+  @Get()
+  list(@Query() query: ListCompaniesDto): Promise<CompanyListResponse> {
+    return this.companiesService.listCompanies(query);
+  }
 
   @Get('me')
   getMe(@CurrentUser() user: AuthSession['user']): Promise<Company> {

@@ -35,7 +35,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { mockCompanies } from '@/data/companies'
 import { mockDashboardStats } from '@/data/dashboardStats'
 import { cn } from '@/lib/cn'
 import { useCompaniesDispatch, useCompaniesState } from '@/state/CompaniesContext'
@@ -226,7 +225,7 @@ export default function MyPageProfilePage() {
   const companiesDispatch = useCompaniesDispatch()
   const { companies } = useCompaniesState()
   const currentUser = userState.currentUser
-  const baseCompany = currentUser?.company ?? mockCompanies[0] ?? emptyCompany
+  const baseCompany = currentUser?.company ?? companies[0] ?? emptyCompany
   const derivedProfile = useMemo(() => companyToProfile(baseCompany), [baseCompany])
   const sidebarLayout = useSidebarLayout()
   const [isEditing, setIsEditing] = useState(false)
@@ -335,8 +334,7 @@ export default function MyPageProfilePage() {
 
   async function saveProfile(values: ProfileFormValues) {
     await new Promise((resolve) => setTimeout(resolve, 200))
-    const fallbackCompany =
-      userState.currentUser?.company ?? companies[0] ?? mockCompanies[0] ?? emptyCompany
+    const fallbackCompany = userState.currentUser?.company ?? companies[0] ?? emptyCompany
     const { company } = buildCompanyPayload(fallbackCompany, values)
     userDispatch({ type: 'user/updateCompany', payload: company })
     companiesDispatch({ type: 'companies/updateCompany', payload: company })

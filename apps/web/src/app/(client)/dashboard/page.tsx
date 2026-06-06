@@ -24,8 +24,8 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import { mockActivityLogs } from '@/data/activityLogs'
-import { mockCompanies } from '@/data/companies'
 import { mockDashboardStats } from '@/data/dashboardStats'
+import { useCompaniesState } from '@/state/CompaniesContext'
 import { useUserState } from '@/state/UserContext'
 import { cn } from '@/lib/utils'
 
@@ -146,7 +146,8 @@ const totalActivityCount = activityDistribution.reduce((sum, item) => sum + item
 
 export default function DashboardPage() {
   const { currentUser } = useUserState()
-  const recommendedCompanies = mockCompanies.slice(0, 3)
+  const { companies } = useCompaniesState()
+  const recommendedCompanies = companies.slice(0, 3)
   const recentActivities = mockActivityLogs.slice(0, 5)
   const todayActionCount = mockDashboardStats.totalMatches + mockDashboardStats.recentMessages
 

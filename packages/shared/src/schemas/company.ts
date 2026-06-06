@@ -20,3 +20,24 @@ export const CompanyUpdateSchema = z
   .meta({ id: 'CompanyUpdate' })
 
 export type CompanyUpdate = z.infer<typeof CompanyUpdateSchema>
+
+export const ConfidenceTierSchema = z.enum([
+  'A_CERTIFIED_ROOT',
+  'B_LOCAL_STRONG_INSIDE',
+  'C_BORDERLINE_INSIDE',
+  'D_LOW_CONFIDENCE',
+])
+
+export const CompanyListQuerySchema = z
+  .object({
+    keyword: z.string().min(1).optional(),
+    industry: z.string().min(1).optional(),
+    region: z.string().min(1).optional(),
+    size: z.string().min(1).optional(),
+    confidenceTier: ConfidenceTierSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .meta({ id: 'CompanyListQuery' })
+
+export type CompanyListQueryParsed = z.infer<typeof CompanyListQuerySchema>

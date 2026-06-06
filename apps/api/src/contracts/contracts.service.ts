@@ -69,6 +69,7 @@ export class ContractsService {
         acceptedQuoteId: input.acceptedQuoteId,
         clientCompanyId: input.clientCompanyId,
         factoryCompanyId: input.factoryCompanyId,
+        expiryMinutes: input.expiryMinutes,
         participants: {
           create: input.participants.map((p) => ({
             role: p.role,
@@ -130,13 +131,14 @@ export class ContractsService {
     const defaultExpiryMinutes = Number(
       this.config.get<string>('UCANSIGN_DEFAULT_EXPIRY_MINUTES') ?? '20160',
     );
+    const expiryMinutes = record.expiryMinutes ?? defaultExpiryMinutes;
 
     const document = await this.gateway.createDocument({
       templateId: record.ucansignTemplateId,
       documentName: record.title,
       isSequential: true,
       isSendMessage: true,
-      expiryMinutes: defaultExpiryMinutes,
+      expiryMinutes,
       participants: record.participants.map(
         (p): GatewayParticipant => ({
           name: p.name,

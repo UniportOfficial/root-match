@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type {
+  Company,
+  FactoryProfile as FactoryProfileRow,
+} from '@prisma/client';
+import type {
   FactoryRecommendation,
   QuoteRequestDraft,
 } from '@rootmatching/shared';
-import {
-  mockFactoryDetails,
-  mockFactoryRecommendations,
-} from '@rootmatching/shared/fixtures/factory-data';
+import { PrismaService } from '../../prisma/prisma.service';
 import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;
@@ -21,8 +22,20 @@ const PROCESS_TYPE_LABELS: Record<string, string> = {
   heat: '열처리',
 };
 
+type FactoryRow = FactoryProfileRow & { company: Company };
+
 interface GPTMatchResult {
   id: string;
+  aiReason: string;
+  qualityScore: number;
+  deliveryScore: number;
+  priceCompetitiveness: number;
+  trustScore: number;
+  estimateMin: number;
+  estimateMax: number;
+}
+
+interface ScoreBundle {
   aiReason: string;
   qualityScore: number;
   deliveryScore: number;
@@ -36,7 +49,10 @@ interface GPTMatchResult {
 export class AiMatchingService {
   private readonly logger = new Logger(AiMatchingService.name);
 
-  constructor(private readonly vectorSearch: VectorSearchService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vectorSearch: VectorSearchService,
+  ) {}
 
   private get apiKey(): string {
     const key = process.env.OPENAI_API_KEY;
@@ -51,12 +67,23 @@ export class AiMatchingService {
   async matchFactories(
     request: QuoteRequestDraft,
   ): Promise<FactoryRecommendation[]> {
-    const allIds = mockFactoryRecommendations.map((r) => r.id);
+    const factories = await this.prisma.factoryProfile.findMany({
+      include: { company: true },
+    });
+
+    if (factories.length === 0) {
+      throw new Error(
+        'No factory profiles available. Run `pnpm --filter @rootmatching/api run prisma:seed` first.',
+      );
+    }
+
+    const factoryById = new Map(factories.map((f) => [f.companyId, f]));
+    const candidateIds = factories.map((f) => f.companyId);
 
     const ranked = await this.vectorSearch.rankByEmbedding(
       this.describeRequest(request),
-      allIds,
-      (id) => this.describeFactory(id),
+      candidateIds,
+      (id) => this.describeFactory(id, factoryById),
     );
     const topIds = ranked.slice(0, TOP_K).map((r) => r.item);
 
@@ -64,93 +91,110 @@ export class AiMatchingService {
       this.logger.warn(
         `Returning ${topIds.length} mock recommendations (OPENAI_API_KEY missing, NODE_ENV=${process.env.NODE_ENV ?? 'undefined'})`,
       );
-      return this.buildMockRecommendations(topIds, request);
+      return this.buildMockRecommendations(topIds, factoryById, request);
     }
 
-    const gptResults = await this.callGPT4o(request, topIds);
+    const gptResults = await this.callGPT4o(request, topIds, factoryById);
 
-    return gptResults.map((gpt) => {
-      const rec = mockFactoryRecommendations.find((r) => r.id === gpt.id);
-      const detail = mockFactoryDetails[gpt.id];
-
-      return {
-        id: gpt.id,
-        name: detail?.name ?? rec?.name ?? `공장 ${gpt.id}`,
-        location: detail?.location ?? rec?.location ?? '위치 미상',
-        processes: detail?.specialty.slice(0, 2) ?? rec?.processes ?? [],
-        trustScore: gpt.trustScore,
-        deliveryRate: detail?.kpi.deliveryRate ?? rec?.deliveryRate ?? 90,
-        reorderRate: detail?.kpi.reorderRate ?? rec?.reorderRate ?? 80,
-        estimateMin: gpt.estimateMin,
-        estimateMax: gpt.estimateMax,
-        aiReason: gpt.aiReason,
-        qualityScore: gpt.qualityScore,
-        deliveryScore: gpt.deliveryScore,
-        priceCompetitiveness: gpt.priceCompetitiveness,
-        contactEmail: rec?.contactEmail,
-        contactPhone: rec?.contactPhone,
-      } satisfies FactoryRecommendation;
-    });
+    return gptResults
+      .map((gpt): FactoryRecommendation | null => {
+        const factory = factoryById.get(gpt.id);
+        if (!factory) return null;
+        return this.toRecommendation(factory, {
+          aiReason: gpt.aiReason,
+          qualityScore: gpt.qualityScore,
+          deliveryScore: gpt.deliveryScore,
+          priceCompetitiveness: gpt.priceCompetitiveness,
+          trustScore: gpt.trustScore,
+          estimateMin: gpt.estimateMin,
+          estimateMax: gpt.estimateMax,
+        });
+      })
+      .filter((r): r is FactoryRecommendation => r !== null);
   }
 
   private buildMockRecommendations(
     ids: string[],
+    factoryById: Map<string, FactoryRow>,
     request: QuoteRequestDraft,
   ): FactoryRecommendation[] {
     const processLabel =
       PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
 
     return ids
-      .map((id) => mockFactoryRecommendations.find((r) => r.id === id))
-      .filter((r): r is FactoryRecommendation => r !== undefined)
-      .map((rec) => {
-        const matchesProcess = rec.processes.some((p) =>
+      .map((id) => factoryById.get(id))
+      .filter((f): f is FactoryRow => f !== undefined)
+      .map((factory) => {
+        const matchesProcess = factory.processes.some((p) =>
           p.includes(processLabel),
         );
         const reasonPrefix = matchesProcess
           ? `[Mock · ${processLabel} 공정 매칭]`
           : '[Mock · API key 미설정]';
-        return {
-          ...rec,
-          aiReason: `${reasonPrefix} ${rec.aiReason}`,
-        };
+        const reasonBody = `${factory.company.name}이(가) ${factory.processes.join(', ')} 공정을 보유하고 있습니다.`;
+        return this.toRecommendation(factory, {
+          aiReason: `${reasonPrefix} ${reasonBody}`,
+          qualityScore: factory.qualityScore,
+          deliveryScore: factory.deliveryScore,
+          priceCompetitiveness: factory.priceCompetitiveness,
+          trustScore: factory.trustScore,
+          estimateMin: factory.estimateMin,
+          estimateMax: factory.estimateMax,
+        });
       });
   }
 
-  private describeFactory(id: string): string {
-    const detail = mockFactoryDetails[id];
+  private toRecommendation(
+    factory: FactoryRow,
+    scores: ScoreBundle,
+  ): FactoryRecommendation {
+    return {
+      id: factory.companyId,
+      name: factory.company.name,
+      location: factory.location ?? factory.company.region ?? '위치 미상',
+      processes: factory.processes,
+      trustScore: scores.trustScore,
+      deliveryRate: factory.deliveryRate,
+      reorderRate: factory.reorderRate,
+      estimateMin: scores.estimateMin,
+      estimateMax: scores.estimateMax,
+      aiReason: scores.aiReason,
+      qualityScore: scores.qualityScore,
+      deliveryScore: scores.deliveryScore,
+      priceCompetitiveness: scores.priceCompetitiveness,
+      industrialComplex: factory.industrialComplex ?? undefined,
+      reorderCustomerCount: factory.reorderCustomerCount ?? undefined,
+      employeeCount: factory.company.employeeCount ?? undefined,
+      contactEmail: factory.company.contactEmail ?? undefined,
+      contactPhone: factory.company.contactPhone ?? undefined,
+    } satisfies FactoryRecommendation;
+  }
 
-    if (detail) {
-      return [
-        `공장명: ${detail.name}`,
-        `위치: ${detail.location}`,
-        `전문 공정: ${detail.specialty.join(', ')}`,
-        `보유 설비: ${detail.equipment.join(', ')}`,
-        `생산 가능 품목: ${detail.products.join(', ')}`,
-        `월 생산 가능량: ${detail.monthlyCapacity}`,
-        `납기 준수율: ${detail.kpi.deliveryRate}%`,
-        `품질 만족도: ${detail.kpi.qualitySatisfaction}점`,
-        `재거래율: ${detail.kpi.reorderRate}%`,
-        `평균 응답 시간: ${detail.kpi.avgResponseTime}`,
-        `주요 고객사: ${detail.clients.join(', ')}`,
-      ].join('\n');
-    }
+  private describeFactory(
+    companyId: string,
+    factoryById: Map<string, FactoryRow>,
+  ): string {
+    const factory = factoryById.get(companyId);
+    if (!factory) return `공장 ID: ${companyId}`;
 
-    const rec = mockFactoryRecommendations.find((r) => r.id === id);
-    if (rec) {
-      return [
-        `공장명: ${rec.name}`,
-        `위치: ${rec.location}`,
-        `전문 공정: ${rec.processes.join(', ')}`,
-        `납기 준수율: ${rec.deliveryRate}%`,
-        `재거래율: ${rec.reorderRate}%`,
-        `품질 점수: ${rec.qualityScore}점`,
-        `납기 점수: ${rec.deliveryScore}점`,
-        `가격 경쟁력: ${rec.priceCompetitiveness}점`,
-      ].join('\n');
-    }
+    const qualityLine =
+      factory.qualitySatisfaction != null
+        ? `품질 만족도: ${factory.qualitySatisfaction}점`
+        : `품질 점수: ${factory.qualityScore}점`;
 
-    return `공장 ID: ${id}`;
+    return [
+      `공장명: ${factory.company.name}`,
+      `위치: ${factory.location ?? factory.company.region ?? '미상'}`,
+      `전문 공정: ${factory.specialty.join(', ')}`,
+      `보유 설비: ${factory.equipment.join(', ')}`,
+      `생산 가능 품목: ${factory.products.join(', ')}`,
+      `월 생산 가능량: ${factory.monthlyCapacity ?? '미상'}`,
+      `납기 준수율: ${factory.deliveryRate}%`,
+      qualityLine,
+      `재거래율: ${factory.reorderRate}%`,
+      `평균 응답 시간: ${factory.avgResponseTime ?? '미상'}`,
+      `주요 고객사: ${factory.clients.join(', ')}`,
+    ].join('\n');
   }
 
   private describeRequest(request: QuoteRequestDraft): string {
@@ -170,9 +214,13 @@ export class AiMatchingService {
   private async callGPT4o(
     request: QuoteRequestDraft,
     factoryIds: string[],
+    factoryById: Map<string, FactoryRow>,
   ): Promise<GPTMatchResult[]> {
     const factoryList = factoryIds
-      .map((id, i) => `[공장 ${i + 1}]\nID: ${id}\n${this.describeFactory(id)}`)
+      .map(
+        (id, i) =>
+          `[공장 ${i + 1}]\nID: ${id}\n${this.describeFactory(id, factoryById)}`,
+      )
       .join('\n\n');
 
     const prompt = `당신은 뿌리산업 B2B 수주 매칭 전문가입니다.

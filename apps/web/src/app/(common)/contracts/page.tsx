@@ -159,58 +159,72 @@ export default function ContractListPage() {
 
         <Card className="mb-6 border-border bg-card shadow-ct-soft">
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
-              <label className="relative block">
-                <span className="sr-only">계약명 검색</span>
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  type="search"
-                  placeholder="계약명으로 검색"
-                  className="h-12 rounded-xl bg-card pl-12 text-[16px] md:text-[16px]"
-                  aria-label="계약명 검색"
-                />
-              </label>
-              <label className="relative block">
-                <span className="sr-only">상태 필터</span>
-                <SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value) => {
-                    if (isStatusFilter(value)) {
-                      setStatusFilter(value)
-                    }
-                  }}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px]">
+              <div className="space-y-2">
+                <label
+                  htmlFor="contract-search"
+                  className="text-kr-keep block text-[14px] font-semibold text-ink-700"
                 >
-                  <SelectTrigger
-                    className="h-12 rounded-xl bg-card pl-12 text-[16px]"
-                    aria-label="상태 필터"
+                  계약명 검색
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="contract-search"
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    type="search"
+                    placeholder="계약명으로 검색"
+                    className="h-12 rounded-xl bg-card pl-12 text-[16px] md:text-[16px]"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="contract-status-filter"
+                  className="text-kr-keep block text-[14px] font-semibold text-ink-700"
+                >
+                  상태 필터
+                </label>
+                <div className="relative">
+                  <SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value) => {
+                      if (isStatusFilter(value)) {
+                        setStatusFilter(value)
+                      }
+                    }}
                   >
-                    <SelectValue placeholder="전체 상태" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-[15px]">
-                      전체 상태
-                    </SelectItem>
-                    <SelectItem value="draft" className="text-[15px]">
-                      임시저장
-                    </SelectItem>
-                    <SelectItem value="pending" className="text-[15px]">
-                      서명 대기
-                    </SelectItem>
-                    <SelectItem value="in_progress" className="text-[15px]">
-                      서명 진행
-                    </SelectItem>
-                    <SelectItem value="completed" className="text-[15px]">
-                      서명 완료
-                    </SelectItem>
-                    <SelectItem value="cancelled" className="text-[15px]">
-                      계약 취소됨
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
+                    <SelectTrigger
+                      id="contract-status-filter"
+                      className="h-12 rounded-xl bg-card pl-12 text-[16px]"
+                    >
+                      <SelectValue placeholder="전체 상태" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-[15px]">
+                        전체 상태
+                      </SelectItem>
+                      <SelectItem value="draft" className="text-[15px]">
+                        임시저장
+                      </SelectItem>
+                      <SelectItem value="pending" className="text-[15px]">
+                        서명 대기
+                      </SelectItem>
+                      <SelectItem value="in_progress" className="text-[15px]">
+                        서명 진행
+                      </SelectItem>
+                      <SelectItem value="completed" className="text-[15px]">
+                        서명 완료
+                      </SelectItem>
+                      <SelectItem value="cancelled" className="text-[15px]">
+                        계약 취소됨
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

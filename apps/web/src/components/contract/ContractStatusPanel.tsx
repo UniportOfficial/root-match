@@ -91,6 +91,8 @@ export function ContractStatusPanel({
   const [signLoading, setSignLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelDialogError, setCancelDialogError] = useState<string | null>(null)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const completedNotifiedRef = useRef(false)
 
   const refreshStatus = useCallback(async () => {
@@ -241,18 +243,25 @@ export function ContractStatusPanel({
     setCancelLoading(true)
     setErrorMessage(null)
     setActionMessage(null)
+    setCancelDialogError(null)
     try {
       const response = await cancelContract({ apiUrl, contractId })
       if (!response.ok) {
         const message = await mapContractError(response)
-        setErrorMessage(message)
+        setCancelDialogError(message)
         return
       }
       setStatus('cancelled')
       setActionMessage('계약이 취소되었습니다.')
+      setCancelDialogError(null)
+      setCancelDialogOpen(false)
     } catch (error) {
       console.warn('Contract cancel failed', error)
-      setErrorMessage('서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요')
+      const message =
+        error instanceof DOMException && error.name === 'AbortError'
+          ? '요청 시간이 너무 오래 걸려요. 다시 시도해주세요'
+          : '서버 응답이 지연되고 있어요. 잠시 후 다시 시도해주세요'
+      setCancelDialogError(message)
     } finally {
       setCancelLoading(false)
     }
@@ -315,7 +324,7 @@ export function ContractStatusPanel({
                 <RotateCcw className="h-5 w-5" aria-hidden="true" />
                 서명 재발송 알림
               </AppButton>
-              <AlertDialog>
+              <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <AppButton
                     variant="danger"
@@ -323,6 +332,10 @@ export function ContractStatusPanel({
                     fullWidth
                     loading={cancelLoading}
                     disabled={signLoading || resendLoading}
+                    onClick={() => {
+                      setCancelDialogOpen(true)
+                      setCancelDialogError(null)
+                    }}
                   >
                     계약 취소
                   </AppButton>
@@ -334,6 +347,14 @@ export function ContractStatusPanel({
                       취소된 계약은 되돌릴 수 없습니다.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+                  {cancelDialogError ? (
+                    <div
+                      role="alert"
+                      className="mt-2 rounded-lg bg-danger-bg p-3 text-[15px] font-semibold text-danger"
+                    >
+                      {cancelDialogError}
+                    </div>
+                  ) : null}
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={cancelLoading}>닫기</AlertDialogCancel>
                     <AlertDialogAction

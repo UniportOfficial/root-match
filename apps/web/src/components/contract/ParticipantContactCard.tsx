@@ -94,7 +94,9 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
     setDraftPhone(defaultValue.phone)
     clearErrors()
     setIsEditing(false)
-  }, [clearErrors, defaultValue])
+    const validation = validateParticipantContact(defaultValue)
+    onValidityChange?.(validation.valid)
+  }, [clearErrors, defaultValue, onValidityChange])
 
   const handleSave = React.useCallback(() => {
     const nextValue = {

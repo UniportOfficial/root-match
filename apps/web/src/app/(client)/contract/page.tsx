@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
+  AlertCircle,
   CreditCard,
   FileSignature,
   Landmark,
@@ -83,6 +84,9 @@ export default function ContractPage() {
   )
   const [clientContact, setClientContact] = useState<ParticipantContactValue>(clientDefault)
   const [factoryContact, setFactoryContact] = useState<ParticipantContactValue>(factoryDefault)
+  const [clientContactValid, setClientContactValid] = useState(true)
+  const [factoryContactValid, setFactoryContactValid] = useState(true)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     setClientContact(clientDefault)
@@ -120,6 +124,12 @@ export default function ContractPage() {
 
   async function completePayment() {
     if (!selectedFactory) return
+    setSubmitError(null)
+
+    if (!clientContactValid || !factoryContactValid) {
+      setSubmitError('참여자 연락처를 모두 확인하고 다시 진행해주세요')
+      return
+    }
 
     const factoryName = selectedFactory.name
     const amount = `${selectedFactory.estimateMin}만원 ~ ${selectedFactory.estimateMax}만원`
@@ -333,6 +343,7 @@ export default function ContractPage() {
                       defaultValue={clientContact}
                       helperText="이 정보는 이번 계약에만 적용됩니다. 회사 기본 정보는 마이페이지에서 수정하세요."
                       onChange={setClientContact}
+                      onValidityChange={setClientContactValid}
                     />
                     <ParticipantContactCard
                       role="factory"
@@ -341,6 +352,7 @@ export default function ContractPage() {
                       defaultValue={factoryContact}
                       helperText="이 정보는 이번 계약에만 적용됩니다."
                       onChange={setFactoryContact}
+                      onValidityChange={setFactoryContactValid}
                     />
                   </div>
                 </CardContent>
@@ -405,6 +417,18 @@ export default function ContractPage() {
 
               <Card className="border-border bg-card shadow-ct-soft">
                 <CardContent className="p-5 sm:p-7">
+                  {submitError ? (
+                    <div
+                      role="alert"
+                      aria-live="polite"
+                      className="mb-4 flex items-start gap-3 rounded-xl border border-danger bg-danger-bg p-4"
+                    >
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+                      <p className="text-kr-pretty text-[15px] font-semibold text-danger">
+                        {submitError}
+                      </p>
+                    </div>
+                  ) : null}
                   <AppButton size="lg" fullWidth onClick={() => void completePayment()}>
                     계약 체결하고 결제하기
                   </AppButton>

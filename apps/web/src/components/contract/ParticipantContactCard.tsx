@@ -71,10 +71,11 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
   const roleLabel = role === 'client' ? '발주처' : '공장'
 
   React.useEffect(() => {
+    if (isEditing) return
     setDraftName(defaultValue.name)
     setDraftEmail(defaultValue.email)
     setDraftPhone(defaultValue.phone)
-  }, [defaultValue])
+  }, [defaultValue, isEditing])
 
   React.useEffect(() => {
     const validation = validateParticipantContact(defaultValue)

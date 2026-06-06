@@ -1,10 +1,13 @@
 'use client'
 
 import * as React from 'react'
+import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SeniorInput } from '@/components/ui/SeniorInput'
+
+const emailSchema = z.string().email()
 
 export interface ParticipantContactValue {
   name: string
@@ -42,7 +45,7 @@ function validateParticipantContact(value: ParticipantContactValue): {
 
   if (!email) {
     errors.email = '이메일을 입력해주세요'
-  } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  } else if (!emailSchema.safeParse(email).success) {
     errors.email = '이메일 형식을 확인해주세요'
   }
 

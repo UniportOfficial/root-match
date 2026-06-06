@@ -25,6 +25,13 @@ export const QuoteRequestSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const RecommendationCompanySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  region: z.string().nullable(),
+  industry: z.string().nullable(),
+})
+
 export const MatchRecommendationSchema = z.object({
   id: z.string(),
   quoteRequestId: z.string(),
@@ -39,6 +46,7 @@ export const MatchRecommendationSchema = z.object({
   estimateMax: z.number(),
   source: MatchingSourceSchema,
   createdAt: z.string(),
+  company: RecommendationCompanySchema.nullable().optional(),
 })
 
 export const QuoteRequestDetailSchema = QuoteRequestSchema.extend({
@@ -46,6 +54,7 @@ export const QuoteRequestDetailSchema = QuoteRequestSchema.extend({
 })
 
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>
+export type RecommendationCompany = z.infer<typeof RecommendationCompanySchema>
 export type MatchRecommendation = z.infer<typeof MatchRecommendationSchema>
 export type QuoteRequestDetail = z.infer<typeof QuoteRequestDetailSchema>
 export type { UpdateQuoteRequestInput }

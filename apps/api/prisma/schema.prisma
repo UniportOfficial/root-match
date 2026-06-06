@@ -147,6 +147,8 @@ model Company {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  factoryProfile FactoryProfile?
+
   @@map("company")
 }
 
@@ -164,6 +166,61 @@ model Profile {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
+}
+
+// ─────────────────────────────────────────────
+// FactoryProfile — factory-side capability + KPI catalog.
+//
+// 1:1 with Company. Replaces mockFactoryRecommendations fixture as the
+// candidate source for /matching/recommend. Response id == Company.id so
+// contract creation can reuse selectedFactory.id as factoryCompanyId
+// without a second indirection.
+//
+// Required fields mirror FactoryRecommendation contract. Optional fields
+// support web parity (industrialComplex/distance) and GPT prompt enrichment
+// (specialty/equipment/products/clients/qualitySatisfaction/avgResponseTime).
+// Portfolio/Reviews intentionally deferred — not in W3 scope.
+//
+// Distance is computed at match time vs the client location, not stored
+// statically: only lat/lng are persisted.
+// ─────────────────────────────────────────────
+
+model FactoryProfile {
+  id                   String   @id @default(cuid())
+  companyId            String   @unique @map("company_id")
+  // Core matching fields
+  processes            String[]
+  trustScore           Int      @map("trust_score")
+  deliveryRate         Int      @map("delivery_rate")
+  reorderRate          Int      @map("reorder_rate")
+  qualityScore         Int      @map("quality_score")
+  deliveryScore        Int      @map("delivery_score")
+  priceCompetitiveness Int      @map("price_competitiveness")
+  estimateMin          Int      @map("estimate_min")
+  estimateMax          Int      @map("estimate_max")
+  // Optional enrichment
+  industrialComplex    String?  @map("industrial_complex")
+  reorderCustomerCount Int?     @map("reorder_customer_count")
+  verified             Boolean  @default(false)
+  // Detail / prompt context
+  specialty            String[]
+  equipment            String[]
+  products             String[]
+  monthlyCapacity      String?  @map("monthly_capacity")
+  clients              String[]
+  qualitySatisfaction  Float?   @map("quality_satisfaction")
+  avgResponseTime      String?  @map("avg_response_time")
+  // Geo (dynamic distance at match time)
+  locationLat          Float?   @map("location_lat")
+  locationLng          Float?   @map("location_lng")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([trustScore])
+  @@index([verified])
+  @@map("factory_profiles")
 }
 
 model QuoteRequest {

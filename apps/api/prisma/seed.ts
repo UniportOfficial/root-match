@@ -2,6 +2,7 @@ import { prisma } from '../src/prisma/prisma.client';
 import { seedCompanies } from './seed/10-companies';
 import { seedQuoteRequests } from './seed/20-quote-requests';
 import { seedUsers } from './seed/00-users';
+import { seedFactories } from './seed/30-factories';
 
 /**
  * Phase 1.W2-4 mock fixture seed.
@@ -51,6 +52,8 @@ async function main(): Promise<void> {
       'quote requests not created from fixture data',
     );
   });
+
+  await seedFactories(prisma);
 }
 
 main()

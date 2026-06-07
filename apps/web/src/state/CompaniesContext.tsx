@@ -11,6 +11,7 @@ import {
 } from 'react'
 import type { Company, CompanyFilter } from '@rootmatching/shared'
 import { fetchCompanies } from '@/lib/companies-api'
+import { useUserState } from '@/state/UserContext'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -84,8 +85,13 @@ const INITIAL_LIMIT = 100
 
 export function CompaniesProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const { isAuthenticated } = useUserState()
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch({ type: 'companies/loadSuccess', payload: [] })
+      return
+    }
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
     let cancelled = false
     dispatch({ type: 'companies/loadStart' })
@@ -102,7 +108,7 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isAuthenticated])
 
   return (
     <StateContext.Provider value={state}>

@@ -82,7 +82,16 @@ export class QuoteRequestsService {
   ): Promise<QuoteRequestWithRecommendations> {
     const record = await this.prisma.quoteRequest.findUnique({
       where: { id },
-      include: { recommendations: { orderBy: { score: 'desc' } } },
+      include: {
+        recommendations: {
+          orderBy: { score: 'desc' },
+          include: {
+            factory: {
+              select: { id: true, name: true, region: true, industry: true },
+            },
+          },
+        },
+      },
     });
     if (!record) {
       throw new NotFoundException(`QuoteRequest ${id} not found`);
@@ -91,26 +100,11 @@ export class QuoteRequestsService {
       throw new ForbiddenException();
     }
 
-    // MatchRecommendation.factoryId is a raw String column (no @relation),
-    // so batch-load Company once to attach (avoids N+1).
-    const factoryIds = Array.from(
-      new Set(record.recommendations.map((rec) => rec.factoryId)),
-    );
-    const companies: RecommendationCompanyInfo[] = factoryIds.length
-      ? await this.prisma.company.findMany({
-          where: { id: { in: factoryIds } },
-          select: { id: true, name: true, region: true, industry: true },
-        })
-      : [];
-    const companyById = new Map<string, RecommendationCompanyInfo>(
-      companies.map((company) => [company.id, company]),
-    );
-
     return {
       ...record,
-      recommendations: record.recommendations.map((rec) => ({
+      recommendations: record.recommendations.map(({ factory, ...rec }) => ({
         ...rec,
-        company: companyById.get(rec.factoryId) ?? null,
+        company: factory ?? null,
       })),
     };
   }

@@ -1,8 +1,16 @@
-import type { CompanyListQuery, CompanyListResponse } from '@rootmatching/shared'
+import type { CompanyDetail, CompanyListQuery, CompanyListResponse } from '@rootmatching/shared'
 
 export type FetchCompaniesResult =
   | { ok: true; data: CompanyListResponse }
   | { ok: false; message: string }
+
+export type FetchCompanyDetailResult =
+  | { ok: true; data: CompanyDetail }
+  | {
+      ok: false
+      reason: 'unauthenticated' | 'not-found' | 'error'
+      message: string
+    }
 
 function buildQueryString(query: CompanyListQuery): string {
   const params = new URLSearchParams()
@@ -36,5 +44,51 @@ export async function fetchCompanies(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'network error'
     return { ok: false, message }
+  }
+}
+
+async function readDetailResponse(response: Response): Promise<FetchCompanyDetailResult> {
+  if (response.status === 401) {
+    return { ok: false, reason: 'unauthenticated', message: 'unauthenticated' }
+  }
+  if (response.status === 404) {
+    return { ok: false, reason: 'not-found', message: 'company not found' }
+  }
+  if (!response.ok) {
+    return { ok: false, reason: 'error', message: `HTTP ${response.status}` }
+  }
+  const data = (await response.json()) as CompanyDetail
+  return { ok: true, data }
+}
+
+export async function fetchCompanyDetail(
+  apiUrl: string,
+  id: string,
+): Promise<FetchCompanyDetailResult> {
+  try {
+    const response = await fetch(`${apiUrl}/companies/${encodeURIComponent(id)}`, {
+      credentials: 'include',
+    })
+    return readDetailResponse(response)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'network error'
+    return { ok: false, reason: 'error', message }
+  }
+}
+
+export async function fetchCompanyDetailServer(
+  apiUrl: string,
+  id: string,
+  cookieHeader: string,
+): Promise<FetchCompanyDetailResult> {
+  try {
+    const response = await fetch(`${apiUrl}/companies/${encodeURIComponent(id)}`, {
+      headers: { cookie: cookieHeader },
+      cache: 'no-store',
+    })
+    return readDetailResponse(response)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'network error'
+    return { ok: false, reason: 'error', message }
   }
 }

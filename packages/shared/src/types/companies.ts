@@ -64,3 +64,31 @@ export interface CompanyListResponse {
   page: number
   limit: number
 }
+
+export interface CompanyFactoryProfile {
+  isSynthesized: boolean
+  location: string | null
+  processes: string[]
+  trustScore: number
+  deliveryRate: number
+  reorderRate: number
+  qualityScore: number
+  deliveryScore: number
+  priceCompetitiveness: number
+  estimateMin: number
+  estimateMax: number
+  industrialComplex: string | null
+  reorderCustomerCount: number | null
+  verified: boolean
+  specialty: string[]
+  equipment: string[]
+  products: string[]
+  monthlyCapacity: string | null
+  clients: string[]
+  qualitySatisfaction: number | null
+  avgResponseTime: string | null
+}
+
+export interface CompanyDetail extends Company {
+  factoryProfile: CompanyFactoryProfile | null
+}

@@ -6,6 +6,10 @@ import type {
   QuoteRequestDraft,
 } from '@rootmatching/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  TIER_KPI_BASELINE,
+  type TierKpiBaseline,
+} from '../../companies/tier-kpi';
 import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;
@@ -58,62 +62,6 @@ const REGION_NORMALIZE: Record<string, string> = {
   세종시: '세종',
 };
 
-// Synthesized KPI baselines per Oracle (2026-06-07) — honest conservative values for directory rows
-// that have no FactoryProfile. A-tier ≈ 인증 뿌리기업, B-tier ≈ 산업단지 검증.
-const TIER_KPI: Record<ConfidenceTier, KpiBundle> = {
-  A_CERTIFIED_ROOT: {
-    trustScore: 86,
-    deliveryRate: 88,
-    reorderRate: 65,
-    qualityScore: 86,
-    deliveryScore: 84,
-    priceCompetitiveness: 74,
-    estimateMin: 300,
-    estimateMax: 500,
-  },
-  B_LOCAL_STRONG_INSIDE: {
-    trustScore: 74,
-    deliveryRate: 78,
-    reorderRate: 52,
-    qualityScore: 74,
-    deliveryScore: 74,
-    priceCompetitiveness: 70,
-    estimateMin: 250,
-    estimateMax: 450,
-  },
-  C_BORDERLINE_INSIDE: {
-    trustScore: 60,
-    deliveryRate: 65,
-    reorderRate: 40,
-    qualityScore: 60,
-    deliveryScore: 60,
-    priceCompetitiveness: 65,
-    estimateMin: 200,
-    estimateMax: 400,
-  },
-  D_LOW_CONFIDENCE: {
-    trustScore: 50,
-    deliveryRate: 55,
-    reorderRate: 30,
-    qualityScore: 50,
-    deliveryScore: 50,
-    priceCompetitiveness: 60,
-    estimateMin: 200,
-    estimateMax: 400,
-  },
-};
-
-interface KpiBundle {
-  trustScore: number;
-  deliveryRate: number;
-  reorderRate: number;
-  qualityScore: number;
-  deliveryScore: number;
-  priceCompetitiveness: number;
-  estimateMin: number;
-  estimateMax: number;
-}
-
 interface ScoreBundle {
   aiReason: string;
   qualityScore: number;
@@ -127,7 +75,7 @@ interface ScoreBundle {
 interface Candidate {
   company: Company;
   factoryProfile: FactoryProfile | null;
-  kpi: KpiBundle;
+  kpi: TierKpiBaseline;
   processes: string[];
 }
 
@@ -319,7 +267,7 @@ export class AiMatchingService {
     return {
       company,
       factoryProfile: null,
-      kpi: { ...TIER_KPI[tier] },
+      kpi: { ...TIER_KPI_BASELINE[tier] },
       processes: deriveProcessesFromHint(company.processHint, requestedLabel),
     };
   }

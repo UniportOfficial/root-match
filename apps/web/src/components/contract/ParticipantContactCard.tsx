@@ -69,13 +69,20 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
   const [emailError, setEmailError] = React.useState<string | undefined>()
   const [phoneError, setPhoneError] = React.useState<string | undefined>()
   const roleLabel = role === 'client' ? '발주처' : '공장'
+  const defaultName = defaultValue.name
+  const defaultEmail = defaultValue.email
+  const defaultPhone = defaultValue.phone
+
+  const resetDraft = React.useCallback((value: ParticipantContactValue) => {
+    setDraftName(value.name)
+    setDraftEmail(value.email)
+    setDraftPhone(value.phone)
+  }, [])
 
   React.useEffect(() => {
     if (isEditing) return
-    setDraftName(defaultValue.name)
-    setDraftEmail(defaultValue.email)
-    setDraftPhone(defaultValue.phone)
-  }, [defaultValue, isEditing])
+    resetDraft({ name: defaultName, email: defaultEmail, phone: defaultPhone })
+  }, [defaultEmail, defaultName, defaultPhone, isEditing, resetDraft])
 
   React.useEffect(() => {
     const validation = validateParticipantContact(defaultValue)
@@ -89,14 +96,12 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
   }, [])
 
   const handleCancel = React.useCallback(() => {
-    setDraftName(defaultValue.name)
-    setDraftEmail(defaultValue.email)
-    setDraftPhone(defaultValue.phone)
+    resetDraft(defaultValue)
     clearErrors()
     setIsEditing(false)
     const validation = validateParticipantContact(defaultValue)
     onValidityChange?.(validation.valid)
-  }, [clearErrors, defaultValue, onValidityChange])
+  }, [clearErrors, defaultValue, onValidityChange, resetDraft])
 
   const handleSave = React.useCallback(() => {
     const nextValue = {

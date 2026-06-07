@@ -35,7 +35,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { mockDashboardStats } from '@/data/dashboardStats'
 import { cn } from '@/lib/cn'
 import { useCompaniesDispatch, useCompaniesState } from '@/state/CompaniesContext'
 import { useUserDispatch, useUserState } from '@/state/UserContext'
@@ -570,10 +569,10 @@ export default function MyPageProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 gap-2 rounded-xl bg-muted p-3">
-                  <StatCell label="조회수" value={mockDashboardStats.totalViews} />
-                  <StatCell label="문의" value={mockDashboardStats.totalInquiries} />
-                  <StatCell label="매칭" value={mockDashboardStats.totalMatches} />
-                  <StatCell label="메시지" value={mockDashboardStats.recentMessages} />
+                  <StatCell label="조회수" value={0} />
+                  <StatCell label="문의" value={0} />
+                  <StatCell label="매칭" value={0} />
+                  <StatCell label="메시지" value={0} />
                 </div>
               </CardContent>
             </Card>

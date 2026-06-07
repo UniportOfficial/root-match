@@ -4,32 +4,18 @@ import Link from 'next/link'
 import {
   ArrowRight,
   Building2,
-  ChevronRight,
   Eye,
   Mail,
   MessageCircle,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis } from 'recharts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart'
-import { mockActivityLogs } from '@/data/activityLogs'
-import { mockDashboardStats } from '@/data/dashboardStats'
+import { Card, CardContent } from '@/components/ui/card'
 import { useCompaniesState } from '@/state/CompaniesContext'
 import { useUserState } from '@/state/UserContext'
 import { cn } from '@/lib/utils'
-
-type ActivityType = (typeof mockActivityLogs)[number]['type']
 
 interface SupportingStat {
   title: string
@@ -39,30 +25,6 @@ interface SupportingStat {
   deltaTone: 'success' | 'muted'
 }
 
-const supportingStats: SupportingStat[] = [
-  {
-    title: '총 조회수',
-    value: mockDashboardStats.totalViews,
-    icon: Eye,
-    delta: '지난주 대비 +12.4%',
-    deltaTone: 'success',
-  },
-  {
-    title: '총 문의',
-    value: mockDashboardStats.totalInquiries,
-    icon: MessageCircle,
-    delta: '지난주 대비 +8.1%',
-    deltaTone: 'success',
-  },
-  {
-    title: '이번 주 신규 매칭',
-    value: mockDashboardStats.totalMatches,
-    icon: Sparkles,
-    delta: '이번 주 +5건',
-    deltaTone: 'success',
-  },
-]
-
 interface ActionTile {
   icon: LucideIcon
   label: string
@@ -71,105 +33,59 @@ interface ActionTile {
   toneClass: string
 }
 
-interface ActivityStyle {
-  icon: LucideIcon
-  bg: string
-  iconColor: string
-  label: string
-}
-
-const activityStyles: Record<ActivityType, ActivityStyle> = {
-  view: { icon: Eye, bg: 'bg-info-subtle', iconColor: 'text-info', label: '조회' },
-  inquiry: {
-    icon: MessageCircle,
-    bg: 'bg-warning-subtle',
-    iconColor: 'text-warning-foreground',
-    label: '문의',
-  },
-  match: { icon: Sparkles, bg: 'bg-accent', iconColor: 'text-accent-foreground', label: '매칭' },
-  message: { icon: Mail, bg: 'bg-primary/10', iconColor: 'text-primary', label: '메시지' },
-}
-
-function formatActivityDate(value: string): string {
-  return new Date(value).toLocaleDateString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    weekday: 'short',
-  })
-}
-
-const chartConfig = {
-  view: { label: '조회', color: 'hsl(var(--info))' },
-  inquiry: { label: '문의', color: 'hsl(var(--warning))' },
-  match: { label: '매칭', color: 'hsl(var(--accent))' },
-  message: { label: '메시지', color: 'hsl(var(--primary))' },
-} satisfies ChartConfig
-
-const weeklyActivity = [
-  { day: '월', view: 18, inquiry: 3, match: 6, message: 1 },
-  { day: '화', view: 22, inquiry: 4, match: 8, message: 0 },
-  { day: '수', view: 15, inquiry: 2, match: 5, message: 1 },
-  { day: '목', view: 25, inquiry: 5, match: 9, message: 0 },
-  { day: '금', view: 20, inquiry: 4, match: 7, message: 1 },
-  { day: '토', view: 12, inquiry: 3, match: 5, message: 0 },
-  { day: '일', view: 15, inquiry: 2, match: 5, message: 1 },
-]
-
-const activityDistribution = [
-  {
-    name: 'view',
-    label: '조회',
-    value: mockDashboardStats.totalViews,
-    fill: 'var(--color-view)',
-  },
-  {
-    name: 'inquiry',
-    label: '문의',
-    value: mockDashboardStats.totalInquiries,
-    fill: 'var(--color-inquiry)',
-  },
-  {
-    name: 'match',
-    label: '매칭',
-    value: mockDashboardStats.totalMatches,
-    fill: 'var(--color-match)',
-  },
-  {
-    name: 'message',
-    label: '메시지',
-    value: mockDashboardStats.recentMessages,
-    fill: 'var(--color-message)',
-  },
-]
-
-const totalActivityCount = activityDistribution.reduce((sum, item) => sum + item.value, 0)
-
 export default function DashboardPage() {
   const { currentUser } = useUserState()
   const { companies } = useCompaniesState()
   const recommendedCompanies = companies.slice(0, 3)
-  const recentActivities = mockActivityLogs.slice(0, 5)
-  const todayActionCount = mockDashboardStats.totalMatches + mockDashboardStats.recentMessages
+  const verifiedCompanyCount = companies.filter(
+    (company) => company.confidenceTier === 'A_CERTIFIED_ROOT' || company.certifications.length > 0,
+  ).length
+  const activeRegionCount = new Set(companies.map((company) => company.region).filter(Boolean)).size
+  const todayActionCount = companies.length
+
+  const supportingStats: SupportingStat[] = [
+    {
+      title: '등록 기업',
+      value: companies.length,
+      icon: Building2,
+      delta: '실시간 디렉토리 기준',
+      deltaTone: 'muted',
+    },
+    {
+      title: '검증 기업',
+      value: verifiedCompanyCount,
+      icon: Eye,
+      delta: '인증/자격 데이터 기준',
+      deltaTone: 'muted',
+    },
+    {
+      title: '활성 권역',
+      value: activeRegionCount,
+      icon: Sparkles,
+      delta: '기업 지역 데이터 기준',
+      deltaTone: 'muted',
+    },
+  ]
 
   const actionTiles: ActionTile[] = [
     {
       icon: Sparkles,
-      label: '새 매칭 결과 확인',
-      count: mockDashboardStats.totalMatches,
-      href: '/matching',
+      label: '기업 디렉토리 확인',
+      count: companies.length,
+      href: '/companies',
       toneClass: 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10',
     },
     {
       icon: MessageCircle,
       label: '답장 필요한 문의',
-      count: mockDashboardStats.totalInquiries,
+      count: 0,
       href: '/messages',
       toneClass: 'border-warning/30 bg-warning-subtle text-warning-foreground hover:bg-warning/10',
     },
     {
       icon: Mail,
       label: '미확인 메시지',
-      count: mockDashboardStats.recentMessages,
+      count: 0,
       href: '/messages',
       toneClass: 'border-info/30 bg-info-subtle text-info hover:bg-info/10',
     },
@@ -192,7 +108,7 @@ export default function DashboardPage() {
                 <h1 className="text-kr-balance text-[26px] font-bold leading-tight text-foreground sm:text-[32px]">
                   {currentUser ? `${currentUser.name}님, ` : '환영합니다. '}
                   <br className="hidden sm:block" />
-                  오늘 확인할 활동이 <span className="text-primary">{todayActionCount}건</span>{' '}
+                  오늘 확인할 기업이 <span className="text-primary">{todayActionCount}곳</span>{' '}
                   있습니다.
                 </h1>
                 <p className="text-kr-pretty text-[15px] leading-7 text-muted-foreground sm:text-[16px]">
@@ -242,9 +158,9 @@ export default function DashboardPage() {
             <CardContent className="flex h-full flex-col justify-between gap-6 p-6">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-kr-keep text-[14px] font-bold opacity-90">매칭된 기업</p>
+                  <p className="text-kr-keep text-[14px] font-bold opacity-90">등록 기업</p>
                   <p className="text-kr-keep text-[13px] font-semibold opacity-70">
-                    이번 주 +5건 누적
+                    실시간 디렉토리 기준
                   </p>
                 </div>
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
@@ -253,7 +169,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[52px] font-bold leading-none tabular-nums sm:text-[60px]">
-                  {mockDashboardStats.totalMatches.toLocaleString('ko-KR')}
+                  {companies.length.toLocaleString('ko-KR')}
                 </p>
                 <Link
                   href="/matching"
@@ -298,104 +214,6 @@ export default function DashboardPage() {
           })}
         </section>
 
-        <section
-          className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]"
-          aria-labelledby="dashboard-charts-heading"
-        >
-          <h2 id="dashboard-charts-heading" className="sr-only">
-            활동 시각화
-          </h2>
-
-          <Card className="border-border bg-card shadow-ct-soft">
-            <CardHeader>
-              <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
-                이번 주 활동 추이
-              </CardTitle>
-              <CardDescription className="text-kr-pretty text-[14px]">
-                요일별 조회·문의·매칭·메시지 분포
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[260px] w-full sm:h-[300px]">
-                <BarChart accessibilityLayer data={weeklyActivity}>
-                  <CartesianGrid
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                    strokeDasharray="3 3"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    fontSize={13}
-                  />
-                  <ChartTooltip
-                    content={<ChartTooltipContent />}
-                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="view" stackId="a" fill="var(--color-view)" />
-                  <Bar dataKey="inquiry" stackId="a" fill="var(--color-inquiry)" />
-                  <Bar dataKey="match" stackId="a" fill="var(--color-match)" />
-                  <Bar
-                    dataKey="message"
-                    stackId="a"
-                    fill="var(--color-message)"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card shadow-ct-soft">
-            <CardHeader>
-              <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
-                활동 유형 비율
-              </CardTitle>
-              <CardDescription className="text-kr-pretty text-[14px]">
-                전체{' '}
-                <span className="font-semibold tabular-nums text-foreground">
-                  {totalActivityCount.toLocaleString('ko-KR')}
-                </span>{' '}
-                건
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-[240px] sm:h-[280px]"
-              >
-                <PieChart accessibilityLayer>
-                  <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
-                  <Pie
-                    data={activityDistribution}
-                    dataKey="value"
-                    nameKey="label"
-                    innerRadius={60}
-                    outerRadius={90}
-                    strokeWidth={2}
-                    label={({ payload, percent }) => {
-                      if (typeof percent !== 'number' || percent <= 0) return ''
-                      const rawLabel =
-                        (payload && typeof payload === 'object' && 'label' in payload
-                          ? (payload as { label?: string }).label
-                          : '') ?? ''
-                      return `${rawLabel} ${Math.round(percent * 100)}%`
-                    }}
-                    labelLine={false}
-                  />
-                  <ChartLegend
-                    content={<ChartLegendContent nameKey="label" />}
-                    verticalAlign="bottom"
-                  />
-                </PieChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </section>
-
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
@@ -403,7 +221,7 @@ export default function DashboardPage() {
                 추천 기업
               </h2>
               <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
-                최근 활동을 기반으로 추천된 기업입니다.
+                기업 디렉토리에서 불러온 최신 기업입니다.
               </p>
             </div>
             <Link
@@ -443,7 +261,7 @@ export default function DashboardPage() {
                     {company.description}
                   </p>
                   <Link
-                    href={`/companies/${company.id}`}
+                    href={`/factories/${company.id}`}
                     className="text-kr-keep mt-4 inline-flex items-center gap-1 text-[14px] font-bold text-primary transition group-hover:gap-2"
                   >
                     기업 상세 보기 <ArrowRight className="h-3.5 w-3.5" />
@@ -467,48 +285,10 @@ export default function DashboardPage() {
           </div>
 
           <Card className="border-border bg-card shadow-ct-soft">
-            <CardContent className="p-0">
-              <ul className="divide-y divide-border">
-                {recentActivities.map((activity) => {
-                  const style = activityStyles[activity.type]
-                  const Icon = style.icon
-                  return (
-                    <li key={activity.id}>
-                      <Link
-                        href={`/companies/${activity.targetCompanyId}`}
-                        className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                        aria-label={`${style.label} · ${activity.description} · ${activity.targetCompanyName}`}
-                      >
-                        <span
-                          className={cn(
-                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                            style.bg,
-                          )}
-                        >
-                          <Icon className={cn('h-5 w-5', style.iconColor)} />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="slate" size="sm" className="shrink-0 text-kr-keep">
-                              {style.label}
-                            </Badge>
-                            <p className="text-kr-pretty min-w-0 truncate text-[15px] font-bold text-foreground">
-                              {activity.description}
-                            </p>
-                          </div>
-                          <p className="text-kr-pretty mt-1 truncate text-[13px] text-muted-foreground">
-                            {activity.targetCompanyName}
-                          </p>
-                        </div>
-                        <time className="text-kr-keep shrink-0 text-[13px] font-semibold text-muted-foreground">
-                          {formatActivityDate(activity.createdAt)}
-                        </time>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
+            <CardContent className="p-6 text-center">
+              <p className="text-kr-pretty text-[15px] font-semibold text-muted-foreground">
+                최근 활동 데이터가 연결되면 이 영역에 표시됩니다.
+              </p>
             </CardContent>
           </Card>
         </section>

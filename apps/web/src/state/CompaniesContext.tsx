@@ -11,6 +11,8 @@ import {
 } from 'react'
 import type { Company, CompanyFilter } from '@rootmatching/shared'
 import { fetchCompanies } from '@/lib/companies-api'
+import { getDemoCompanies } from '@/lib/demo-companies'
+import { isDemoFallbackEnabled } from '@/lib/demo-policy'
 import { useUserState } from '@/state/UserContext'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -99,6 +101,8 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
       if (result.ok) {
         dispatch({ type: 'companies/loadSuccess', payload: result.data.items })
+      } else if (isDemoFallbackEnabled()) {
+        dispatch({ type: 'companies/loadSuccess', payload: getDemoCompanies() })
       } else if (result.message === 'unauthenticated') {
         dispatch({ type: 'companies/loadSuccess', payload: [] })
       } else {

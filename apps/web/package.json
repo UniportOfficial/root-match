@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test demo-walkthrough.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

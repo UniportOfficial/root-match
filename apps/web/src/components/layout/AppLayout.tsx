@@ -61,7 +61,6 @@ const DYNAMIC_TITLE_PREFIXES: Array<{ prefix: string; title: string }> = [
   { prefix: '/requests/', title: '견적 요청 상세' },
   { prefix: '/transactions/', title: '거래 진행 상세' },
   { prefix: '/disputes/', title: '분쟁 상세' },
-  { prefix: '/companies/', title: '기업 상세' },
 ]
 
 function resolveTitleForPath(pathname: string): string {

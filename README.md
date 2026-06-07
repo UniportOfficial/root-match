@@ -95,6 +95,10 @@ pnpm dev
 | production | 미설정           | 미설정 또는 `false`      | **500 throw** (silent mock 금지)                         |
 | production | 미설정           | `"true"`                 | mock 추천 반환 (명시적 opt-in)                           |
 
+### 데모 fallback 정책
+
+프론트엔드는 `NEXT_PUBLIC_DEMO_MODE=true`일 때만 데모용 fallback 데이터를 사용합니다. 이 모드에서는 로그인 상태에서 기업 디렉토리 API, 공장 상세 API, AI 매칭 API가 4xx/네트워크 오류를 반환해도 시연 화면이 비지 않도록 mock 추천/공장 데이터를 표시합니다. 일반 production에서 URL `?demo=true`만으로는 fallback이 켜지지 않습니다.
+
 ## 워크스페이스 명령
 
 | 명령                | 동작                               |
@@ -107,6 +111,18 @@ pnpm dev
 | `pnpm format`       | Prettier 적용                      |
 | `pnpm format:check` | Prettier 검증 (CI용)               |
 | `pnpm test`         | 단위 테스트                        |
+
+## 데모 smoke
+
+데모 직전에는 API·web 서버와 seed DB를 준비한 뒤 브라우저 smoke를 실행합니다.
+
+```bash
+pnpm --filter @rootmatching/api prisma:seed
+NEXT_PUBLIC_DEMO_MODE=true pnpm dev
+PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @rootmatching/web test:e2e:demo
+```
+
+이 smoke는 발주처 로그인 → `/companies` → `/factories/[id]` → `/request` → `/matching`, 공장 로그인 → route guard → CTA 숨김까지 확인합니다.
 
 ## 기술 스택
 

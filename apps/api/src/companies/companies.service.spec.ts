@@ -1,6 +1,10 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConfidenceTier, type Company } from '@prisma/client';
+import {
+  ConfidenceTier,
+  type Company,
+  type FactoryProfile,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from './companies.service';
 import type { ListCompaniesDto } from './dto/list-companies.dto';
@@ -31,6 +35,40 @@ function makeCompany(overrides: Partial<Company> = {}): Company {
     kakaoId: null,
     representative: '홍길동',
     sourceTypes: ['kpic_or_root_cert'],
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+function makeFactoryProfile(
+  overrides: Partial<FactoryProfile> = {},
+): FactoryProfile {
+  return {
+    id: 'fp-1',
+    companyId: 'company-a',
+    location: '경기 안산시 단원구',
+    processes: ['CNC 절삭', '표면처리'],
+    trustScore: 95,
+    deliveryRate: 96,
+    reorderRate: 88,
+    qualityScore: 94,
+    deliveryScore: 95,
+    priceCompetitiveness: 86,
+    estimateMin: 400,
+    estimateMax: 500,
+    industrialComplex: '시화국가산업단지',
+    reorderCustomerCount: 22,
+    verified: true,
+    specialty: ['알루미늄 CNC'],
+    equipment: ['CNC 머시닝센터 6대'],
+    products: ['알루미늄 하우징'],
+    monthlyCapacity: '8,000개',
+    clients: ['삼성전자 1차 협력사', 'LG전자 2차'],
+    qualitySatisfaction: 4.6,
+    avgResponseTime: '평일 4시간 이내',
+    locationLat: 37.3,
+    locationLng: 126.8,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
@@ -172,6 +210,76 @@ describe('CompaniesService', () => {
 
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getById', () => {
+    it('returns CompanyDetail with real FactoryProfile (isSynthesized=false)', async () => {
+      const company = makeCompany();
+      const factoryProfile = makeFactoryProfile();
+      prisma.company.findUnique.mockResolvedValue({
+        ...company,
+        factoryProfile,
+      });
+
+      const result = await service.getById('company-a');
+
+      expect(result.id).toBe('company-a');
+      expect(result.name).toBe('Acme Manufacturing');
+      expect(result.factoryProfile).not.toBeNull();
+      expect(result.factoryProfile?.isSynthesized).toBe(false);
+      expect(result.factoryProfile?.trustScore).toBe(95);
+      expect(result.factoryProfile?.deliveryRate).toBe(96);
+      expect(result.factoryProfile?.specialty).toEqual(['알루미늄 CNC']);
+      expect(result.factoryProfile?.industrialComplex).toBe('시화국가산업단지');
+      expect(result.factoryProfile?.location).toBe('경기 안산시 단원구');
+    });
+
+    it('returns CompanyDetail with synthesized profile when FactoryProfile missing (isSynthesized=true, A-tier verified)', async () => {
+      const company = makeCompany({
+        confidenceTier: ConfidenceTier.A_CERTIFIED_ROOT,
+        processHint: '알루미늄 주조업',
+      });
+      prisma.company.findUnique.mockResolvedValue({
+        ...company,
+        factoryProfile: null,
+      });
+
+      const result = await service.getById('company-a');
+
+      expect(result.factoryProfile).not.toBeNull();
+      expect(result.factoryProfile?.isSynthesized).toBe(true);
+      expect(result.factoryProfile?.trustScore).toBe(86);
+      expect(result.factoryProfile?.deliveryRate).toBe(88);
+      expect(result.factoryProfile?.qualityScore).toBe(86);
+      expect(result.factoryProfile?.verified).toBe(true);
+      expect(result.factoryProfile?.specialty).toEqual([]);
+      expect(result.factoryProfile?.processes).toEqual(['알루미늄 주조업']);
+      expect(result.factoryProfile?.location).toBe('경기 안산시');
+    });
+
+    it('throws NotFoundException when company missing', async () => {
+      prisma.company.findUnique.mockResolvedValue(null);
+
+      await expect(service.getById('unknown')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('calls findUnique with include factoryProfile and only once (prevents N+1)', async () => {
+      const company = makeCompany();
+      prisma.company.findUnique.mockResolvedValue({
+        ...company,
+        factoryProfile: null,
+      });
+
+      await service.getById('company-a');
+
+      expect(prisma.company.findUnique).toHaveBeenCalledTimes(1);
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: { id: 'company-a' },
+        include: { factoryProfile: true },
+      });
     });
   });
 });

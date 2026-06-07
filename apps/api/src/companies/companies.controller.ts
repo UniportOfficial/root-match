@@ -1,6 +1,14 @@
-import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { Company } from '@prisma/client';
-import type { CompanyListResponse } from '@rootmatching/shared';
+import type { CompanyDetail, CompanyListResponse } from '@rootmatching/shared';
 import type { AuthSession } from '../auth/auth.config';
 import { BetterAuthGuard } from '../auth/better-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -29,5 +37,10 @@ export class CompaniesController {
     @Body() body: UpdateCompanyDto,
   ): Promise<Company> {
     return this.companiesService.updateMyCompany(user.id, body);
+  }
+
+  @Get(':id')
+  get(@Param('id') id: string): Promise<CompanyDetail> {
+    return this.companiesService.getById(id);
   }
 }

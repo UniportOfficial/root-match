@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Company, Prisma } from '@prisma/client';
-import type { CompanyListResponse } from '@rootmatching/shared';
+import type { CompanyDetail, CompanyListResponse } from '@rootmatching/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { toSharedCompany } from './companies.adapter';
+import { toSharedCompany, toSharedCompanyDetail } from './companies.adapter';
 import type { ListCompaniesDto } from './dto/list-companies.dto';
 import type { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -20,6 +20,19 @@ export class CompaniesService {
     }
 
     return company;
+  }
+
+  async getById(id: string): Promise<CompanyDetail> {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      include: { factoryProfile: true },
+    });
+
+    if (!company) {
+      throw new NotFoundException(`Company ${id} not found`);
+    }
+
+    return toSharedCompanyDetail(company);
   }
 
   async updateMyCompany(

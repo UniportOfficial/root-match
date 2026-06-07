@@ -260,6 +260,9 @@ export class AiMatchingService {
     }
     tryQueries.push({ AND: [tierFilter, processFilter] });
 
+    // Broaden when first attempt returns fewer than TOP_K to guarantee FE 4-card render.
+    // Keep widest accepted set so embedding ranking still has options.
+    let widest: (Company & { factoryProfile: FactoryProfile | null })[] = [];
     for (const where of tryQueries) {
       const companies = await this.prisma.company.findMany({
         where,
@@ -267,11 +270,18 @@ export class AiMatchingService {
         orderBy: [{ confidenceTier: 'asc' }, { name: 'asc' }],
         take: PREFILTER_TAKE,
       });
-      if (companies.length > 0) {
+      if (companies.length > widest.length) widest = companies;
+      if (companies.length >= TOP_K) {
         return companies.map((c) =>
           this.buildCandidate(c, c.factoryProfile, koreanLabel),
         );
       }
+    }
+
+    if (widest.length > 0) {
+      return widest.map((c) =>
+        this.buildCandidate(c, c.factoryProfile, koreanLabel),
+      );
     }
 
     const factoryProfiles = await this.prisma.factoryProfile.findMany({

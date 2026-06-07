@@ -375,6 +375,36 @@ describe('AiMatchingService', () => {
       expect(hasRegionClause).toBe(false);
     });
 
+    it('broadens when region+process returns < TOP_K (1-3 candidates → use broader set)', async () => {
+      const thin = PPURI_COMPANIES.slice(0, 2);
+      companyFindManyMock
+        .mockResolvedValueOnce(thin)
+        .mockResolvedValueOnce(PPURI_COMPANIES);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(companyFindManyMock).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(4);
+    });
+
+    it('returns widest available set when even broadened query returns < TOP_K', async () => {
+      const thin = PPURI_COMPANIES.slice(0, 2);
+      companyFindManyMock
+        .mockResolvedValueOnce(thin)
+        .mockResolvedValueOnce(thin);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(factoryProfileFindManyMock).not.toHaveBeenCalled();
+      expect(result).toHaveLength(2);
+    });
+
     it('expands 금형 process to processHint OR list (금형, 주형)', async () => {
       companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
 

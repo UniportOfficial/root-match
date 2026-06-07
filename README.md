@@ -36,17 +36,20 @@ rootmatching/
 │   │       │       ├── disputes/[id]?/     # 분쟁 목록 + 상세
 │   │       │       └── mypage/             # 프로필 편집
 │   │       ├── components/ui/      # AppBadge 등
-│   │       ├── data/               # mock data (Phase 1.Week 2에 Prisma seed로 이전)
-│   │       └── lib/cn.ts           # clsx + tailwind-merge
+│   │       ├── lib/                # API client, demo policy, auth helpers
+│   │       ├── state/              # client-side contexts
+│   │       └── tests/              # Playwright smoke
 │   └── api/                        # NestJS 11
 │       └── src/
-│           ├── app.module.ts       # MatchingModule 등록
+│           ├── app.module.ts       # API 모듈 등록
 │           ├── main.ts             # CORS + port 3001
+│           ├── auth/               # Better Auth 설정
+│           ├── companies/          # 기업 디렉토리 API
+│           ├── quote-requests/     # 견적 요청 API
 │           └── matching/           # AI 매칭 모듈
 │               ├── matching.controller.ts   # POST /matching/recommend
 │               ├── matching.module.ts
-│               ├── services/                # VectorSearch + AiMatching
-│               └── fixtures/                # mock 공장 데이터
+│               └── services/                # VectorSearch + AiMatching
 ├── packages/
 │   └── shared/                     # 공용 zod schemas + 도메인 타입
 │       └── src/types/              #   matching, requests, transactions, disputes
@@ -130,7 +133,7 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @rootmatching/web test:e
   - 폼: React Hook Form + zod
   - 아이콘: Lucide React
   - 클래스 합성: clsx + tailwind-merge
-- **Backend**: NestJS 11 + Prisma 6 (Phase 1.Week 2) + PostgreSQL (Neon) + Better Auth (Phase 1.Week 2)
+- **Backend**: NestJS 11 + Prisma 6 + PostgreSQL (Neon) + Better Auth
 - **AI**: OpenAI text-embedding-3-small + GPT-4o (apps/api/src/matching)
 - **Shared**: zod schemas + 도메인 타입 (`@rootmatching/shared`)
 - **Tooling**: pnpm workspaces · ESLint 9 (flat) · Prettier 3 · Husky 9 · lint-staged 15
@@ -144,8 +147,11 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @rootmatching/web test:e
 | `/quotes`            | 공개 견적 모집 게시판              | 공장이 발주처 요청을 본다                                   |
 | `/request`           | 새 견적 요청 폼                    | 발주처. RHF + zod, 인라인 캘린더, 파일 업로드, AI 매칭 호출 |
 | `/matching`          | AI 매칭 결과                       | 발주처. `/request` 결과를 sessionStorage로 받아 표시        |
+| `/companies`         | 기업 디렉토리                      | 인증 사용자. API 실패 시 demo mode에서 fallback 표시        |
+| `/factories/[id]`    | 공장 상세                          | Company directory 기반 상세. 발주처만 견적 CTA 표시         |
 | `/requests`          | 내 견적 요청 목록                  | 발주처                                                      |
 | `/requests/[id]`     | 내 견적 요청 상세                  | 발주처                                                      |
+| `/factory/requests`  | 받은 견적 요청 목록                | 공장                                                        |
 | `/transactions`      | 거래 목록                          | 공통                                                        |
 | `/transactions/[id]` | 거래 진행 (스텝퍼 + 타임라인)      | 공통                                                        |
 | `/disputes`          | 분쟁 목록                          | 공통                                                        |
@@ -157,14 +163,14 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @rootmatching/web test:e
 | 메서드 | 경로                  | 동작                                                                      |
 | ------ | --------------------- | ------------------------------------------------------------------------- |
 | GET    | `/health/db`          | DB + pgvector 상태 확인 (`{ db, vectorExtension, latencyMs, timestamp }`) |
+| GET    | `/companies`          | 기업 디렉토리 페이지네이션 조회                                           |
+| GET    | `/companies/:id`      | Company directory 기반 공장 상세 조회                                     |
 | POST   | `/matching/recommend` | 발주 요청 → 벡터 검색 top-K → GPT-4o 추천 (key 미설정 시 mock fallback)   |
 
-## 다음 작업 (Phase 1.Week 2)
+## 데모 전 체크리스트
 
-1. Prisma 6 + Neon PostgreSQL 연결
-2. Better Auth 통합 (`better-auth` + Prisma adapter, NestJS 안에 내장)
-3. 비즈니스 모듈 (Users, Companies)
-4. Mock fixtures → Prisma seed 마이그레이션
-5. nestjs-zod DTO 검증
-6. Swagger + ThrottlerGuard + helmet + nestjs-pino
-7. E2E 테스트
+1. 데모 fallback 배포: `NEXT_PUBLIC_DEMO_MODE=true`
+2. 실제 production 배포: `NEXT_PUBLIC_DEMO_MODE` 미설정 또는 `false`
+3. 필수 API env: `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `OPENAI_API_KEY`
+4. 선택 fallback env: `MATCHING_MOCK_FALLBACK=true`는 production에서 명시적으로 mock 추천을 허용할 때만 사용
+5. smoke: seed DB 준비 후 `pnpm --filter @rootmatching/web test:e2e:demo`

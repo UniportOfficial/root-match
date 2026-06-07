@@ -23,6 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { getServerSession } from '@/lib/auth-server'
 import { fetchCompanyDetailServer } from '@/lib/companies-api'
+import { getDemoCompanyDetail } from '@/lib/demo-companies'
+import { isDemoFallbackEnabled, isDemoModeSearch } from '@/lib/demo-policy'
 
 const EMPTY_LIST_PLACEHOLDER = '정보가 곧 추가됩니다.'
 const EMPTY_PORTFOLIO_MESSAGE = '포트폴리오 정보가 곧 추가됩니다.'
@@ -32,24 +34,35 @@ const HERO_FALLBACK_IMAGE =
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function FactoryDetailPage({ params }: PageProps) {
+export default async function FactoryDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params
+  const resolvedSearchParams = await searchParams
   const requestHeaders = await headers()
   const cookieHeader = requestHeaders.get('cookie') ?? ''
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  const demoSearch = new URLSearchParams()
+  const demoParam = resolvedSearchParams?.demo
+  if (typeof demoParam === 'string') demoSearch.set('demo', demoParam)
+  const allowDemoFallback = isDemoFallbackEnabled() || isDemoModeSearch(demoSearch)
 
   const [detailResult, session] = await Promise.all([
     fetchCompanyDetailServer(apiUrl, id, cookieHeader),
     getServerSession(),
   ])
 
-  if (!detailResult.ok) {
+  const demoDetail = !detailResult.ok && allowDemoFallback ? getDemoCompanyDetail(id) : null
+
+  if (!detailResult.ok && !demoDetail) {
     return <DetailErrorCard reason={detailResult.reason} />
   }
 
-  const company = detailResult.data
+  const company = detailResult.ok ? detailResult.data : demoDetail
+  if (!company) {
+    return <DetailErrorCard reason="error" />
+  }
   const profile = company.factoryProfile
   const accountType = session?.user.accountType ?? null
   const showQuoteCta = accountType === 'client'

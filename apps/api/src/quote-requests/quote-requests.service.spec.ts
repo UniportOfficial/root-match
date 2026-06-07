@@ -129,7 +129,7 @@ describe('QuoteRequestsService', () => {
   });
 
   describe('get()', () => {
-    it('returns the record with empty recommendations and skips Company lookup', async () => {
+    it('returns empty recommendations and uses nested factory include (no extra Company query)', async () => {
       const record = { ...makeRecord(), recommendations: [] };
       prisma.quoteRequest.findUnique.mockResolvedValue(record);
 
@@ -137,41 +137,45 @@ describe('QuoteRequestsService', () => {
 
       expect(prisma.quoteRequest.findUnique).toHaveBeenCalledWith({
         where: { id: 'qr-test' },
-        include: { recommendations: { orderBy: { score: 'desc' } } },
+        include: {
+          recommendations: {
+            orderBy: { score: 'desc' },
+            include: {
+              factory: {
+                select: { id: true, name: true, region: true, industry: true },
+              },
+            },
+          },
+        },
       });
       expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(result).toEqual({ ...record, recommendations: [] });
     });
 
-    it('attaches Company info to each recommendation by factoryId', async () => {
+    it('maps the relation-loaded factory into the company field', async () => {
       const recommendation = makeRecommendation({ factoryId: 'factory-a' });
+      const company = makeCompany({ id: 'factory-a' });
       const record = {
         ...makeRecord(),
-        recommendations: [recommendation],
+        recommendations: [{ ...recommendation, factory: company }],
       };
-      const company = makeCompany({ id: 'factory-a' });
       prisma.quoteRequest.findUnique.mockResolvedValue(record);
-      prisma.company.findMany.mockResolvedValue([company]);
 
       const result = await service.get('user-owner', 'qr-test');
 
-      expect(prisma.company.findMany).toHaveBeenCalledWith({
-        where: { id: { in: ['factory-a'] } },
-        select: { id: true, name: true, region: true, industry: true },
-      });
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(result.recommendations).toEqual([{ ...recommendation, company }]);
     });
 
-    it('attaches company=null when factory is not found in the Company table', async () => {
+    it('maps factory=null (FK was removed before read race) to company=null', async () => {
       const recommendation = makeRecommendation({
         factoryId: 'factory-missing',
       });
       const record = {
         ...makeRecord(),
-        recommendations: [recommendation],
+        recommendations: [{ ...recommendation, factory: null }],
       };
       prisma.quoteRequest.findUnique.mockResolvedValue(record);
-      prisma.company.findMany.mockResolvedValue([]);
 
       const result = await service.get('user-owner', 'qr-test');
 
@@ -180,26 +184,31 @@ describe('QuoteRequestsService', () => {
       ]);
     });
 
-    it('batches Company lookup with a single findMany call (N+1 prevention)', async () => {
+    it('preserves recommendation order and forwards factory metadata for each row', async () => {
       const recommendations = [
-        makeRecommendation({ id: 'rec-a', factoryId: 'factory-a' }),
-        makeRecommendation({ id: 'rec-b', factoryId: 'factory-b' }),
-        makeRecommendation({ id: 'rec-c', factoryId: 'factory-c' }),
+        {
+          ...makeRecommendation({ id: 'rec-a', factoryId: 'factory-a' }),
+          factory: makeCompany({ id: 'factory-a', name: 'Alpha' }),
+        },
+        {
+          ...makeRecommendation({ id: 'rec-b', factoryId: 'factory-b' }),
+          factory: makeCompany({
+            id: 'factory-b',
+            name: 'Beta',
+            region: null,
+          }),
+        },
+        {
+          ...makeRecommendation({ id: 'rec-c', factoryId: 'factory-c' }),
+          factory: null,
+        },
       ];
       const record = { ...makeRecord(), recommendations };
       prisma.quoteRequest.findUnique.mockResolvedValue(record);
-      prisma.company.findMany.mockResolvedValue([
-        makeCompany({ id: 'factory-a', name: 'Alpha' }),
-        makeCompany({ id: 'factory-b', name: 'Beta', region: null }),
-      ]);
 
       const result = await service.get('user-owner', 'qr-test');
 
-      expect(prisma.company.findMany).toHaveBeenCalledTimes(1);
-      expect(prisma.company.findMany).toHaveBeenCalledWith({
-        where: { id: { in: ['factory-a', 'factory-b', 'factory-c'] } },
-        select: { id: true, name: true, region: true, industry: true },
-      });
+      expect(prisma.company.findMany).not.toHaveBeenCalled();
       expect(result.recommendations).toHaveLength(3);
       expect(result.recommendations[0]?.company?.name).toBe('Alpha');
       expect(result.recommendations[1]?.company?.name).toBe('Beta');

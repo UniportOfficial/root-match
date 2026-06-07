@@ -172,7 +172,8 @@ model Company {
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  factoryProfile FactoryProfile?
+  factoryProfile       FactoryProfile?
+  matchRecommendations MatchRecommendation[]
 
   // Composite index supports Phase 4 pre-filter (region + process_hint exact → top 20).
   @@index([region, processHint])
@@ -292,9 +293,12 @@ model MatchRecommendation {
   createdAt      DateTime       @default(now()) @map("created_at")
 
   quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  // Restrict prevents accidental Company deletion from silently erasing audit/history rows.
+  factory      Company      @relation(fields: [factoryId], references: [id], onDelete: Restrict)
 
   @@unique([quoteRequestId, factoryId, source])
   @@index([quoteRequestId])
+  @@index([factoryId])
   @@map("match_recommendations")
 }
 

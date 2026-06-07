@@ -18,6 +18,7 @@ import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MatchingModule } from './matching/matching.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 import { UsersModule } from './users/users.module';
 
 const ZodValidationPipe = createZodValidationPipe({
@@ -139,6 +140,7 @@ function requestPath(context: ExecutionContext): string {
     UsersModule,
     CompaniesModule,
     ContractsModule,
+    QuoteRequestsModule,
     HealthModule,
   ],
   controllers: [AppController],

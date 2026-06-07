@@ -107,7 +107,7 @@ export default function TransactionReviewPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
-              <div className="flex gap-2" onMouseLeave={() => setHoverRating(0)}>
+              <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((index) => (
                   <button
                     key={index}
@@ -115,6 +115,8 @@ export default function TransactionReviewPage() {
                     aria-label={`${index}점 선택`}
                     onClick={() => setRating(index)}
                     onMouseEnter={() => setHoverRating(index)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onBlur={() => setHoverRating(0)}
                     className="rounded-xl p-1 transition hover:bg-warning-bg focus:outline-none focus:ring-4 focus:ring-ring/20"
                   >
                     <Star

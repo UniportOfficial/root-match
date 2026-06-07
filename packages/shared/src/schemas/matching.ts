@@ -10,6 +10,8 @@ export const QuoteRequestDraftSchema = z
     desiredDeadline: z.string().min(1, '희망 납기를 입력하세요.'),
     budgetRange: z.string().min(1, '예산 범위를 입력하세요.'),
     detailRequirements: z.string().min(1, '상세 요구사항을 입력하세요.'),
+    quoteRequestId: z.string().optional(),
+    region: z.string().min(1).optional(),
   })
   .meta({ id: 'QuoteRequestDraft' })
 

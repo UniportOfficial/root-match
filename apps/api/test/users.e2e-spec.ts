@@ -1,5 +1,3 @@
-import { execFileSync } from 'child_process';
-import { join } from 'path';
 import { INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -10,31 +8,13 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { auth } from '../src/auth/auth.config';
+import { prisma } from '../src/prisma/prisma.client';
 
-const apiRoot = join(__dirname, '..');
 const seedEmail = 'hong@techsolution.co.kr';
 const seedPassword = 'TempPass!2026';
+const seedOriginalName = '홍길동';
 
 jest.setTimeout(60_000);
-
-function runPrisma(args: string[]): void {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      execFileSync('pnpm', ['exec', 'prisma', ...args], {
-        // NOSONAR S4036 — trusted CI dev command, args are constant string literals
-        cwd: apiRoot,
-        stdio: 'inherit',
-        env: process.env,
-      });
-      return;
-    } catch (error) {
-      if (attempt === 3) {
-        throw error;
-      }
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2_000);
-    }
-  }
-}
 
 function extractSessionCookie(response: request.Response): string {
   const rawSetCookie = response.headers['set-cookie'];
@@ -66,9 +46,7 @@ describe('Users e2e (W2-5)', () => {
   let sessionCookie = '';
 
   beforeAll(async () => {
-    runPrisma(['migrate', 'reset', '--force', '--skip-seed']);
-    runPrisma(['db', 'seed']);
-
+    // Schema + seed are provisioned by jest-e2e.globalSetup.ts once per run.
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -95,6 +73,16 @@ describe('Users e2e (W2-5)', () => {
   });
 
   afterAll(async () => {
+    // Restore mutated seed user name so subsequent suites within the same run
+    // (or later runs reading existing data) see canonical seed state.
+    try {
+      await prisma.user.update({
+        where: { email: seedEmail },
+        data: { name: seedOriginalName },
+      });
+    } catch {
+      // best-effort; non-fatal if user was already cleaned up
+    }
     await app?.close();
   });
 

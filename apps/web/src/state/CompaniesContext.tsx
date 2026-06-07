@@ -3,18 +3,26 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
   type Dispatch,
   type ReactNode,
 } from 'react'
 import type { Company, CompanyFilter } from '@rootmatching/shared'
-import { mockCompanies } from '@/data/companies'
+import { fetchCompanies } from '@/lib/companies-api'
+import { getDemoCompanies } from '@/lib/demo-companies'
+import { isDemoFallbackEnabled } from '@/lib/demo-policy'
+import { useUserState } from '@/state/UserContext'
+
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 interface CompaniesState {
   companies: Company[]
   filter: CompanyFilter
   favorites: string[]
+  status: LoadStatus
+  error: string | null
 }
 
 type CompaniesAction =
@@ -22,13 +30,18 @@ type CompaniesAction =
   | { type: 'companies/clearFilter' }
   | { type: 'companies/toggleFavorite'; payload: string }
   | { type: 'companies/updateCompany'; payload: Company }
+  | { type: 'companies/loadStart' }
+  | { type: 'companies/loadSuccess'; payload: Company[] }
+  | { type: 'companies/loadError'; payload: string }
 
 const emptyFilter: CompanyFilter = { keyword: '', industry: '', region: '', size: '' }
 
 const initialState: CompaniesState = {
-  companies: mockCompanies,
+  companies: [],
   filter: emptyFilter,
   favorites: [],
+  status: 'idle',
+  error: null,
 }
 
 function reducer(state: CompaniesState, action: CompaniesAction): CompaniesState {
@@ -51,6 +64,17 @@ function reducer(state: CompaniesState, action: CompaniesAction): CompaniesState
           company.id === action.payload.id ? action.payload : company,
         ),
       }
+    case 'companies/loadStart':
+      return { ...state, status: 'loading', error: null }
+    case 'companies/loadSuccess':
+      return {
+        ...state,
+        companies: action.payload,
+        status: 'ready',
+        error: null,
+      }
+    case 'companies/loadError':
+      return { ...state, status: 'error', error: action.payload }
     default:
       return state
   }
@@ -59,8 +83,37 @@ function reducer(state: CompaniesState, action: CompaniesAction): CompaniesState
 const StateContext = createContext<CompaniesState | undefined>(undefined)
 const DispatchContext = createContext<Dispatch<CompaniesAction> | undefined>(undefined)
 
+const INITIAL_LIMIT = 100
+
 export function CompaniesProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const { isAuthenticated } = useUserState()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch({ type: 'companies/loadSuccess', payload: [] })
+      return
+    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+    let cancelled = false
+    dispatch({ type: 'companies/loadStart' })
+    fetchCompanies(apiUrl, { limit: INITIAL_LIMIT }).then((result) => {
+      if (cancelled) return
+      if (result.ok) {
+        dispatch({ type: 'companies/loadSuccess', payload: result.data.items })
+      } else if (isDemoFallbackEnabled()) {
+        dispatch({ type: 'companies/loadSuccess', payload: getDemoCompanies() })
+      } else if (result.message === 'unauthenticated') {
+        dispatch({ type: 'companies/loadSuccess', payload: [] })
+      } else {
+        dispatch({ type: 'companies/loadError', payload: result.message })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated])
+
   return (
     <StateContext.Provider value={state}>
       <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>

@@ -10,7 +10,6 @@ import {
 } from 'react'
 import type { Company, User } from '@rootmatching/shared'
 import { authClient } from '@/lib/auth-client'
-import { mockCompanies } from '@/data/companies'
 
 interface UserState {
   currentUser: User | null
@@ -51,25 +50,79 @@ function reducer(state: UserState, action: UserAction): UserState {
 const StateContext = createContext<UserState | undefined>(undefined)
 const DispatchContext = createContext<Dispatch<UserAction> | undefined>(undefined)
 
-// Map a Better Auth session.user → local UI User shape.
-// W2-5 will fetch real Company via /companies; for now we fall back to the
-// first mock company so existing UI surfaces (AppHeader, dashboard, contract,
-// mypage, companies/[id]) keep rendering.
-function sessionUserToLocalUser(sessionUser: {
+interface BackendCompany {
   id: string
-  email: string
+  userId: string
   name: string
-  image?: string | null
-  role: string
-  accountType: string
-}): User | null {
-  const fallbackCompany = mockCompanies[0]
-  if (!fallbackCompany) return null
+  industry: string | null
+  region: string | null
+  size: string | null
+  description: string | null
+  contactEmail: string | null
+  contactPhone: string | null
+  website: string | null
+  establishedYear: number | null
+  employeeCount: number | null
+  revenue: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+function backendCompanyToShared(be: BackendCompany): Company {
+  return {
+    id: be.id,
+    name: be.name,
+    industry: be.industry ?? '',
+    region: be.region ?? '',
+    size: be.size ?? '',
+    description: be.description ?? '',
+    contactEmail: be.contactEmail ?? '',
+    contactPhone: be.contactPhone ?? '',
+    website: be.website ?? '',
+    establishedYear: be.establishedYear ?? 0,
+    employeeCount: be.employeeCount ?? 0,
+    revenue: be.revenue ?? '',
+    certifications: [],
+    tags: [],
+    createdAt: be.createdAt,
+  }
+}
+
+async function fetchMyCompany(): Promise<Company | null> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  try {
+    const response = await fetch(`${apiUrl}/companies/me`, {
+      credentials: 'include',
+    })
+    if (response.status === 404) return null
+    if (!response.ok) {
+      console.warn('Failed to load company: HTTP', response.status)
+      return null
+    }
+    const data = (await response.json()) as BackendCompany
+    return backendCompanyToShared(data)
+  } catch (error) {
+    console.warn('Failed to load company: network error', error)
+    return null
+  }
+}
+
+function sessionUserToLocalUser(
+  sessionUser: {
+    id: string
+    email: string
+    name: string
+    image?: string | null
+    role: string
+    accountType: string
+  },
+  company: Company | null,
+): User {
   return {
     id: sessionUser.id,
     email: sessionUser.email,
     name: sessionUser.name,
-    company: fallbackCompany,
+    company,
     role: (sessionUser.role as User['role']) ?? 'member',
     accountType: (sessionUser.accountType as User['accountType']) ?? 'client',
     ...(sessionUser.image ? { avatar: sessionUser.image } : {}),
@@ -82,13 +135,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (session.isPending) return
-    if (session.data?.user) {
-      const localUser = sessionUserToLocalUser(session.data.user)
-      if (localUser) {
-        dispatch({ type: 'user/login', payload: localUser })
-      }
-    } else {
+    const sessionUser = session.data?.user
+    if (!sessionUser) {
       dispatch({ type: 'user/logout' })
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      const company = await fetchMyCompany()
+      if (cancelled) return
+      const localUser = sessionUserToLocalUser(sessionUser, company)
+      dispatch({ type: 'user/login', payload: localUser })
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [session.isPending, session.data?.user])
 

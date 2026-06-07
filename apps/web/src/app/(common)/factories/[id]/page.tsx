@@ -1,8 +1,6 @@
-'use client'
-
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { headers } from 'next/headers'
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,20 +16,59 @@ import {
   Star,
   TrendingUp,
 } from 'lucide-react'
-import {
-  mockDefaultFactoryDetail,
-  mockFactoryDetails,
-} from '@rootmatching/shared/fixtures/factory-data'
-import { AppBadge } from '@/components/ui/AppBadge'
+import type { CompanyFactoryProfile, CompanyDetail } from '@rootmatching/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/cn'
+import { getServerSession } from '@/lib/auth-server'
+import { fetchCompanyDetailServer } from '@/lib/companies-api'
+import { getDemoCompanyDetail } from '@/lib/demo-companies'
+import { isDemoFallbackEnabled, isDemoModeSearch } from '@/lib/demo-policy'
 
-export default function FactoryDetailPage() {
-  const params = useParams<{ id: string }>()
-  const factory = mockFactoryDetails[params.id] ?? mockDefaultFactoryDetail
+const EMPTY_LIST_PLACEHOLDER = '정보가 곧 추가됩니다.'
+const EMPTY_PORTFOLIO_MESSAGE = '포트폴리오 정보가 곧 추가됩니다.'
+const EMPTY_REVIEWS_MESSAGE = '리뷰 정보가 곧 추가됩니다.'
+const HERO_FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=1600&h=600&fit=crop'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function FactoryDetailPage({ params, searchParams }: PageProps) {
+  const { id } = await params
+  const resolvedSearchParams = await searchParams
+  const requestHeaders = await headers()
+  const cookieHeader = requestHeaders.get('cookie') ?? ''
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  const demoSearch = new URLSearchParams()
+  const demoParam = resolvedSearchParams?.demo
+  if (typeof demoParam === 'string') demoSearch.set('demo', demoParam)
+  const allowDemoFallback = isDemoFallbackEnabled() || isDemoModeSearch(demoSearch)
+
+  const [detailResult, session] = await Promise.all([
+    fetchCompanyDetailServer(apiUrl, id, cookieHeader),
+    getServerSession(),
+  ])
+
+  const demoDetail = !detailResult.ok && allowDemoFallback ? getDemoCompanyDetail(id) : null
+
+  if (!detailResult.ok && !demoDetail) {
+    return <DetailErrorCard reason={detailResult.reason} />
+  }
+
+  const company = detailResult.ok ? detailResult.data : demoDetail
+  if (!company) {
+    return <DetailErrorCard reason="error" />
+  }
+  const profile = company.factoryProfile
+  const accountType = session?.user.accountType ?? null
+  const showQuoteCta = accountType === 'client'
+  const displayLocation = profile?.location ?? company.address ?? company.region ?? '위치 정보 미상'
+  const headline = buildHeadline(company)
+  const verified = profile?.verified ?? false
 
   return (
     <div className="bg-background">
@@ -46,91 +83,111 @@ export default function FactoryDetailPage() {
 
         <Card className="overflow-hidden border-border bg-card shadow-ct-soft">
           <div className="h-48 w-full overflow-hidden bg-surface-muted">
-            <img src={factory.image} alt={factory.name} className="h-full w-full object-cover" />
+            <img
+              src={HERO_FALLBACK_IMAGE}
+              alt={`${company.name} 대표 이미지`}
+              className="h-full w-full object-cover"
+            />
           </div>
           <CardContent className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between lg:p-8">
             <div>
-              {factory.verified && (
+              {(verified || company.confidenceTier) && (
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="success" className="text-kr-keep">
-                    <ShieldCheck className="h-4 w-4" />
-                    인증 공장
-                  </Badge>
-                  <AppBadge variant="green">
-                    <ShieldCheck className="h-4 w-4" />
-                    인증 공장
-                  </AppBadge>
+                  {verified && (
+                    <Badge variant="success" className="text-kr-keep">
+                      <ShieldCheck className="h-4 w-4" />
+                      인증 공장
+                    </Badge>
+                  )}
+                  {company.confidenceTier && (
+                    <Badge variant="info" className="text-kr-keep">
+                      {formatConfidenceTier(company.confidenceTier)}
+                    </Badge>
+                  )}
                 </div>
               )}
               <h1 className="text-kr-pretty mt-4 text-[24px] font-bold text-foreground sm:text-[28px]">
-                {factory.name}
+                {company.name}
               </h1>
               <p className="text-kr-keep mt-2 inline-flex items-center gap-2 text-base text-foreground/80">
                 <MapPin className="h-4 w-4 text-ink-400" />
-                {factory.location}
+                {displayLocation}
               </p>
-              <div className="mt-3 inline-flex items-center gap-2 text-base font-bold text-ink-950">
-                <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                {factory.trustScore} / 5.0
-              </div>
+              {headline && (
+                <p className="text-kr-pretty mt-2 text-sm text-muted-foreground">{headline}</p>
+              )}
+              {profile && (
+                <div className="mt-3 inline-flex items-center gap-2 text-base font-bold text-ink-950">
+                  <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                  {formatTrustScore(profile)}
+                </div>
+              )}
             </div>
-            <Button asChild>
-              <Link href={`/factory/requests/${factory.id}`}>
-                견적 요청하기
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+            {showQuoteCta && (
+              <Button asChild>
+                <Link href={`/factory/requests/${company.id}`}>
+                  견적 요청하기
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
 
-        <section className="my-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <KpiCard
-            icon={<Clock className="h-5 w-5" />}
-            label="납기 준수율"
-            value={`${factory.kpi.deliveryRate}%`}
-          />
-          <KpiCard
-            icon={<Award className="h-5 w-5" />}
-            label="품질 만족도"
-            value={`${factory.kpi.qualitySatisfaction} / 5.0`}
-          />
-          <KpiCard
-            icon={<TrendingUp className="h-5 w-5" />}
-            label="재거래율"
-            value={`${factory.kpi.reorderRate}%`}
-          />
-          <KpiCard
-            icon={<CheckCircle className="h-5 w-5" />}
-            label="평균 응답 시간"
-            value={factory.kpi.avgResponseTime}
-          />
-        </section>
+        {profile && (
+          <section className="my-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <KpiCard
+              icon={<Clock className="h-5 w-5" />}
+              label="납기 준수율"
+              value={`${profile.deliveryRate}%`}
+            />
+            <KpiCard
+              icon={<Award className="h-5 w-5" />}
+              label="품질 만족도"
+              value={formatQualityValue(profile)}
+            />
+            <KpiCard
+              icon={<TrendingUp className="h-5 w-5" />}
+              label="재거래율"
+              value={`${profile.reorderRate}%`}
+            />
+            <KpiCard
+              icon={<CheckCircle className="h-5 w-5" />}
+              label="평균 응답 시간"
+              value={profile.avgResponseTime ?? '정보 준비 중'}
+            />
+          </section>
+        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
           <main className="space-y-6">
             <DetailCard icon={<Factory className="h-5 w-5" />} title="전문 공정">
-              <ChipList items={factory.specialty} />
+              <ChipListOrEmpty items={profile?.specialty ?? []} />
             </DetailCard>
 
             <DetailCard icon={<Building2 className="h-5 w-5" />} title="보유 설비">
-              <ChipList items={factory.equipment} />
+              <ChipListOrEmpty items={profile?.equipment ?? []} />
             </DetailCard>
 
             <DetailCard icon={<Package className="h-5 w-5" />} title="주요 생산 품목">
-              <ChipList items={factory.products} />
+              <ChipListOrEmpty items={profile?.products ?? []} />
             </DetailCard>
 
             <DetailCard icon={<TrendingUp className="h-5 w-5" />} title="월 생산량">
               <div className="rounded-2xl bg-surface-muted p-5">
-                <p className="text-3xl font-black text-ink-950">{factory.monthlyCapacity}</p>
-                <p className="mt-2 text-sm font-semibold text-ink-400">
-                  프로젝트 규모에 따라 생산 라인 증설과 협력 공장 연계가 가능합니다.
+                <p className="text-3xl font-black text-ink-950">
+                  {profile?.monthlyCapacity ?? EMPTY_LIST_PLACEHOLDER}
                 </p>
+                {profile?.monthlyCapacity && (
+                  <p className="mt-2 text-sm font-semibold text-ink-400">
+                    프로젝트 규모에 따라 생산 라인 증설과 협력 공장 연계가 가능합니다.
+                  </p>
+                )}
               </div>
             </DetailCard>
 
             <DetailCard icon={<Award className="h-5 w-5" />} title="주요 고객사">
-              <ChipList items={factory.clients} />
+              <ChipListOrEmpty items={profile?.clients ?? []} />
             </DetailCard>
           </main>
 
@@ -145,44 +202,53 @@ export default function FactoryDetailPage() {
                 <QuickInfo
                   icon={<MapPin className="h-4 w-4" />}
                   label="위치"
-                  value={factory.location}
+                  value={displayLocation}
                 />
                 <QuickInfo
                   icon={<Factory className="h-4 w-4" />}
                   label="전문 공정"
-                  value={factory.specialty.join(', ')}
+                  value={joinOrPlaceholder(profile?.specialty)}
                 />
                 <QuickInfo
                   icon={<Package className="h-4 w-4" />}
                   label="생산 품목"
-                  value={factory.products.join(', ')}
+                  value={joinOrPlaceholder(profile?.products)}
                 />
                 <QuickInfo
                   icon={<Clock className="h-4 w-4" />}
                   label="응답 시간"
-                  value={factory.kpi.avgResponseTime}
+                  value={profile?.avgResponseTime ?? EMPTY_LIST_PLACEHOLDER}
                 />
+                {company.representative && (
+                  <QuickInfo
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    label="대표자"
+                    value={company.representative}
+                  />
+                )}
               </CardContent>
             </Card>
 
-            <Card className="border-border bg-ink-950 text-white shadow-ct-soft">
-              <CardContent className="p-6">
-                <ShieldCheck className="h-10 w-10 text-brand-light" />
-                <h2 className="text-kr-pretty mt-4 text-[18px] font-bold sm:text-[20px]">
-                  이 공장에 견적을 요청해보세요
-                </h2>
-                <p className="text-kr-pretty mt-2 text-sm leading-6 text-white/70">
-                  도면과 수량을 공유하면 생산 가능 여부와 예상 단가를 빠르게 확인할 수 있습니다.
-                </p>
-                <Separator className="my-4 bg-white/20" />
-                <Button asChild fullWidth className="mt-5">
-                  <Link href={`/factory/requests/${factory.id}`}>
-                    견적 요청하기
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            {showQuoteCta && (
+              <Card className="border-border bg-ink-950 text-white shadow-ct-soft">
+                <CardContent className="p-6">
+                  <ShieldCheck className="h-10 w-10 text-brand-light" />
+                  <h2 className="text-kr-pretty mt-4 text-[18px] font-bold sm:text-[20px]">
+                    이 공장에 견적을 요청해보세요
+                  </h2>
+                  <p className="text-kr-pretty mt-2 text-sm leading-6 text-white/70">
+                    도면과 수량을 공유하면 생산 가능 여부와 예상 단가를 빠르게 확인할 수 있습니다.
+                  </p>
+                  <Separator className="my-4 bg-white/20" />
+                  <Button asChild fullWidth className="mt-5">
+                    <Link href={`/factory/requests/${company.id}`}>
+                      견적 요청하기
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </aside>
         </div>
 
@@ -196,23 +262,7 @@ export default function FactoryDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {factory.portfolio.map((item) => (
-                <article
-                  key={item.id}
-                  className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
-                >
-                  <img src={item.image} alt={item.title} className="h-40 w-full object-cover" />
-                  <div className="p-4">
-                    <h3 className="text-kr-pretty font-bold text-foreground">{item.title}</h3>
-                    <p className="text-kr-keep mt-2 text-sm font-semibold text-brand">
-                      {item.process}
-                    </p>
-                    <p className="text-kr-keep mt-1 text-sm text-muted-foreground">{item.period}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <EmptyStatePanel message={EMPTY_PORTFOLIO_MESSAGE} />
           </CardContent>
         </Card>
 
@@ -226,40 +276,44 @@ export default function FactoryDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {factory.reviews.length > 0 ? (
-              <div className="space-y-4">
-                {factory.reviews.map((review) => (
-                  <article key={review.id} className="rounded-2xl bg-surface-muted p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <StarRating value={review.rating} />
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <h3 className="text-kr-keep font-bold text-foreground">
-                            {review.author}
-                          </h3>
-                          <span className="text-kr-keep text-sm font-semibold text-muted-foreground">
-                            {review.company}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-kr-keep text-sm font-semibold text-muted-foreground">
-                        {review.date}
-                      </span>
-                    </div>
-                    <p className="text-kr-pretty mt-4 leading-7 text-foreground/80">
-                      {review.content}
-                    </p>
-                    <p className="text-kr-keep mt-3 text-sm font-bold text-brand">
-                      {review.product}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl bg-surface-muted p-8 text-center text-sm font-semibold text-ink-400">
-                아직 리뷰가 없습니다.
-              </div>
-            )}
+            <EmptyStatePanel message={EMPTY_REVIEWS_MESSAGE} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function DetailErrorCard({ reason }: { reason: 'unauthenticated' | 'not-found' | 'error' }) {
+  const message =
+    reason === 'unauthenticated'
+      ? '로그인이 필요한 페이지입니다. 다시 로그인한 후 시도해주세요.'
+      : reason === 'not-found'
+        ? '해당 기업 정보를 찾을 수 없습니다. 디렉토리로 돌아가 다른 기업을 확인해주세요.'
+        : '기업 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+
+  return (
+    <div className="bg-background">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        <Link
+          href="/companies"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-ink-700 hover:text-brand"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          기업 디렉토리로
+        </Link>
+        <Card className="border-border bg-card shadow-ct-soft">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-kr-pretty text-[20px] font-bold text-foreground sm:text-[22px]">
+              정보 없음
+            </h1>
+            <p className="text-kr-pretty mt-3 text-base text-muted-foreground">{message}</p>
+            <Button asChild className="mt-6">
+              <Link href="/companies">
+                기업 디렉토리로 돌아가기
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -311,21 +365,22 @@ function QuickInfo({ icon, label, value }: { icon: ReactNode; label: string; val
   )
 }
 
-function ChipList({ items }: { items: string[] }) {
+function ChipListOrEmpty({ items }: { items: string[] }) {
+  if (items.length === 0) {
+    return (
+      <p className="text-kr-keep text-sm font-semibold text-muted-foreground">
+        {EMPTY_LIST_PLACEHOLDER}
+      </p>
+    )
+  }
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <Chip key={item}>{item}</Chip>
+        <Badge key={item} variant="info" className="text-kr-keep">
+          {item}
+        </Badge>
       ))}
     </div>
-  )
-}
-
-function Chip({ children }: { children: ReactNode }) {
-  return (
-    <Badge variant="info" className="text-kr-keep">
-      {children}
-    </Badge>
   )
 }
 
@@ -343,15 +398,49 @@ function KpiCard({ icon, label, value }: { icon: ReactNode; label: string; value
   )
 }
 
-function StarRating({ value }: { value: number }) {
+function EmptyStatePanel({ message }: { message: string }) {
   return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={cn('h-4 w-4', i < value ? 'fill-amber-400 text-amber-400' : 'text-ink-400')}
-        />
-      ))}
+    <div className="rounded-2xl bg-surface-muted p-8 text-center text-sm font-semibold text-ink-400">
+      {message}
     </div>
   )
+}
+
+function buildHeadline(company: CompanyDetail): string | null {
+  const parts: string[] = []
+  if (company.processHint) parts.push(company.processHint)
+  if (company.industry) parts.push(company.industry)
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+function formatTrustScore(profile: CompanyFactoryProfile): string {
+  if (!profile.isSynthesized && profile.qualitySatisfaction != null) {
+    return `${profile.qualitySatisfaction.toFixed(1)} / 5.0`
+  }
+  return `${profile.trustScore} / 100`
+}
+
+function formatQualityValue(profile: CompanyFactoryProfile): string {
+  if (!profile.isSynthesized && profile.qualitySatisfaction != null) {
+    return `${profile.qualitySatisfaction.toFixed(1)} / 5.0`
+  }
+  return `${profile.qualityScore} / 100`
+}
+
+function joinOrPlaceholder(items: string[] | undefined): string {
+  if (!items || items.length === 0) return EMPTY_LIST_PLACEHOLDER
+  return items.join(', ')
+}
+
+function formatConfidenceTier(tier: NonNullable<CompanyDetail['confidenceTier']>): string {
+  switch (tier) {
+    case 'A_CERTIFIED_ROOT':
+      return '인증 뿌리기업'
+    case 'B_LOCAL_STRONG_INSIDE':
+      return '산업단지 검증 기업'
+    case 'C_BORDERLINE_INSIDE':
+      return '검증 후보 기업'
+    case 'D_LOW_CONFIDENCE':
+      return '디렉토리 등록 기업'
+  }
 }

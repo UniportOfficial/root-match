@@ -8,6 +8,11 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { auth } from '../src/auth/auth.config';
+import { captureRawBodyForWebhooks } from '../src/bootstrap';
+import {
+  CONTRACT_GATEWAY,
+  type ContractGateway,
+} from '../src/contracts/gateway/contract-gateway.interface';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 const SEED_PASSWORD = 'TempPass!2026';
@@ -81,7 +86,40 @@ describe('Contracts e2e (STEP 6)', () => {
   let prisma: PrismaService;
   let clientUserId: string;
 
+  async function createDraft(
+    sessionCookie: string,
+    title: string,
+  ): Promise<request.Response> {
+    return request(app.getHttpServer())
+      .post('/contracts')
+      .set('Cookie', sessionCookie)
+      .send(buildCreateContractBody(title))
+      .expect(201);
+  }
+
+  async function sendContract(
+    sessionCookie: string,
+    contractId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<request.Response> {
+    return request(app.getHttpServer())
+      .post(`/contracts/${contractId}/send`)
+      .set('Cookie', sessionCookie)
+      .send(body)
+      .expect(201);
+  }
+
+  async function createAndSend(
+    sessionCookie: string,
+    title: string,
+  ): Promise<request.Response> {
+    const created = await createDraft(sessionCookie, title);
+    return sendContract(sessionCookie, created.body.id);
+  }
+
   beforeAll(async () => {
+    process.env.CONTRACT_GATEWAY = 'mock';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -95,7 +133,7 @@ describe('Contracts e2e (STEP 6)', () => {
       .getHttpAdapter()
       .getInstance();
     expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
-    app.use(json({ limit: '10mb' }));
+    app.use(json({ limit: '10mb', verify: captureRawBodyForWebhooks }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
     await app.init();
 
@@ -122,25 +160,22 @@ describe('Contracts e2e (STEP 6)', () => {
     await app?.close();
   });
 
-  it('POST /contracts persists a Contract row with participants via the mock gateway', async () => {
+  it('POST /contracts persists a Contract row as draft via the mock gateway', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
 
-    const response = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — mock create'))
-      .expect(201);
+    const response = await createDraft(sessionCookie, 'STEP 6 — draft create');
 
     expect(response.body).toMatchObject({
       ownerUserId: clientUserId,
-      title: 'STEP 6 — mock create',
-      status: 'pending',
+      title: 'STEP 6 — draft create',
+      status: 'draft',
       ucansignTemplateId: 'tmpl_e2e_mock',
       quoteRequestId: 'qr_e2e_mock',
       acceptedQuoteId: 'q_e2e_mock',
     });
     expect(typeof response.body.id).toBe('string');
-    expect(response.body.ucansignDocumentId).toMatch(/^mock-doc-/);
+    expect(response.body.ucansignDocumentId).toBeNull();
+    expect(response.body.sentAt).toBeNull();
     expect(Array.isArray(response.body.participants)).toBe(true);
     expect(response.body.participants).toHaveLength(2);
     expect(response.body.participants[0]).toMatchObject({
@@ -160,7 +195,9 @@ describe('Contracts e2e (STEP 6)', () => {
       where: { id: response.body.id },
       include: { participants: true },
     });
-    expect(persisted?.status).toBe('pending');
+    expect(persisted?.status).toBe('draft');
+    expect(persisted?.ucansignDocumentId).toBeNull();
+    expect(persisted?.sentAt).toBeNull();
     expect(persisted?.participants).toHaveLength(2);
   });
 
@@ -176,17 +213,12 @@ describe('Contracts e2e (STEP 6)', () => {
     expect(response.body.length).toBeGreaterThan(0);
     expect(response.body[0]).toMatchObject({
       ownerUserId: clientUserId,
-      status: 'pending',
     });
   });
 
   it('GET /contracts/:id returns the contract with sorted participants', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — get one'))
-      .expect(201);
+    const created = await createDraft(sessionCookie, 'STEP 6 — get one');
 
     const detail = await request(app.getHttpServer())
       .get(`/contracts/${created.body.id}`)
@@ -199,32 +231,158 @@ describe('Contracts e2e (STEP 6)', () => {
     ).toEqual(['client', 'factory']);
   });
 
-  it('GET /contracts/:id/pdf returns the mock gateway signed URL', async () => {
+  it('POST /contracts/:id/send transitions a draft to pending with vendor document id', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
+    const draft = await createDraft(sessionCookie, 'STEP 6 — send draft');
+
+    const sent = await sendContract(sessionCookie, draft.body.id);
+
+    expect(sent.body).toMatchObject({
+      id: draft.body.id,
+      status: 'pending',
+    });
+    expect(sent.body.ucansignDocumentId).toMatch(/^mock-doc-/);
+    expect(typeof sent.body.sentAt).toBe('string');
+
+    const persisted = await prisma.contract.findUnique({
+      where: { id: draft.body.id },
+    });
+    expect(persisted?.status).toBe('pending');
+    expect(persisted?.ucansignDocumentId).toMatch(/^mock-doc-/);
+    expect(persisted?.sentAt).not.toBeNull();
+  });
+
+  it('POST /contracts/:id/send without resend on pending contract returns 409', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — send twice');
+
+    await request(app.getHttpServer())
+      .post(`/contracts/${sent.body.id}/send`)
       .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — pdf'))
-      .expect(201);
+      .send({})
+      .expect(409);
+  });
+
+  it('POST /contracts/:id/send with { resend: true } on pending contract returns 201 (reminder)', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — resend');
+    const originalDocId = sent.body.ucansignDocumentId;
+
+    const reminded = await sendContract(sessionCookie, sent.body.id, {
+      resend: true,
+    });
+
+    expect(reminded.body.status).toBe('pending');
+    expect(reminded.body.ucansignDocumentId).toBe(originalDocId);
+  });
+
+  it('POST /contracts/:id/send on completed contract returns 409', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — send completed');
+
+    await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send({
+        eventType: 'signing_completed_all',
+        documentId: sent.body.ucansignDocumentId,
+        customValue5: sent.body.id,
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/contracts/${sent.body.id}/send`)
+      .set('Cookie', sessionCookie)
+      .send({ resend: true })
+      .expect(409);
+  });
+
+  it('POST /contracts/:id/send without a session cookie returns 401', async () => {
+    await request(app.getHttpServer())
+      .post('/contracts/some-contract-id/send')
+      .send({})
+      .expect(401);
+  });
+
+  it('POST /contracts/:id/send with { resend: true } on in_progress contract returns 201 + actually invokes vendor reminder', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — in_progress reminder',
+    );
+
+    await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send({
+        eventType: 'signing_completed',
+        documentId: sent.body.ucansignDocumentId,
+        customValue5: sent.body.id,
+        participantId: 'mock-participant-1',
+        participantSigningOrder: 1,
+        participantName: '홍길동',
+      })
+      .expect(200);
+
+    const detail = await request(app.getHttpServer())
+      .get(`/contracts/${sent.body.id}`)
+      .set('Cookie', sessionCookie)
+      .expect(200);
+    expect(detail.body.status).toBe('in_progress');
+
+    const gateway = app.get<ContractGateway>(CONTRACT_GATEWAY);
+    const reminderSpy = jest.spyOn(gateway, 'requestReminder');
+
+    try {
+      const reminded = await sendContract(sessionCookie, sent.body.id, {
+        resend: true,
+      });
+
+      expect(reminded.body.status).toBe('in_progress');
+      expect(reminded.body.ucansignDocumentId).toBe(
+        sent.body.ucansignDocumentId,
+      );
+      expect(reminderSpy).toHaveBeenCalledWith(sent.body.ucansignDocumentId);
+    } finally {
+      reminderSpy.mockRestore();
+    }
+  });
+
+  it('POST /contracts/:id/send with { resend: true } on pending contract missing vendor document returns 404', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — missing vendor doc reminder',
+    );
+
+    await prisma.contract.update({
+      where: { id: sent.body.id },
+      data: { ucansignDocumentId: null },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/contracts/${sent.body.id}/send`)
+      .set('Cookie', sessionCookie)
+      .send({ resend: true })
+      .expect(404);
+  });
+
+  it('GET /contracts/:id/pdf returns the mock gateway signed URL after send', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — pdf');
 
     const pdf = await request(app.getHttpServer())
-      .get(`/contracts/${created.body.id}/pdf`)
+      .get(`/contracts/${sent.body.id}/pdf`)
       .set('Cookie', sessionCookie)
       .expect(200);
 
     expect(pdf.body.url).toMatch(/^https:\/\/mock\.rootmatching\.local\//);
   });
 
-  it('GET /contracts/:id/audit-trail returns the mock audit-trail URL with expiry', async () => {
+  it('GET /contracts/:id/audit-trail returns the mock audit-trail URL with expiry after send', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — audit-trail'))
-      .expect(201);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — audit-trail');
 
     const auditTrail = await request(app.getHttpServer())
-      .get(`/contracts/${created.body.id}/audit-trail`)
+      .get(`/contracts/${sent.body.id}/audit-trail`)
       .set('Cookie', sessionCookie)
       .expect(200);
 
@@ -236,14 +394,10 @@ describe('Contracts e2e (STEP 6)', () => {
 
   it('POST /contracts/:id/cancel transitions status to cancelled and persists reason', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — cancel'))
-      .expect(201);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — cancel');
 
     const cancelled = await request(app.getHttpServer())
-      .post(`/contracts/${created.body.id}/cancel`)
+      .post(`/contracts/${sent.body.id}/cancel`)
       .set('Cookie', sessionCookie)
       .send({ reason: 'e2e cancel reason' })
       .expect(201);
@@ -253,21 +407,17 @@ describe('Contracts e2e (STEP 6)', () => {
     expect(cancelled.body.cancelledAt).not.toBeNull();
 
     const persisted = await prisma.contract.findUnique({
-      where: { id: created.body.id },
+      where: { id: sent.body.id },
     });
     expect(persisted?.status).toBe('cancelled');
   });
 
-  it('GET /contracts/:id/embed/sign returns the mock sign-embedding URL with redirectUrl honored', async () => {
+  it('GET /contracts/:id/embed/sign returns the mock sign-embedding URL with redirectUrl honored after send', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — embed sign'))
-      .expect(201);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — embed sign');
 
     const embed = await request(app.getHttpServer())
-      .get(`/contracts/${created.body.id}/embed/sign`)
+      .get(`/contracts/${sent.body.id}/embed/sign`)
       .query({ redirectUrl: 'https://example.com/contracts/done' })
       .set('Cookie', sessionCookie)
       .expect(200);
@@ -280,16 +430,12 @@ describe('Contracts e2e (STEP 6)', () => {
     expect(typeof embed.body.expiresAt).toBe('string');
   });
 
-  it('GET /contracts/:id/embed/view returns the mock view-embedding URL', async () => {
+  it('GET /contracts/:id/embed/view returns the mock view-embedding URL after send', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — embed view'))
-      .expect(201);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — embed view');
 
     const embed = await request(app.getHttpServer())
-      .get(`/contracts/${created.body.id}/embed/view`)
+      .get(`/contracts/${sent.body.id}/embed/view`)
       .set('Cookie', sessionCookie)
       .expect(200);
 
@@ -302,28 +448,24 @@ describe('Contracts e2e (STEP 6)', () => {
 
   it('POST /webhooks/ucansign signing_completed_all marks the contract completed', async () => {
     const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
-    const created = await request(app.getHttpServer())
-      .post('/contracts')
-      .set('Cookie', sessionCookie)
-      .send(buildCreateContractBody('STEP 6 — webhook'))
-      .expect(201);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — webhook');
 
     const webhookResponse = await request(app.getHttpServer())
       .post('/webhooks/ucansign')
       .send({
         eventType: 'signing_completed_all',
-        documentId: created.body.ucansignDocumentId,
-        customValue5: created.body.id,
+        documentId: sent.body.ucansignDocumentId,
+        customValue5: sent.body.id,
       })
       .expect(200);
 
     expect(webhookResponse.body).toEqual({
       matched: true,
-      contractId: created.body.id,
+      contractId: sent.body.id,
     });
 
     const persisted = await prisma.contract.findUnique({
-      where: { id: created.body.id },
+      where: { id: sent.body.id },
       include: { participants: true },
     });
     expect(persisted?.status).toBe('completed');
@@ -344,6 +486,78 @@ describe('Contracts e2e (STEP 6)', () => {
       .expect(200);
 
     expect(webhookResponse.body).toEqual({ matched: false });
+  });
+
+  it('POST /webhooks/ucansign duplicate payload is idempotent (state mutates once)', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(
+      sessionCookie,
+      'STEP 6 — idempotent webhook',
+    );
+    const payload = {
+      eventType: 'signing_completed_all' as const,
+      documentId: sent.body.ucansignDocumentId,
+      customValue5: sent.body.id,
+    };
+
+    const first = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send(payload)
+      .expect(200);
+    expect(first.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const afterFirst = await prisma.contract.findUnique({
+      where: { id: sent.body.id },
+    });
+    const completedAtSnapshot = afterFirst?.completedAt?.toISOString();
+    expect(completedAtSnapshot).toBeDefined();
+
+    const second = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .send(payload)
+      .expect(200);
+    expect(second.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const afterSecond = await prisma.contract.findUnique({
+      where: { id: sent.body.id },
+    });
+    expect(afterSecond?.completedAt?.toISOString()).toBe(completedAtSnapshot);
+
+    const events = await prisma.webhookEvent.findMany({
+      where: { contractId: sent.body.id },
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.eventType).toBe('signing_completed_all');
+  });
+
+  it('POST /webhooks/ucansign accepts unquoted bigint documentId without precision loss', async () => {
+    const sessionCookie = await signIn(app, SEED_CLIENT_EMAIL);
+    const sent = await createAndSend(sessionCookie, 'STEP 6 — bigint webhook');
+
+    const bigVendorId = '9007199254740993';
+    const rawJson = `{"eventType":"signing_completed_all","documentId":${bigVendorId},"customValue5":"${sent.body.id}"}`;
+
+    const webhookResponse = await request(app.getHttpServer())
+      .post('/webhooks/ucansign')
+      .set('Content-Type', 'application/json')
+      .send(rawJson)
+      .expect(200);
+
+    expect(webhookResponse.body).toEqual({
+      matched: true,
+      contractId: sent.body.id,
+    });
+
+    const events = await prisma.webhookEvent.findMany({
+      where: { contractId: sent.body.id },
+    });
+    expect(events.some((e) => e.documentId === bigVendorId)).toBe(true);
   });
 
   it('GET /contracts/me without a session cookie returns 401', async () => {

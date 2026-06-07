@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
+  AlertCircle,
   CreditCard,
   FileSignature,
   Landmark,
@@ -12,12 +13,18 @@ import {
   WalletCards,
 } from 'lucide-react'
 import { CreateContractSchema, type CreateContractInput } from '@rootmatching/shared/schemas'
+import {
+  ParticipantContactCard,
+  type ParticipantContactValue,
+} from '@/components/contract/ParticipantContactCard'
+import { ContractStatusPanel } from '@/components/contract/ContractStatusPanel'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProcessStepper } from '@/components/ui/ProcessStepper'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { mapContractError } from '@/lib/contracts-api'
 import { useUserState } from '@/state/UserContext'
 import { useWorkflowDispatch, useWorkflowState } from '@/state/WorkflowContext'
 
@@ -50,29 +57,91 @@ const paymentMethods = [
   },
 ]
 
+const fallbackTransactionId = 'TXN-2026-018'
+const envExpiryMinutes = Number(process.env.NEXT_PUBLIC_CONTRACT_EXPIRY_MINUTES) || undefined
+
 export default function ContractPage() {
   const router = useRouter()
   const workflowState = useWorkflowState()
   const workflowDispatch = useWorkflowDispatch()
   const { currentUser, isAuthenticated } = useUserState()
-  const [paymentMethod, setPaymentMethod] = useState('escrow')
-
   const request = workflowState.matchingResults?.request
   const selectedFactory = workflowState.selectedFactory
+  const [paymentMethod, setPaymentMethod] = useState('escrow')
+  const clientDefault = useMemo<ParticipantContactValue>(
+    () => ({
+      name: currentUser?.name ?? '담당자',
+      email: currentUser?.email ?? '',
+      phone: currentUser?.phone ?? currentUser?.company?.contactPhone ?? '',
+    }),
+    [currentUser],
+  )
+  const factoryDefault = useMemo<ParticipantContactValue>(
+    () => ({
+      name: selectedFactory?.name ?? '',
+      email: selectedFactory?.contactEmail ?? '',
+      phone: selectedFactory?.contactPhone ?? '',
+    }),
+    [selectedFactory],
+  )
+  const [clientContact, setClientContact] = useState<ParticipantContactValue>(clientDefault)
+  const [factoryContact, setFactoryContact] = useState<ParticipantContactValue>(factoryDefault)
+  const clientHasOverrideRef = useRef(false)
+  const factoryHasOverrideRef = useRef(false)
+  const [clientContactValid, setClientContactValid] = useState(true)
+  const [factoryContactValid, setFactoryContactValid] = useState(true)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (clientHasOverrideRef.current) return
+    setClientContact(clientDefault)
+  }, [clientDefault])
+
+  useEffect(() => {
+    if (factoryHasOverrideRef.current) return
+    setFactoryContact(factoryDefault)
+  }, [factoryDefault])
+
   const projectName = request?.projectName ?? '신규 프로젝트'
   const clientCompanyName =
-    isAuthenticated && currentUser ? currentUser.company.name : '테크솔루션 주식회사'
+    isAuthenticated && currentUser?.company ? currentUser.company.name : '테크솔루션 주식회사'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+
+  const completeWorkflowForTransaction = useCallback(() => {
+    if (!selectedFactory) return
+
+    workflowDispatch({
+      type: 'workflow/setContract',
+      payload: {
+        transactionId: fallbackTransactionId,
+        projectName,
+        factoryName: selectedFactory.name,
+        amount: `${selectedFactory.estimateMin}만원 ~ ${selectedFactory.estimateMax}만원`,
+        dueDate: request?.desiredDeadline ?? '',
+      },
+    })
+    workflowDispatch({ type: 'workflow/completePayment' })
+  }, [projectName, request?.desiredDeadline, selectedFactory, workflowDispatch])
+
+  const startTransaction = useCallback(() => {
+    completeWorkflowForTransaction()
+    router.push(`/transactions/${fallbackTransactionId}`)
+  }, [completeWorkflowForTransaction, router])
 
   async function completePayment() {
     if (!selectedFactory) return
+    setSubmitError(null)
+
+    if (!clientContactValid || !factoryContactValid) {
+      setSubmitError('참여자 연락처를 모두 확인하고 다시 진행해주세요')
+      return
+    }
 
     const factoryName = selectedFactory.name
     const amount = `${selectedFactory.estimateMin}만원 ~ ${selectedFactory.estimateMax}만원`
     const dueDate = request?.desiredDeadline ?? ''
-    const fallbackTransactionId = 'TXN-2026-018'
 
     if (isAuthenticated) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
       const templateId = process.env.NEXT_PUBLIC_CONTRACT_TEMPLATE_ID ?? 'mock-template'
       const requestBody: CreateContractInput = {
         templateId,
@@ -80,53 +149,74 @@ export default function ContractPage() {
         participants: [
           {
             role: 'client',
-            name: clientCompanyName,
+            name: clientContact.name,
+            ...(clientContact.email ? { email: clientContact.email } : {}),
+            ...(clientContact.phone ? { phone: clientContact.phone } : {}),
             signingOrder: 1,
             signingMethodType: 'email',
           },
           {
             role: 'factory',
-            name: factoryName,
+            name: factoryContact.name,
+            ...(factoryContact.email ? { email: factoryContact.email } : {}),
+            ...(factoryContact.phone ? { phone: factoryContact.phone } : {}),
             signingOrder: 2,
             signingMethodType: 'email',
           },
         ],
         factoryCompanyId: selectedFactory.id,
+        ...(workflowState.quoteRequestId ? { quoteRequestId: workflowState.quoteRequestId } : {}),
+        ...(workflowState.selectedRecommendationId
+          ? { acceptedQuoteId: workflowState.selectedRecommendationId }
+          : {}),
+        ...(currentUser?.company?.id ? { clientCompanyId: currentUser.company.id } : {}),
+        ...(envExpiryMinutes ? { expiryMinutes: envExpiryMinutes } : {}),
       }
       const parsed = CreateContractSchema.safeParse(requestBody)
       if (!parsed.success) {
-        console.warn(
-          'Contract payload failed client-side schema validation; skipping backend call',
-          parsed.error.issues,
-        )
-      } else {
-        try {
-          const response = await fetch(`${apiUrl}/contracts`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(parsed.data),
-          })
-          if (!response.ok) {
-            console.warn(
-              `Backend contract creation returned ${response.status}; continuing with demo flow`,
-            )
-          }
-        } catch (error) {
-          console.warn('Backend contract API unreachable, continuing with demo flow', error)
+        console.warn('Contract payload failed client-side schema validation', parsed.error.issues)
+        setSubmitError('입력값 형식을 확인해주세요')
+        return
+      }
+      try {
+        const createResponse = await fetch(`${apiUrl}/contracts`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed.data),
+        })
+        if (!createResponse.ok) {
+          setSubmitError(await mapContractError(createResponse))
+          return
         }
+        const created = (await createResponse.json()) as { id?: string }
+        if (!created?.id) {
+          setSubmitError('계약 생성 결과를 확인할 수 없어요. 잠시 후 다시 시도해주세요')
+          return
+        }
+        const sendResponse = await fetch(`${apiUrl}/contracts/${created.id}/send`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resend: false }),
+        })
+        if (!sendResponse.ok) {
+          setSubmitError(await mapContractError(sendResponse))
+          return
+        }
+        workflowDispatch({ type: 'workflow/setContractId', payload: created.id })
+        return
+      } catch (error) {
+        console.warn('Backend contract API unreachable', error)
+        setSubmitError('서버 연결을 확인해주세요. 잠시 후 다시 시도해주세요')
+        return
       }
     }
 
+    workflowDispatch({ type: 'workflow/setContractId', payload: null })
     workflowDispatch({
       type: 'workflow/setContract',
-      payload: {
-        transactionId: fallbackTransactionId,
-        projectName,
-        factoryName,
-        amount,
-        dueDate,
-      },
+      payload: { transactionId: fallbackTransactionId, projectName, factoryName, amount, dueDate },
     })
     workflowDispatch({ type: 'workflow/completePayment' })
     router.push(`/transactions/${fallbackTransactionId}`)
@@ -218,73 +308,163 @@ export default function ContractPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card shadow-ct-soft">
-            <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
-              <CardTitle className="text-kr-pretty flex items-center gap-2 text-[18px] font-bold text-foreground sm:text-[20px]">
-                <WalletCards className="h-5 w-5 text-primary" />
-                결제 방식 선택
-              </CardTitle>
-              <CardDescription className="text-kr-pretty text-[15px]">
-                계약 체결 후 사용할 결제 방식을 선택하세요.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                className="grid gap-3"
-              >
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon
-                  const selected = paymentMethod === method.value
+          {workflowState.contractId ? (
+            <>
+              <ContractStatusPanel
+                apiUrl={apiUrl}
+                contractId={workflowState.contractId}
+                fallbackTransactionId={fallbackTransactionId}
+                onCompletedStatus={completeWorkflowForTransaction}
+                onStartTransaction={startTransaction}
+              />
 
-                  return (
-                    <label
-                      key={method.value}
-                      className={`flex cursor-pointer items-start gap-4 rounded-2xl border-2 p-5 transition ${
-                        selected
-                          ? 'border-brand bg-brand-light/30 shadow-toss-sm'
-                          : 'border-border bg-card hover:border-brand-light hover:bg-muted'
-                      }`}
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
+                  <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
+                    진행 단계
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
+                  <ProcessStepper
+                    steps={contractSteps}
+                    currentStep={workflowState.paymentCompleted ? 4 : 2}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
+                  <CardTitle className="text-kr-pretty flex items-center gap-2 text-[18px] font-bold text-foreground sm:text-[20px]">
+                    <FileSignature className="h-5 w-5 text-primary" />
+                    담당자 연락처 확인
+                  </CardTitle>
+                  <CardDescription className="text-kr-pretty text-[15px]">
+                    전자서명 알림이 발송되는 연락처를 확인하세요.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
+                  <div className="grid gap-4">
+                    <ParticipantContactCard
+                      role="client"
+                      title="발주처 담당자 연락처"
+                      companyName={clientCompanyName}
+                      defaultValue={clientContact}
+                      helperText="이 정보는 이번 계약에만 적용됩니다. 회사 기본 정보는 마이페이지에서 수정하세요."
+                      onChange={(value) => {
+                        clientHasOverrideRef.current = true
+                        setClientContact(value)
+                      }}
+                      onValidityChange={setClientContactValid}
+                    />
+                    <ParticipantContactCard
+                      role="factory"
+                      title="공장 담당자 연락처"
+                      companyName={selectedFactory.name}
+                      defaultValue={factoryContact}
+                      helperText="이 정보는 이번 계약에만 적용됩니다."
+                      onChange={(value) => {
+                        factoryHasOverrideRef.current = true
+                        setFactoryContact(value)
+                      }}
+                      onValidityChange={setFactoryContactValid}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
+                  <CardTitle className="text-kr-pretty flex items-center gap-2 text-[18px] font-bold text-foreground sm:text-[20px]">
+                    <WalletCards className="h-5 w-5 text-primary" />
+                    결제 방식 선택
+                  </CardTitle>
+                  <CardDescription className="text-kr-pretty text-[15px]">
+                    계약 체결 후 사용할 결제 방식을 선택하세요.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
+                  <RadioGroup
+                    value={paymentMethod}
+                    onValueChange={setPaymentMethod}
+                    className="grid gap-3"
+                  >
+                    {paymentMethods.map((method) => {
+                      const Icon = method.icon
+                      const selected = paymentMethod === method.value
+
+                      return (
+                        <label
+                          key={method.value}
+                          className={`flex cursor-pointer items-start gap-4 rounded-2xl border-2 p-5 transition ${
+                            selected
+                              ? 'border-brand bg-brand-light/30 shadow-toss-sm'
+                              : 'border-border bg-card hover:border-brand-light hover:bg-muted'
+                          }`}
+                        >
+                          <RadioGroupItem value={method.value} className="mt-1" />
+                          <span>
+                            <span className="text-kr-keep flex items-center gap-2 text-lg font-bold text-foreground">
+                              <Icon className="h-5 w-5 text-primary" />
+                              {method.title}
+                            </span>
+                            <span className="text-kr-pretty mt-2 block text-[15px] leading-6 text-muted-foreground">
+                              {method.description}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
+                  <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
+                    진행 단계
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
+                  <ProcessStepper steps={contractSteps} currentStep={3} />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card shadow-ct-soft">
+                <CardContent className="p-5 sm:p-7">
+                  {submitError ? (
+                    <div
+                      role="alert"
+                      aria-live="polite"
+                      className="mb-4 rounded-xl border border-danger bg-danger-bg p-4"
                     >
-                      <RadioGroupItem value={method.value} className="mt-1" />
-                      <span>
-                        <span className="text-kr-keep flex items-center gap-2 text-lg font-bold text-foreground">
-                          <Icon className="h-5 w-5 text-primary" />
-                          {method.title}
-                        </span>
-                        <span className="text-kr-pretty mt-2 block text-sm leading-6 text-muted-foreground">
-                          {method.description}
-                        </span>
-                      </span>
-                    </label>
-                  )
-                })}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card shadow-ct-soft">
-            <CardHeader className="p-5 pb-2 sm:p-7 sm:pb-2">
-              <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
-                진행 단계
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 pt-3 sm:p-7 sm:pt-3">
-              <ProcessStepper steps={contractSteps} currentStep={3} />
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card shadow-ct-soft">
-            <CardContent className="p-5 sm:p-7">
-              <AppButton size="lg" fullWidth onClick={() => void completePayment()}>
-                계약 체결하고 결제하기
-              </AppButton>
-              <p className="text-kr-pretty mt-3 text-center text-sm text-muted-foreground">
-                결제 진행 시 양측 전자서명이 자동으로 완료됩니다 (목 시뮬레이션).
-              </p>
-            </CardContent>
-          </Card>
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+                        <p className="text-kr-pretty text-[15px] font-semibold text-danger">
+                          {submitError}
+                        </p>
+                      </div>
+                      <AppButton
+                        variant="secondary"
+                        size="md"
+                        onClick={() => void completePayment()}
+                        className="mt-3"
+                      >
+                        다시 시도
+                      </AppButton>
+                    </div>
+                  ) : null}
+                  <AppButton size="lg" fullWidth onClick={() => void completePayment()}>
+                    계약 체결하고 결제하기
+                  </AppButton>
+                  <p className="text-kr-pretty mt-3 text-center text-[15px] text-muted-foreground">
+                    계약 발송 후 이 화면에서 전자서명 상태를 확인할 수 있습니다.
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </main>
       </div>
     </div>

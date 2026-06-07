@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -7,18 +8,22 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import type {
   Contract,
   ContractParticipant,
   ContractStatus,
-  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateContractInput } from './dto/create-contract.dto';
+import type {
+  CreateContractInput,
+  SendContractInput,
+} from './dto/create-contract.dto';
 import type { UCanSignWebhookPayload } from './dto/ucansign-webhook.schema';
 import {
   CONTRACT_GATEWAY,
   type ContractGateway,
+  type GatewayParticipant,
 } from './gateway/contract-gateway.interface';
 
 export type ContractParticipantStatus = 'need_signing' | 'completed';
@@ -52,48 +57,19 @@ export class ContractsService {
     input: CreateContractInput,
   ): Promise<ContractRecord> {
     const contractId = randomUUID();
-    const now = new Date();
-
-    const defaultExpiryMinutes = Number(
-      this.config.get<string>('UCANSIGN_DEFAULT_EXPIRY_MINUTES') ?? '20160',
-    );
-
-    const document = await this.gateway.createDocument({
-      templateId: input.templateId,
-      documentName: input.title,
-      isSequential: true,
-      isSendMessage: true,
-      expiryMinutes: input.expiryMinutes ?? defaultExpiryMinutes,
-      participants: input.participants.map((p) => ({
-        name: p.name,
-        email: p.email,
-        phone: p.phone,
-        signingOrder: p.signingOrder,
-        signingMethodType: p.signingMethodType,
-        authType: p.authType,
-      })),
-      customValues: {
-        customValue: input.quoteRequestId,
-        customValue1: input.acceptedQuoteId,
-        customValue2: input.clientCompanyId,
-        customValue3: input.factoryCompanyId,
-        customValue5: contractId,
-      },
-    });
 
     const record = await this.prisma.contract.create({
       data: {
         id: contractId,
         ownerUserId: userId,
         title: input.title,
-        status: 'pending',
-        ucansignDocumentId: document.documentId,
+        status: 'draft',
         ucansignTemplateId: input.templateId,
         quoteRequestId: input.quoteRequestId,
         acceptedQuoteId: input.acceptedQuoteId,
         clientCompanyId: input.clientCompanyId,
         factoryCompanyId: input.factoryCompanyId,
-        sentAt: now,
+        expiryMinutes: input.expiryMinutes,
         participants: {
           create: input.participants.map((p) => ({
             role: p.role,
@@ -111,9 +87,132 @@ export class ContractsService {
     });
 
     this.logger.log(
-      `Contract ${record.id} created (documentId=${document.documentId}, participants=${record.participants.length})`,
+      `Contract ${record.id} created as draft (participants=${record.participants.length})`,
     );
     return record;
+  }
+
+  async send(
+    userId: string,
+    id: string,
+    input: SendContractInput = { resend: false },
+  ): Promise<ContractRecord> {
+    const record = await this.get(userId, id);
+
+    if (record.status === 'completed' || record.status === 'cancelled') {
+      throw new ConflictException(
+        `Cannot send contract in terminal status '${record.status}'`,
+      );
+    }
+
+    if (record.status === 'draft') {
+      return this.dispatchDraft(record);
+    }
+
+    if (!input.resend) {
+      throw new ConflictException(
+        `Contract already sent (status='${record.status}'). Pass { resend: true } to nudge participants.`,
+      );
+    }
+
+    if (!record.ucansignDocumentId) {
+      throw new NotFoundException(
+        'Vendor document not provisioned; cannot send reminder',
+      );
+    }
+    await this.gateway.requestReminder(record.ucansignDocumentId);
+    this.logger.log(
+      `Contract ${record.id} reminder sent (documentId=${record.ucansignDocumentId}, status=${record.status})`,
+    );
+    return record;
+  }
+
+  private async dispatchDraft(record: ContractRecord): Promise<ContractRecord> {
+    const defaultExpiryMinutes = Number(
+      this.config.get<string>('UCANSIGN_DEFAULT_EXPIRY_MINUTES') ?? '20160',
+    );
+    const expiryMinutes = record.expiryMinutes ?? defaultExpiryMinutes;
+
+    const document = await this.gateway.createDocument({
+      templateId: record.ucansignTemplateId,
+      documentName: record.title,
+      isSequential: true,
+      isSendMessage: true,
+      expiryMinutes,
+      participants: record.participants.map(
+        (p): GatewayParticipant => ({
+          name: p.name,
+          email: p.email ?? undefined,
+          phone: p.phone ?? undefined,
+          signingOrder: p.signingOrder,
+          signingMethodType:
+            p.signingMethodType as GatewayParticipant['signingMethodType'],
+          authType: (p.authType ?? undefined) as GatewayParticipant['authType'],
+        }),
+      ),
+      customValues: {
+        customValue: record.quoteRequestId ?? undefined,
+        customValue1: record.acceptedQuoteId ?? undefined,
+        customValue2: record.clientCompanyId ?? undefined,
+        customValue3: record.factoryCompanyId ?? undefined,
+        customValue5: record.id,
+      },
+    });
+
+    let updateResult: { count: number };
+    try {
+      updateResult = await this.prisma.contract.updateMany({
+        where: { id: record.id, status: 'draft' },
+        data: {
+          status: 'pending',
+          ucansignDocumentId: document.documentId,
+          sentAt: new Date(),
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `DB persistence failed after vendor send for contract ${record.id}; attempting best-effort cancellation of vendor document ${document.documentId}`,
+      );
+      await this.safeCancelVendorDocument(document.documentId);
+      throw error;
+    }
+
+    if (updateResult.count === 0) {
+      this.logger.warn(
+        `Concurrent send detected for contract ${record.id}; rolling back vendor document ${document.documentId}`,
+      );
+      await this.safeCancelVendorDocument(document.documentId);
+      throw new ConflictException(
+        `Contract ${record.id} already sent by another request`,
+      );
+    }
+
+    const updated = await this.prisma.contract.findUnique({
+      where: { id: record.id },
+      include: CONTRACT_INCLUDE,
+    });
+    if (!updated) {
+      throw new NotFoundException(
+        `Contract ${record.id} disappeared after send`,
+      );
+    }
+    this.logger.log(
+      `Contract ${record.id} sent (documentId=${document.documentId})`,
+    );
+    return updated;
+  }
+
+  private async safeCancelVendorDocument(documentId: string): Promise<void> {
+    try {
+      await this.gateway.cancelDocument(
+        documentId,
+        'rollback after local persistence failure or send conflict',
+      );
+    } catch (cancelError) {
+      this.logger.error(
+        `Best-effort cancellation also failed for vendor document ${documentId}: ${(cancelError as Error).message}`,
+      );
+    }
   }
 
   async list(userId: string): Promise<ContractRecord[]> {
@@ -159,15 +258,30 @@ export class ContractsService {
     );
 
     const now = new Date();
-    const updated = await this.prisma.contract.update({
-      where: { id },
+    const result = await this.prisma.contract.updateMany({
+      where: {
+        id,
+        status: { notIn: ['completed', 'cancelled'] },
+      },
       data: {
         status: 'cancelled',
         cancelledAt: now,
         cancelledReason: options.reason ?? null,
       },
+    });
+    if (result.count === 0) {
+      this.logger.warn(
+        `Contract ${id} reached terminal state during cancel; vendor cancel may be redundant`,
+      );
+      return this.get(userId, id);
+    }
+    const updated = await this.prisma.contract.findUnique({
+      where: { id },
       include: CONTRACT_INCLUDE,
     });
+    if (!updated) {
+      throw new NotFoundException(`Contract ${id} not found`);
+    }
     this.logger.log(`Contract ${id} cancelled`);
     return updated;
   }
@@ -233,6 +347,47 @@ export class ContractsService {
     return { url: file.url, expiresAt: file.expiresAt };
   }
 
+  async handleWebhookIdempotent(
+    payload: UCanSignWebhookPayload,
+    payloadHash: string,
+  ): Promise<{ matched: boolean; contractId?: string }> {
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          source: 'ucansign',
+          payloadHash,
+          eventType: payload.eventType,
+          documentId: payload.documentId,
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        const prior = await this.prisma.webhookEvent.findUnique({
+          where: { payloadHash },
+        });
+        this.logger.log(
+          `Idempotent webhook skip payloadHash=${payloadHash.slice(0, 12)} priorContractId=${prior?.contractId ?? 'n/a'}`,
+        );
+        return {
+          matched: !!prior?.contractId,
+          contractId: prior?.contractId ?? undefined,
+        };
+      }
+      throw error;
+    }
+
+    const result = await this.handleWebhook(payload);
+
+    if (result.matched && result.contractId) {
+      await this.prisma.webhookEvent.update({
+        where: { payloadHash },
+        data: { contractId: result.contractId },
+      });
+    }
+
+    return result;
+  }
+
   async handleWebhook(
     payload: UCanSignWebhookPayload,
   ): Promise<{ matched: boolean; contractId?: string }> {
@@ -257,6 +412,13 @@ export class ContractsService {
       `Webhook ${payload.eventType} applied to contract ${record.id}`,
     );
     return { matched: true, contractId: record.id };
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
   }
 
   private async findByWebhookPayload(
@@ -286,6 +448,8 @@ export class ContractsService {
         return { status: 'pending' satisfies ContractStatus };
 
       case 'signing_canceled':
+        if (record.status === 'completed') return null;
+        if (record.status === 'cancelled') return null;
         return {
           status: 'cancelled' satisfies ContractStatus,
           cancelledAt: now,
@@ -293,6 +457,8 @@ export class ContractsService {
         };
 
       case 'signing_completed':
+        if (record.status === 'cancelled') return null;
+        if (record.status === 'completed') return null;
         return {
           status: 'in_progress' satisfies ContractStatus,
           participants: {
@@ -311,6 +477,8 @@ export class ContractsService {
         };
 
       case 'signing_completed_all':
+        if (record.status === 'cancelled') return null;
+        if (record.status === 'completed') return null;
         return {
           status: 'completed' satisfies ContractStatus,
           completedAt: now,

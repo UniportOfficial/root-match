@@ -8,7 +8,7 @@ export interface User {
   id: string
   email: string
   name: string
-  company: Company
+  company: Company | null
   role: UserPermission
   accountType?: AccountType
   avatar?: string

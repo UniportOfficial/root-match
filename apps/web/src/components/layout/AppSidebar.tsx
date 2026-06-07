@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -7,6 +8,7 @@ import {
   BarChart3,
   Building2,
   Factory,
+  FileSignature,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -20,7 +22,10 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
+import { useUserState } from '@/state/UserContext'
 import { cn } from '@/lib/utils'
+
+type SidebarAccountType = 'client' | 'factory' | 'operator'
 
 interface NavItem {
   href: string
@@ -40,50 +45,59 @@ interface AppSidebarProps {
   onClose?: () => void
 }
 
-const navGroups: NavGroup[] = [
-  {
+export function buildNavGroups(accountType: SidebarAccountType | null): NavGroup[] {
+  const common: NavGroup = {
     title: '공통',
     items: [
       { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
       { href: '/messages', label: '메시지', icon: MessageSquare },
       { href: '/companies', label: '기업 디렉토리', icon: Building2 },
     ],
-  },
-  {
+  }
+  const client: NavGroup = {
     title: '발주처',
     items: [
       { href: '/request', label: '견적 요청', icon: FileText },
       { href: '/matching', label: 'AI 매칭', icon: Sparkles },
       { href: '/requests', label: '내 요청', icon: Inbox },
     ],
-  },
-  {
+  }
+  const factory: NavGroup = {
     title: '공장',
     items: [
       { href: '/factory/onboarding', label: '공장 등록', icon: Factory },
       { href: '/factory/requests', label: '받은 요청', icon: Inbox },
       { href: '/quotes', label: '공개 견적', icon: Search },
     ],
-  },
-  {
+  }
+  const txn: NavGroup = {
     title: '거래/분쟁',
     items: [
+      { href: '/contracts', label: '계약 현황', icon: FileSignature },
       { href: '/transactions', label: '거래 현황', icon: PackageCheck },
       { href: '/disputes', label: '분쟁 중재', icon: AlertTriangle },
     ],
-  },
-  {
+  }
+  const mypage: NavGroup = {
     title: '마이페이지',
     items: [
       { href: '/mypage', label: '프로필', icon: User },
       { href: '/mypage/analytics', label: '활동 분석', icon: BarChart3 },
       { href: '/mypage/settings', label: '설정', icon: Settings },
     ],
-  },
-]
+  }
+
+  if (!accountType) return [common]
+  if (accountType === 'client') return [common, client, txn, mypage]
+  if (accountType === 'factory') return [common, factory, txn, mypage]
+  return [common, client, factory, txn, mypage]
+}
 
 export function AppSidebar({ className, onNavigate, onClose }: AppSidebarProps) {
   const pathname = usePathname()
+  const { currentUser } = useUserState()
+  const accountType = currentUser?.accountType ?? null
+  const navGroups = useMemo(() => buildNavGroups(accountType), [accountType])
 
   return (
     <div className={cn('flex h-full flex-col overflow-y-auto bg-card px-3 py-4', className)}>

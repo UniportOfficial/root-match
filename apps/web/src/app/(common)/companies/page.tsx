@@ -276,7 +276,7 @@ function CompaniesPageContent() {
                       {company.revenue}
                     </p>
                     <Link
-                      href={`/companies/${company.id}`}
+                      href={`/factories/${company.id}`}
                       className="inline-flex items-center gap-1 text-sm font-bold text-brand transition hover:text-brand-hover"
                     >
                       상세

@@ -57,6 +57,17 @@ enum ContractStatus {
   cancelled // request_cancelled
 }
 
+// Source provenance tier for Company directory entries (docs/datasets/ppuri/HANDOFF_dataset.md §2).
+// A: KPIC root-tech certified (highest trust). B: Kakao score≥8 + inside industrial polygon.
+// C: borderline 4≤score<8 + inside polygon. D: factory registry only, low confidence.
+// Existing claimed companies (pre-Ppuri) have null tier; seed populates A+B first.
+enum ConfidenceTier {
+  A_CERTIFIED_ROOT
+  B_LOCAL_STRONG_INSIDE
+  C_BORDERLINE_INSIDE
+  D_LOW_CONFIDENCE
+}
+
 // ─────────────────────────────────────────────
 // Better Auth 1.6 core models
 // Source: bg_607b471d librarian snippet (§7.1.3 sub-step 1)
@@ -131,22 +142,42 @@ model Verification {
 // ─────────────────────────────────────────────
 
 model Company {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
+  id              String          @id @default(cuid())
+  // Nullable to accommodate unclaimed Ppuri directory entries. Postgres UNIQUE treats
+  // NULL as distinct, so multiple unclaimed rows are allowed while claimed users
+  // remain 1:1. Existing companies.service.ts findUnique/update calls unaffected.
+  userId          String?         @unique @map("user_id")
   name            String
   industry        String?
   region          String?
   size            String?
-  description     String?  @db.Text
-  contactEmail    String?  @map("contact_email")
-  contactPhone    String?  @map("contact_phone")
+  description     String?         @db.Text
+  contactEmail    String?         @map("contact_email")
+  contactPhone    String?         @map("contact_phone")
   website         String?
-  establishedYear Int?     @map("established_year")
-  employeeCount   Int?     @map("employee_count")
+  establishedYear Int?            @map("established_year")
+  employeeCount   Int?            @map("employee_count")
   revenue         String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  // ─── Ppuri directory fields (see docs/datasets/ppuri/HANDOFF_dataset.md). ───
+  // externalId = source CSV company_id (C0000001…). Acts as idempotency key for seed upsert.
+  externalId      String?         @unique @map("external_id")
+  confidenceTier  ConfidenceTier? @map("confidence_tier")
+  processHint     String?         @map("process_hint")
+  address         String?
+  lat             Float?
+  lng             Float?
+  kakaoId         String?         @map("kakao_id")
+  representative  String?
+  sourceTypes     String[]        @default([]) @map("source_types")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
+  factoryProfile       FactoryProfile?
+  matchRecommendations MatchRecommendation[]
+
+  // Composite index supports Phase 4 pre-filter (region + process_hint exact → top 20).
+  @@index([region, processHint])
+  @@index([confidenceTier])
   @@map("company")
 }
 
@@ -164,6 +195,63 @@ model Profile {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
+}
+
+// ─────────────────────────────────────────────
+// FactoryProfile — factory-side capability + KPI catalog.
+//
+// 1:1 with Company. Replaces mockFactoryRecommendations fixture as the
+// candidate source for /matching/recommend. Response id == Company.id so
+// contract creation can reuse selectedFactory.id as factoryCompanyId
+// without a second indirection.
+//
+// Required fields mirror FactoryRecommendation contract. Optional fields
+// support web parity (industrialComplex/distance) and GPT prompt enrichment
+// (specialty/equipment/products/clients/qualitySatisfaction/avgResponseTime).
+// Portfolio/Reviews intentionally deferred — not in W3 scope.
+//
+// Distance is computed at match time vs the client location, not stored
+// statically: only lat/lng are persisted.
+// ─────────────────────────────────────────────
+
+model FactoryProfile {
+  id                   String   @id @default(cuid())
+  companyId            String   @unique @map("company_id")
+  // Display location (richer than Company.region which stays as the search filter token).
+  location             String?
+  // Core matching fields
+  processes            String[]
+  trustScore           Int      @map("trust_score")
+  deliveryRate         Int      @map("delivery_rate")
+  reorderRate          Int      @map("reorder_rate")
+  qualityScore         Int      @map("quality_score")
+  deliveryScore        Int      @map("delivery_score")
+  priceCompetitiveness Int      @map("price_competitiveness")
+  estimateMin          Int      @map("estimate_min")
+  estimateMax          Int      @map("estimate_max")
+  // Optional enrichment
+  industrialComplex    String?  @map("industrial_complex")
+  reorderCustomerCount Int?     @map("reorder_customer_count")
+  verified             Boolean  @default(false)
+  // Detail / prompt context
+  specialty            String[]
+  equipment            String[]
+  products             String[]
+  monthlyCapacity      String?  @map("monthly_capacity")
+  clients              String[]
+  qualitySatisfaction  Float?   @map("quality_satisfaction")
+  avgResponseTime      String?  @map("avg_response_time")
+  // Geo (dynamic distance at match time)
+  locationLat          Float?   @map("location_lat")
+  locationLng          Float?   @map("location_lng")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([trustScore])
+  @@index([verified])
+  @@map("factory_profiles")
 }
 
 model QuoteRequest {
@@ -205,9 +293,12 @@ model MatchRecommendation {
   createdAt      DateTime       @default(now()) @map("created_at")
 
   quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  // Restrict prevents accidental Company deletion from silently erasing audit/history rows.
+  factory      Company      @relation(fields: [factoryId], references: [id], onDelete: Restrict)
 
   @@unique([quoteRequestId, factoryId, source])
   @@index([quoteRequestId])
+  @@index([factoryId])
   @@map("match_recommendations")
 }
 
@@ -238,7 +329,7 @@ model Contract {
   id                 String         @id @default(cuid())
   ownerUserId        String         @map("owner_user_id")
   title              String
-  status             ContractStatus @default(pending)
+  status             ContractStatus @default(draft)
   ucansignDocumentId String?        @unique @map("ucansign_document_id")
   ucansignTemplateId String         @map("ucansign_template_id")
   ucansignFolderId   String?        @map("ucansign_folder_id")
@@ -246,6 +337,7 @@ model Contract {
   acceptedQuoteId    String?        @map("accepted_quote_id")
   clientCompanyId    String?        @map("client_company_id")
   factoryCompanyId   String?        @map("factory_company_id")
+  expiryMinutes      Int?           @map("expiry_minutes")
   sentAt             DateTime?      @map("sent_at")
   completedAt        DateTime?      @map("completed_at")
   cancelledAt        DateTime?      @map("cancelled_at")
@@ -280,4 +372,31 @@ model ContractParticipant {
 
   @@index([contractId, signingOrder])
   @@map("contract_participants")
+}
+
+// ─────────────────────────────────────────────
+// Webhook events (vendor inbound — idempotency + audit)
+//
+// One row per unique inbound webhook, keyed by sha256(raw body bytes).
+// The UNIQUE constraint on payload_hash enforces at-most-once processing:
+// a duplicate vendor retry attempting to insert collides, the handler
+// detects P2002, and skips state mutation while still returning 200 OK.
+//
+// `source` is reserved for future expansion (e.g. payment vendors).
+// Currently only 'ucansign' is written by ContractsWebhookController.
+// ─────────────────────────────────────────────
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  source      String // 'ucansign' (extendable)
+  payloadHash String   @unique @map("payload_hash") // sha256 hex of raw body
+  eventType   String   @map("event_type")
+  documentId  String?  @map("document_id")
+  contractId  String?  @map("contract_id")
+  receivedAt  DateTime @default(now()) @map("received_at")
+
+  @@index([documentId])
+  @@index([contractId])
+  @@index([receivedAt])
+  @@map("webhook_events")
 }

@@ -40,6 +40,9 @@ interface WorkflowState {
   hydrated: boolean
   matchingResults: MatchingResultsPayload | null
   selectedFactory: FactoryRecommendation | null
+  quoteRequestId: string | null
+  selectedRecommendationId: string | null
+  contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
   inspectionApproved: boolean
@@ -52,6 +55,9 @@ type WorkflowAction =
       payload: {
         matchingResults: MatchingResultsPayload | null
         selectedFactory: FactoryRecommendation | null
+        quoteRequestId: string | null
+        selectedRecommendationId: string | null
+        contractId: string | null
         contract: WorkflowContract | null
         paymentCompleted: boolean
         inspectionApproved: boolean
@@ -60,6 +66,9 @@ type WorkflowAction =
     }
   | { type: 'workflow/setMatchingResults'; payload: MatchingResultsPayload | null }
   | { type: 'workflow/setSelectedFactory'; payload: FactoryRecommendation | null }
+  | { type: 'workflow/setQuoteRequestId'; payload: string | null }
+  | { type: 'workflow/setSelectedRecommendationId'; payload: string | null }
+  | { type: 'workflow/setContractId'; payload: string | null }
   | { type: 'workflow/setContract'; payload: WorkflowContract | null }
   | { type: 'workflow/completePayment' }
   | { type: 'workflow/approveInspection' }
@@ -69,6 +78,9 @@ const initialState: WorkflowState = {
   hydrated: false,
   matchingResults: null,
   selectedFactory: null,
+  quoteRequestId: null,
+  selectedRecommendationId: null,
+  contractId: null,
   contract: null,
   paymentCompleted: false,
   inspectionApproved: false,
@@ -83,6 +95,9 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
         hydrated: true,
         matchingResults: action.payload.matchingResults,
         selectedFactory: action.payload.selectedFactory,
+        quoteRequestId: action.payload.quoteRequestId,
+        selectedRecommendationId: action.payload.selectedRecommendationId,
+        contractId: action.payload.contractId,
         contract: action.payload.contract,
         paymentCompleted: action.payload.paymentCompleted,
         inspectionApproved: action.payload.inspectionApproved,
@@ -92,6 +107,12 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
       return { ...state, matchingResults: action.payload }
     case 'workflow/setSelectedFactory':
       return { ...state, selectedFactory: action.payload }
+    case 'workflow/setQuoteRequestId':
+      return { ...state, quoteRequestId: action.payload }
+    case 'workflow/setSelectedRecommendationId':
+      return { ...state, selectedRecommendationId: action.payload }
+    case 'workflow/setContractId':
+      return { ...state, contractId: action.payload }
     case 'workflow/setContract':
       return { ...state, contract: action.payload }
     case 'workflow/completePayment':
@@ -182,6 +203,9 @@ function isWorkflowReview(value: unknown): value is WorkflowReview {
 }
 
 interface WorkflowExtraPayload {
+  quoteRequestId: string | null
+  selectedRecommendationId: string | null
+  contractId: string | null
   contract: WorkflowContract | null
   paymentCompleted: boolean
   inspectionApproved: boolean
@@ -192,6 +216,10 @@ function isWorkflowExtraPayload(value: unknown): value is WorkflowExtraPayload {
   if (!isRecord(value)) return false
 
   return (
+    (value.quoteRequestId === null || typeof value.quoteRequestId === 'string') &&
+    (value.selectedRecommendationId === null ||
+      typeof value.selectedRecommendationId === 'string') &&
+    (value.contractId === null || typeof value.contractId === 'string') &&
     (value.contract === null || isWorkflowContract(value.contract)) &&
     typeof value.paymentCompleted === 'boolean' &&
     typeof value.inspectionApproved === 'boolean' &&
@@ -225,35 +253,26 @@ function readSelectedFactory(): FactoryRecommendation | null {
   }
 }
 
+const EMPTY_WORKFLOW_EXTRA: WorkflowExtraPayload = {
+  quoteRequestId: null,
+  selectedRecommendationId: null,
+  contractId: null,
+  contract: null,
+  paymentCompleted: false,
+  inspectionApproved: false,
+  review: null,
+}
+
 function readWorkflowExtra(): WorkflowExtraPayload {
   try {
     const raw = sessionStorage.getItem(WORKFLOW_EXTRA_KEY)
-    if (!raw) {
-      return {
-        contract: null,
-        paymentCompleted: false,
-        inspectionApproved: false,
-        review: null,
-      }
-    }
+    if (!raw) return EMPTY_WORKFLOW_EXTRA
     const parsed: unknown = JSON.parse(raw)
-    if (!isWorkflowExtraPayload(parsed)) {
-      return {
-        contract: null,
-        paymentCompleted: false,
-        inspectionApproved: false,
-        review: null,
-      }
-    }
+    if (!isWorkflowExtraPayload(parsed)) return EMPTY_WORKFLOW_EXTRA
     return parsed
   } catch (error) {
     console.error('Failed to hydrate workflow extra state from sessionStorage', error)
-    return {
-      contract: null,
-      paymentCompleted: false,
-      inspectionApproved: false,
-      review: null,
-    }
+    return EMPTY_WORKFLOW_EXTRA
   }
 }
 
@@ -308,21 +327,27 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem(
         WORKFLOW_EXTRA_KEY,
         JSON.stringify({
+          quoteRequestId: state.quoteRequestId,
+          selectedRecommendationId: state.selectedRecommendationId,
           contract: state.contract,
+          contractId: state.contractId,
           paymentCompleted: state.paymentCompleted,
           inspectionApproved: state.inspectionApproved,
           review: state.review,
-        }),
+        } satisfies WorkflowExtraPayload),
       )
     } catch (error) {
       console.error('Failed to persist workflow extra state to sessionStorage', error)
     }
   }, [
     state.contract,
+    state.contractId,
     state.hydrated,
     state.inspectionApproved,
     state.paymentCompleted,
+    state.quoteRequestId,
     state.review,
+    state.selectedRecommendationId,
   ])
 
   return (

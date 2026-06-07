@@ -10,6 +10,12 @@ export interface CompanyFilter {
   size: string
 }
 
+export type ConfidenceTier =
+  | 'A_CERTIFIED_ROOT'
+  | 'B_LOCAL_STRONG_INSIDE'
+  | 'C_BORDERLINE_INSIDE'
+  | 'D_LOW_CONFIDENCE'
+
 export interface Company {
   id: string
   name: string
@@ -31,4 +37,58 @@ export interface Company {
   revenue: string
   certifications: string[]
   createdAt: string
+  externalId?: string
+  confidenceTier?: ConfidenceTier
+  processHint?: string
+  address?: string
+  lat?: number
+  lng?: number
+  kakaoId?: string
+  representative?: string
+  sourceTypes?: string[]
+}
+
+export interface CompanyListQuery {
+  keyword?: string
+  industry?: string
+  region?: string
+  size?: string
+  confidenceTier?: ConfidenceTier
+  page?: number
+  limit?: number
+}
+
+export interface CompanyListResponse {
+  items: Company[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface CompanyFactoryProfile {
+  isSynthesized: boolean
+  location: string | null
+  processes: string[]
+  trustScore: number
+  deliveryRate: number
+  reorderRate: number
+  qualityScore: number
+  deliveryScore: number
+  priceCompetitiveness: number
+  estimateMin: number
+  estimateMax: number
+  industrialComplex: string | null
+  reorderCustomerCount: number | null
+  verified: boolean
+  specialty: string[]
+  equipment: string[]
+  products: string[]
+  monthlyCapacity: string | null
+  clients: string[]
+  qualitySatisfaction: number | null
+  avgResponseTime: string | null
+}
+
+export interface CompanyDetail extends Company {
+  factoryProfile: CompanyFactoryProfile | null
 }

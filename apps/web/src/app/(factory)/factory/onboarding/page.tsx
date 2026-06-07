@@ -83,7 +83,8 @@ const initialBasicInfo: BasicInfo = {
 
 function getNextProductionId(productionItems: ProductionItem[]): string {
   const nextNumber =
-    Math.max(0, ...productionItems.map((item) => parseInt(item.id.replace('p-', ''), 10))) + 1
+    Math.max(0, ...productionItems.map((item) => Number.parseInt(item.id.replace('p-', ''), 10))) +
+    1
 
   return `p-${nextNumber}`
 }

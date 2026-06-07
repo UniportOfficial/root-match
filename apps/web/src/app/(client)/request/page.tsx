@@ -42,6 +42,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/cn'
 import { useDemoMode } from '@/lib/demo-mode'
 import { useSidebarLayout } from '@/components/layout/AppLayout'
+import { useUserState } from '@/state/UserContext'
+import { useWorkflowDispatch } from '@/state/WorkflowContext'
 
 const quoteRequestSchema = z.object({
   projectName: z.string().trim().min(1, '프로젝트명을 입력하세요.'),
@@ -326,6 +328,8 @@ export default function ClientRequestPage() {
   const router = useRouter()
   const isDemoMode = useDemoMode()
   const sidebarLayout = useSidebarLayout()
+  const { isAuthenticated } = useUserState()
+  const workflowDispatch = useWorkflowDispatch()
   const parsedQuantity = useMemo(() => parseQuantityDetails(initialRequest.estimatedQuantity), [])
   const parsedBudget = useMemo(() => parseBudgetRange(initialRequest.budgetRange), [])
   const [firstRunQuantity, setFirstRunQuantity] = useState(parsedQuantity.firstRun)
@@ -432,6 +436,9 @@ export default function ClientRequestPage() {
   async function submitRequest(values: QuoteRequestDraft) {
     setSubmitError(null)
     setLoadingStep(1)
+    workflowDispatch({ type: 'workflow/setQuoteRequestId', payload: null })
+    workflowDispatch({ type: 'workflow/setSelectedRecommendationId', payload: null })
+
     const estimatedQuantity = buildEstimatedQuantity({
       firstRunQuantity,
       productionQuantity,
@@ -445,16 +452,40 @@ export default function ClientRequestPage() {
       budgetRange,
     })
 
-    const matchingRequest = fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/matching/recommend`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      },
-    )
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+
+    let quoteRequestId: string | undefined
+    if (isAuthenticated) {
+      try {
+        const quoteResponse = await fetch(`${apiBase}/quote-requests`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        })
+        if (quoteResponse.ok) {
+          const persisted = (await quoteResponse.json()) as { id?: string }
+          if (persisted?.id) {
+            quoteRequestId = persisted.id
+            workflowDispatch({
+              type: 'workflow/setQuoteRequestId',
+              payload: persisted.id,
+            })
+          }
+        } else {
+          console.warn('Quote request persistence skipped: HTTP', quoteResponse.status)
+        }
+      } catch (quoteError) {
+        console.warn('Quote request persistence skipped: network error', quoteError)
+      }
+    }
+
+    const matchingBody = quoteRequestId ? { ...request, quoteRequestId } : request
+    const matchingRequest = fetch(`${apiBase}/matching/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(matchingBody),
+    })
 
     try {
       await wait(900)
@@ -469,6 +500,7 @@ export default function ClientRequestPage() {
       }
 
       const results = (await response.json()) as FactoryRecommendation[]
+
       await wait(1200)
       setLoadingStep(4)
       await wait(500)
@@ -476,9 +508,9 @@ export default function ClientRequestPage() {
         'rm:matchingResults',
         JSON.stringify({ results, request, submittedAt: Date.now() }),
       )
-      router.push('/matching')
+      router.push(isDemoMode ? '/matching?demo=true' : '/matching')
     } catch {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !isDemoMode) {
         setLoadingStep(0)
         setSubmitError('AI 매칭 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
         return
@@ -1054,8 +1086,8 @@ function MatchingLoadingOverlay({ currentStep }: { currentStep: number }) {
                           <span className="relative flex h-1.5 w-1.5">
                             <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60" />
                             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                          </span>
-                          진행 중
+                          </span>{' '}
+                          <span>진행 중</span>
                         </span>
                       )}
                       {isDone && (

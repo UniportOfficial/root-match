@@ -3,15 +3,11 @@
 import Link from 'next/link'
 import { Eye, Mail, MessageCircle, Sparkles, type LucideIcon } from 'lucide-react'
 import { AppBadge } from '@/components/ui/AppBadge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
-import { mockActivityLogs } from '@/data/activityLogs'
-import { mockDashboardStats } from '@/data/dashboardStats'
 
-type ActivityType = (typeof mockActivityLogs)[number]['type']
+type ActivityType = 'view' | 'inquiry' | 'match' | 'message'
 
 interface StatCard {
   title: string
@@ -33,23 +29,16 @@ const tabItems = [
 ]
 
 const statCards: StatCard[] = [
-  { title: '총 조회수', value: mockDashboardStats.totalViews, icon: Eye, delta: '+12.4%' },
+  { title: '총 조회수', value: 0, icon: Eye, delta: '데이터 연결 대기' },
   {
     title: '총 문의',
-    value: mockDashboardStats.totalInquiries,
+    value: 0,
     icon: MessageCircle,
-    delta: '+8.1%',
+    delta: '데이터 연결 대기',
   },
-  { title: '매칭 기업', value: mockDashboardStats.totalMatches, icon: Sparkles, delta: '+5건' },
-  { title: '최근 메시지', value: mockDashboardStats.recentMessages, icon: Mail, delta: '오늘' },
+  { title: '매칭 기업', value: 0, icon: Sparkles, delta: '데이터 연결 대기' },
+  { title: '최근 메시지', value: 0, icon: Mail, delta: '데이터 연결 대기' },
 ]
-
-const activityIcons: Record<ActivityType, LucideIcon> = {
-  view: Eye,
-  inquiry: MessageCircle,
-  match: Sparkles,
-  message: Mail,
-}
 
 const summaryItems: ActivitySummaryItem[] = [
   { type: 'view', label: '프로필 조회', icon: Eye },
@@ -58,16 +47,9 @@ const summaryItems: ActivitySummaryItem[] = [
   { type: 'message', label: '메시지', icon: Mail },
 ]
 
-function formatActivityDate(value: string): string {
-  return new Date(value).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
-
 function countActivityType(type: ActivityType): number {
-  return mockActivityLogs.filter((activity) => activity.type === type).length
+  void type
+  return 0
 }
 
 export default function MyPageAnalyticsPage() {
@@ -154,36 +136,10 @@ export default function MyPageAnalyticsPage() {
           </div>
 
           <Card className="border-border bg-card shadow-ct-soft">
-            <CardContent className="p-0">
-              {mockActivityLogs.map((activity) => {
-                const Icon = activityIcons[activity.type]
-
-                return (
-                  <div key={activity.id}>
-                    <div className="flex items-start gap-4 px-5 py-4">
-                      <Avatar className="h-10 w-10 rounded-xl">
-                        <AvatarFallback className="rounded-xl bg-accent text-primary">
-                          <Icon className="h-5 w-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-kr-pretty text-sm font-bold text-foreground">
-                          {activity.description}
-                        </p>
-                        <p className="text-kr-pretty mt-1 text-sm text-muted-foreground">
-                          {activity.targetCompanyName}
-                        </p>
-                      </div>
-                      <time className="text-kr-keep shrink-0 text-sm font-semibold text-muted-foreground">
-                        {formatActivityDate(activity.createdAt)}
-                      </time>
-                    </div>
-                    {activity.id !== mockActivityLogs[mockActivityLogs.length - 1]?.id && (
-                      <Separator />
-                    )}
-                  </div>
-                )
-              })}
+            <CardContent className="p-6 text-center">
+              <p className="text-kr-pretty text-[15px] font-semibold text-muted-foreground">
+                활동 데이터가 연결되면 최근 활동이 표시됩니다.
+              </p>
             </CardContent>
           </Card>
         </section>

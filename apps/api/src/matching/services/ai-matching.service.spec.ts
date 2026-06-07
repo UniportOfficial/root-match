@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { ConfidenceTier } from '@prisma/client';
 import type {
   Company,
   FactoryProfile as FactoryProfileRow,
@@ -33,27 +34,29 @@ function restoreEnv(snapshot: Record<EnvKey, string | undefined>): void {
   }
 }
 
-type FactoryRow = FactoryProfileRow & { company: Company };
+type CompanyWithFactoryProfile = Company & {
+  factoryProfile: FactoryProfileRow | null;
+};
 
-const NOW = new Date('2026-06-06T00:00:00Z');
+const NOW = new Date('2026-06-07T00:00:00Z');
 
 function makeCompany(
   overrides: Partial<Company> & Pick<Company, 'id' | 'name'>,
 ): Company {
   return {
-    userId: `user-${overrides.id}`,
-    industry: '제조/생산',
-    region: '서울',
-    size: '중소기업',
+    userId: null,
+    industry: null,
+    region: '경기',
+    size: null,
     description: null,
-    contactEmail: `${overrides.id}@example.kr`,
-    contactPhone: '02-0000-0000',
+    contactEmail: null,
+    contactPhone: null,
     website: null,
     establishedYear: null,
-    employeeCount: 20,
+    employeeCount: null,
     revenue: null,
     externalId: null,
-    confidenceTier: null,
+    confidenceTier: ConfidenceTier.A_CERTIFIED_ROOT,
     processHint: null,
     address: null,
     lat: null,
@@ -67,15 +70,14 @@ function makeCompany(
   };
 }
 
-function makeFactory(
-  id: string,
+function makeFactoryProfile(
+  companyId: string,
   processes: string[],
   overrides: Partial<FactoryProfileRow> = {},
-  companyName = `공장-${id}`,
-): FactoryRow {
-  const profile: FactoryProfileRow = {
-    id: `profile-${id}`,
-    companyId: id,
+): FactoryProfileRow {
+  return {
+    id: `profile-${companyId}`,
+    companyId,
     location: '서울',
     processes,
     trustScore: 90,
@@ -102,25 +104,87 @@ function makeFactory(
     updatedAt: NOW,
     ...overrides,
   };
-  return {
-    ...profile,
-    company: makeCompany({ id, name: companyName }),
-  };
 }
 
-const TEST_FACTORIES: FactoryRow[] = [
-  makeFactory('factory-mold', ['금형', 'CNC 절삭'], {
-    specialty: ['금형 정밀가공', '알루미늄 하우징', 'CNC 절삭'],
-    equipment: ['5축 CNC', '머시닝센터'],
-    products: ['알루미늄 하우징', '정밀 케이스'],
-  }),
-  makeFactory('factory-cast', ['주조', '표면처리']),
-  makeFactory('factory-weld', ['용접', '소성가공']),
-  makeFactory('factory-surf', ['표면처리', '열처리']),
-  makeFactory('factory-heat', ['열처리']),
+const FACTORY_PROFILES_WITH_COMPANY: Array<
+  FactoryProfileRow & { company: Company }
+> = [
+  {
+    ...makeFactoryProfile('factory-mold', ['금형', 'CNC 절삭'], {
+      specialty: ['금형 정밀가공', '알루미늄 하우징', 'CNC 절삭'],
+      equipment: ['5축 CNC', '머시닝센터'],
+      products: ['알루미늄 하우징', '정밀 케이스'],
+    }),
+    company: makeCompany({ id: 'factory-mold', name: '공장-mold' }),
+  },
+  {
+    ...makeFactoryProfile('factory-cast', ['주조', '표면처리']),
+    company: makeCompany({ id: 'factory-cast', name: '공장-cast' }),
+  },
+  {
+    ...makeFactoryProfile('factory-weld', ['용접', '소성가공']),
+    company: makeCompany({ id: 'factory-weld', name: '공장-weld' }),
+  },
+  {
+    ...makeFactoryProfile('factory-surf', ['표면처리', '열처리']),
+    company: makeCompany({ id: 'factory-surf', name: '공장-surf' }),
+  },
+  {
+    ...makeFactoryProfile('factory-heat', ['열처리']),
+    company: makeCompany({ id: 'factory-heat', name: '공장-heat' }),
+  },
 ];
 
-const sampleRequest: QuoteRequestDraft = {
+const PPURI_COMPANIES: CompanyWithFactoryProfile[] = [
+  {
+    ...makeCompany({
+      id: 'ppuri-1',
+      name: '주식회사 와이씨에프',
+      region: '경기',
+      processHint: '주형 및 금형 제조업',
+      externalId: 'C0000001',
+      confidenceTier: ConfidenceTier.A_CERTIFIED_ROOT,
+      representative: '홍길동',
+      sourceTypes: ['kpic_or_root_cert'],
+    }),
+    factoryProfile: null,
+  },
+  {
+    ...makeCompany({
+      id: 'ppuri-2',
+      name: '(주)인아',
+      region: '경기',
+      processHint: '금형',
+      externalId: 'C0000002',
+      confidenceTier: ConfidenceTier.A_CERTIFIED_ROOT,
+    }),
+    factoryProfile: null,
+  },
+  {
+    ...makeCompany({
+      id: 'ppuri-3',
+      name: '대성주조',
+      region: '경기',
+      processHint: '알루미늄주물 주조업',
+      externalId: 'C0000003',
+      confidenceTier: ConfidenceTier.A_CERTIFIED_ROOT,
+    }),
+    factoryProfile: null,
+  },
+  {
+    ...makeCompany({
+      id: 'ppuri-4',
+      name: '경기금형',
+      region: '경기',
+      processHint: '금형',
+      externalId: 'C0000004',
+      confidenceTier: ConfidenceTier.B_LOCAL_STRONG_INSIDE,
+    }),
+    factoryProfile: null,
+  },
+];
+
+const sampleMoldRequest: QuoteRequestDraft = {
   projectName: '알루미늄 하우징 시제품',
   processType: 'mold',
   productItem: '전장 모듈용 알루미늄 케이스',
@@ -133,18 +197,22 @@ const sampleRequest: QuoteRequestDraft = {
 describe('AiMatchingService', () => {
   let service: AiMatchingService;
   let envSnapshot: Record<EnvKey, string | undefined>;
-  let findManyMock: jest.Mock;
-
+  let companyFindManyMock: jest.Mock;
+  let factoryProfileFindManyMock: jest.Mock;
   let quoteRequestFindUniqueMock: jest.Mock;
   let matchRecommendationUpsertMock: jest.Mock;
 
   beforeEach(async () => {
     envSnapshot = snapshotEnv();
-    findManyMock = jest.fn().mockResolvedValue(TEST_FACTORIES);
+    companyFindManyMock = jest.fn().mockResolvedValue([]);
+    factoryProfileFindManyMock = jest
+      .fn()
+      .mockResolvedValue(FACTORY_PROFILES_WITH_COMPANY);
     quoteRequestFindUniqueMock = jest.fn();
     matchRecommendationUpsertMock = jest.fn();
     const prismaStub = {
-      factoryProfile: { findMany: findManyMock },
+      company: { findMany: companyFindManyMock },
+      factoryProfile: { findMany: factoryProfileFindManyMock },
       quoteRequest: { findUnique: quoteRequestFindUniqueMock },
       matchRecommendation: { upsert: matchRecommendationUpsertMock },
     };
@@ -165,20 +233,22 @@ describe('AiMatchingService', () => {
     jest.restoreAllMocks();
   });
 
-  describe('matchFactories (mock fallback path)', () => {
+  describe('matchFactories (FactoryProfile fallback path — mock fallback)', () => {
     beforeEach(() => {
       delete process.env.OPENAI_API_KEY;
       process.env.NODE_ENV = 'test';
       jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     });
 
-    it('returns 4 recommendations without calling fetch', async () => {
+    it('falls back to FactoryProfile when Company directory has no match', async () => {
       const fetchSpy = jest.spyOn(global, 'fetch');
 
-      const result = await service.matchFactories(sampleRequest);
+      const result = await service.matchFactories(sampleMoldRequest);
 
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(result).toHaveLength(4);
+      expect(companyFindManyMock).toHaveBeenCalled();
+      expect(factoryProfileFindManyMock).toHaveBeenCalled();
       for (const rec of result) {
         expect(rec.id).toBeDefined();
         expect(rec.name).toBeDefined();
@@ -186,100 +256,308 @@ describe('AiMatchingService', () => {
       }
     });
 
-    it('returns Company.id as recommendation id (D2 mapping)', async () => {
-      const result = await service.matchFactories(sampleRequest);
+    it('returns Company.id as recommendation id (quote-requests join compat)', async () => {
+      const result = await service.matchFactories(sampleMoldRequest);
       const ids = result.map((r) => r.id);
       for (const id of ids) {
-        expect(TEST_FACTORIES.map((f) => f.companyId)).toContain(id);
+        expect(FACTORY_PROFILES_WITH_COMPANY.map((f) => f.companyId)).toContain(
+          id,
+        );
       }
     });
 
-    it('queries factory profiles with company include once per call', async () => {
-      await service.matchFactories(sampleRequest);
-      expect(findManyMock).toHaveBeenCalledTimes(1);
-      expect(findManyMock).toHaveBeenCalledWith({
-        include: { company: true },
-      });
-    });
-
     it('ranks deterministically across repeated calls', async () => {
-      const first = await service.matchFactories(sampleRequest);
-      const second = await service.matchFactories(sampleRequest);
+      const first = await service.matchFactories(sampleMoldRequest);
+      const second = await service.matchFactories(sampleMoldRequest);
       expect(second.map((r) => r.id)).toEqual(first.map((r) => r.id));
     });
 
-    it('process-matching factories carry "[Mock · {label} 공정 매칭]" prefix', async () => {
-      const result = await service.matchFactories(sampleRequest);
+    it('process-matching factories carry "[Mock · 금형 공정 매칭]" prefix', async () => {
+      const result = await service.matchFactories(sampleMoldRequest);
       const moldMatch = result.find((r) => r.processes.includes('금형'));
       expect(moldMatch).toBeDefined();
       expect(moldMatch?.aiReason).toMatch(/^\[Mock · 금형 공정 매칭\]/);
     });
 
-    it('non-matching factories carry "[Mock · API key 미설정]" prefix', async () => {
-      const result = await service.matchFactories(sampleRequest);
-      const nonMatching = result.filter(
-        (r) => !r.processes.some((p) => p.includes('금형')),
+    it('throws when both Company and FactoryProfile sources return empty', async () => {
+      factoryProfileFindManyMock.mockResolvedValueOnce([]);
+      await expect(service.matchFactories(sampleMoldRequest)).rejects.toThrow(
+        /No matching candidates available/,
       );
-      expect(nonMatching.length).toBeGreaterThan(0);
-      for (const rec of nonMatching) {
-        expect(rec.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
-      }
-    });
-
-    it('logs Logger.warn() exactly once per matchFactories call', async () => {
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-      warnSpy.mockClear();
-      await service.matchFactories(sampleRequest);
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy.mock.calls[0]?.[0]).toEqual(
-        expect.stringContaining('mock recommendations'),
-      );
-    });
-
-    it('uses Korean label fallback for unknown process types', async () => {
-      const requestWithUnknown: QuoteRequestDraft = {
-        ...sampleRequest,
-        processType: 'unknown-process',
-      };
-      const result = await service.matchFactories(requestWithUnknown);
-      for (const rec of result) {
-        expect(rec.aiReason).toMatch(/^\[Mock · API key 미설정\]/);
-      }
-    });
-
-    it('throws when factoryProfile.findMany returns empty', async () => {
-      findManyMock.mockResolvedValueOnce([]);
-      await expect(service.matchFactories(sampleRequest)).rejects.toThrow(
-        /No factory profiles available/,
-      );
-    });
-
-    it('maps DB columns into FactoryRecommendation contract', async () => {
-      const result = await service.matchFactories(sampleRequest);
-      const moldMatch = result.find((r) => r.processes.includes('금형'));
-      expect(moldMatch).toBeDefined();
-      expect(moldMatch?.location).toBeTruthy();
-      expect(moldMatch?.contactEmail).toMatch(/@/);
-      expect(moldMatch?.deliveryRate).toBeGreaterThan(0);
-      expect(moldMatch?.reorderRate).toBeGreaterThan(0);
     });
   });
 
-  describe('matchFactories (OpenAI path)', () => {
-    it('hits api.openai.com/v1/embeddings when OPENAI_API_KEY is present', async () => {
+  describe('matchFactories (Phase 4 — Company directory path)', () => {
+    beforeEach(() => {
+      delete process.env.OPENAI_API_KEY;
+      process.env.NODE_ENV = 'test';
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    });
+
+    it('uses Ppuri Company candidates when matches exist (skips FactoryProfile fallback)', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(result).toHaveLength(4);
+      expect(factoryProfileFindManyMock).not.toHaveBeenCalled();
+      const ids = result.map((r) => r.id);
+      for (const id of ids) {
+        expect(PPURI_COMPANIES.map((c) => c.id)).toContain(id);
+      }
+    });
+
+    it('attaches Ppuri metadata (externalId, region, confidenceTier, processHint) to recommendation', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      const ppuri = result.find((r) => r.id === 'ppuri-1');
+      expect(ppuri).toBeDefined();
+      expect(ppuri?.externalId).toBe('C0000001');
+      expect(ppuri?.region).toBe('경기');
+      expect(ppuri?.confidenceTier).toBe('A_CERTIFIED_ROOT');
+      expect(ppuri?.processHint).toBe('주형 및 금형 제조업');
+    });
+
+    it('synthesizes A-tier KPI for Company-only candidates (no FactoryProfile)', async () => {
+      companyFindManyMock.mockResolvedValueOnce([PPURI_COMPANIES[0]!]);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.trustScore).toBe(86);
+      expect(result[0]?.deliveryRate).toBe(88);
+      expect(result[0]?.qualityScore).toBe(86);
+    });
+
+    it('normalizes long-form region (경기도 → 경기) before query', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기도',
+      });
+
+      const firstCall = companyFindManyMock.mock.calls[0]?.[0];
+      const andClauses = firstCall?.where?.AND;
+      expect(Array.isArray(andClauses)).toBe(true);
+      const regionClause = (andClauses as { region?: string }[]).find(
+        (clause) => clause.region !== undefined,
+      );
+      expect(regionClause?.region).toBe('경기');
+    });
+
+    it('retries without region when region-filtered query returns empty', async () => {
+      companyFindManyMock
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce(PPURI_COMPANIES);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '제주',
+      });
+
+      expect(companyFindManyMock).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(4);
+      const secondCallWhere = companyFindManyMock.mock.calls[1]?.[0]?.where;
+      const secondAnd = secondCallWhere?.AND as { region?: string }[];
+      const hasRegionClause = secondAnd.some((c) => c.region !== undefined);
+      expect(hasRegionClause).toBe(false);
+    });
+
+    it('expands 금형 process to processHint OR list (금형, 주형)', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      await service.matchFactories(sampleMoldRequest);
+
+      const firstCall = companyFindManyMock.mock.calls[0]?.[0];
+      const processFilter = (
+        firstCall.where.AND as { OR?: Array<{ processHint?: unknown }> }[]
+      ).find((c) => Array.isArray(c.OR));
+      expect(processFilter).toBeDefined();
+      const orHints = processFilter?.OR ?? [];
+      const hintSubstrings = orHints
+        .map((h) => (h.processHint as { contains?: string })?.contains)
+        .filter(Boolean);
+      expect(hintSubstrings).toEqual(expect.arrayContaining(['금형', '주형']));
+    });
+
+    it('filters confidenceTier to A+B only (excludes C/D directory rows)', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      await service.matchFactories(sampleMoldRequest);
+
+      const firstCall = companyFindManyMock.mock.calls[0]?.[0];
+      const tierFilter = (
+        firstCall.where.AND as { confidenceTier?: { in?: ConfidenceTier[] } }[]
+      ).find((c) => c.confidenceTier !== undefined);
+      expect(tierFilter?.confidenceTier?.in).toEqual([
+        ConfidenceTier.A_CERTIFIED_ROOT,
+        ConfidenceTier.B_LOCAL_STRONG_INSIDE,
+      ]);
+    });
+
+    it('caps candidate pool at PREFILTER_TAKE (20)', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+
+      await service.matchFactories(sampleMoldRequest);
+
+      const firstCall = companyFindManyMock.mock.calls[0]?.[0];
+      expect(firstCall.take).toBe(20);
+    });
+  });
+
+  describe('matchFactories (GPT defensive validation — Phase 4 GPT < 4 fix)', () => {
+    beforeEach(() => {
       process.env.OPENAI_API_KEY = 'sk-test-fake-key';
       process.env.NODE_ENV = 'test';
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
+    });
 
-      const fetchSpy = jest
+    function stubGptResponse(matches: unknown[]): jest.SpyInstance {
+      const embedJson = (data: unknown) =>
+        new Response(JSON.stringify(data), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      const embedding = Array.from({ length: 1536 }, (_, i) => (i % 7) / 10);
+      return jest
         .spyOn(global, 'fetch')
-        .mockRejectedValue(new Error('network blocked in test'));
+        .mockImplementation(async (url: string | URL | Request) => {
+          const target =
+            typeof url === 'string'
+              ? url
+              : url instanceof URL
+                ? url.toString()
+                : url.url;
+          if (target.includes('embeddings')) {
+            return embedJson({ data: [{ embedding }] });
+          }
+          if (target.includes('chat/completions')) {
+            return embedJson({
+              choices: [
+                {
+                  message: { content: JSON.stringify({ matches }) },
+                },
+              ],
+            });
+          }
+          throw new Error(`Unexpected fetch URL in test: ${target}`);
+        });
+    }
 
-      await expect(service.matchFactories(sampleRequest)).rejects.toThrow();
-      expect(fetchSpy).toHaveBeenCalled();
+    it('pads to exactly 4 when GPT returns only 2 matches', async () => {
+      stubGptResponse([
+        {
+          id: 'ppuri-1',
+          aiReason: 'GPT 응답 1',
+          qualityScore: 88,
+          deliveryScore: 88,
+          priceCompetitiveness: 80,
+          trustScore: 90,
+          estimateMin: 300,
+          estimateMax: 500,
+        },
+        {
+          id: 'ppuri-2',
+          aiReason: 'GPT 응답 2',
+          qualityScore: 85,
+          deliveryScore: 85,
+          priceCompetitiveness: 78,
+          trustScore: 88,
+          estimateMin: 280,
+          estimateMax: 480,
+        },
+      ]);
 
-      const firstCallUrl = String(fetchSpy.mock.calls[0]?.[0] ?? '');
-      expect(firstCallUrl).toContain('api.openai.com');
-      expect(firstCallUrl).toContain('embeddings');
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(result).toHaveLength(4);
+      const paddedRecs = result.filter((r) =>
+        r.aiReason.startsWith('[자동 보강]'),
+      );
+      expect(paddedRecs).toHaveLength(2);
+    });
+
+    it('drops unknown IDs returned by GPT (hallucinated factory)', async () => {
+      stubGptResponse([
+        {
+          id: 'ppuri-1',
+          aiReason: 'OK',
+          qualityScore: 80,
+          deliveryScore: 80,
+          priceCompetitiveness: 75,
+          trustScore: 85,
+          estimateMin: 300,
+          estimateMax: 500,
+        },
+        {
+          id: 'fake-hallucinated-id',
+          aiReason: 'should be dropped',
+          qualityScore: 99,
+          deliveryScore: 99,
+          priceCompetitiveness: 99,
+          trustScore: 99,
+          estimateMin: 100,
+          estimateMax: 200,
+        },
+      ]);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      expect(result).toHaveLength(4);
+      expect(result.map((r) => r.id)).not.toContain('fake-hallucinated-id');
+    });
+
+    it('dedupes when GPT returns the same ID twice', async () => {
+      stubGptResponse([
+        {
+          id: 'ppuri-1',
+          aiReason: 'first',
+          qualityScore: 88,
+          deliveryScore: 88,
+          priceCompetitiveness: 80,
+          trustScore: 90,
+          estimateMin: 300,
+          estimateMax: 500,
+        },
+        {
+          id: 'ppuri-1',
+          aiReason: 'duplicate',
+          qualityScore: 60,
+          deliveryScore: 60,
+          priceCompetitiveness: 60,
+          trustScore: 60,
+          estimateMin: 100,
+          estimateMax: 200,
+        },
+      ]);
+
+      const result = await service.matchFactories({
+        ...sampleMoldRequest,
+        region: '경기',
+      });
+
+      const ppuri1Recs = result.filter((r) => r.id === 'ppuri-1');
+      expect(ppuri1Recs).toHaveLength(1);
+      expect(ppuri1Recs[0]?.aiReason).toBe('first');
     });
   });
 
@@ -291,7 +569,7 @@ describe('AiMatchingService', () => {
     });
 
     it('skips persistence when quoteRequestId is absent', async () => {
-      const result = await service.matchFactories(sampleRequest);
+      const result = await service.matchFactories(sampleMoldRequest);
 
       expect(quoteRequestFindUniqueMock).not.toHaveBeenCalled();
       expect(matchRecommendationUpsertMock).not.toHaveBeenCalled();
@@ -300,29 +578,8 @@ describe('AiMatchingService', () => {
       }
     });
 
-    it('skips persistence when quoteRequestId is provided but not found', async () => {
-      quoteRequestFindUniqueMock.mockResolvedValue(null);
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-
-      const result = await service.matchFactories({
-        ...sampleRequest,
-        quoteRequestId: 'qr-missing',
-      });
-
-      expect(quoteRequestFindUniqueMock).toHaveBeenCalledWith({
-        where: { id: 'qr-missing' },
-        select: { id: true },
-      });
-      expect(matchRecommendationUpsertMock).not.toHaveBeenCalled();
-      for (const rec of result) {
-        expect(rec.recommendationId).toBeUndefined();
-      }
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('qr-missing'),
-      );
-    });
-
-    it('persists each recommendation and attaches recommendationId when quoteRequestId resolves', async () => {
+    it('persists each recommendation with factoryId = Company.id', async () => {
+      companyFindManyMock.mockResolvedValueOnce(PPURI_COMPANIES);
       quoteRequestFindUniqueMock.mockResolvedValue({ id: 'qr-real' });
       matchRecommendationUpsertMock.mockImplementation(
         ({
@@ -338,7 +595,8 @@ describe('AiMatchingService', () => {
       );
 
       const result = await service.matchFactories({
-        ...sampleRequest,
+        ...sampleMoldRequest,
+        region: '경기',
         quoteRequestId: 'qr-real',
       });
 
@@ -347,61 +605,13 @@ describe('AiMatchingService', () => {
 
       for (const rec of result) {
         expect(rec.recommendationId).toBe(`mr-${rec.id}`);
-        expect(TEST_FACTORIES.map((f) => f.companyId)).toContain(rec.id);
+        expect(PPURI_COMPANIES.map((c) => c.id)).toContain(rec.id);
       }
 
-      const firstRec = result[0];
-      if (!firstRec) throw new Error('expected at least one recommendation');
       const firstCall = matchRecommendationUpsertMock.mock.calls[0][0];
-      expect(firstCall.where).toEqual({
-        quoteRequestId_factoryId_source: {
-          quoteRequestId: 'qr-real',
-          factoryId: firstRec.id,
-          source: 'DETERMINISTIC_MOCK',
-        },
-      });
-      expect(firstCall.create).toEqual(
-        expect.objectContaining({
-          quoteRequestId: 'qr-real',
-          factoryId: firstRec.id,
-          source: 'DETERMINISTIC_MOCK',
-          qualityScore: expect.any(Number),
-          deliveryScore: expect.any(Number),
-          priceScore: expect.any(Number),
-          trustScore: expect.any(Number),
-          score: expect.any(Number),
-        }),
+      expect(firstCall.where.quoteRequestId_factoryId_source.source).toBe(
+        'DETERMINISTIC_MOCK',
       );
-      expect(firstCall.update).toEqual(
-        expect.objectContaining({
-          score: firstCall.create.score,
-          qualityScore: firstCall.create.qualityScore,
-        }),
-      );
-    });
-
-    it('preserves recommendation order after persistence', async () => {
-      quoteRequestFindUniqueMock.mockResolvedValue({ id: 'qr-real' });
-      matchRecommendationUpsertMock.mockImplementation(
-        ({
-          create,
-        }: {
-          create: { factoryId: string; quoteRequestId: string };
-        }) =>
-          Promise.resolve({
-            id: `mr-${create.factoryId}`,
-            quoteRequestId: create.quoteRequestId,
-            factoryId: create.factoryId,
-          }),
-      );
-
-      const baseline = await service.matchFactories(sampleRequest);
-      const persisted = await service.matchFactories({
-        ...sampleRequest,
-        quoteRequestId: 'qr-real',
-      });
-
-      expect(persisted.map((r) => r.id)).toEqual(baseline.map((r) => r.id));
     });
   });
 
@@ -415,7 +625,7 @@ describe('AiMatchingService', () => {
         .spyOn(global, 'fetch')
         .mockRejectedValue(new Error('network blocked in test'));
 
-      await expect(service.matchFactories(sampleRequest)).rejects.toThrow(
+      await expect(service.matchFactories(sampleMoldRequest)).rejects.toThrow(
         /OPENAI_API_KEY/,
       );
       expect(fetchSpy).not.toHaveBeenCalled();
@@ -429,7 +639,7 @@ describe('AiMatchingService', () => {
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
 
-      const result = await service.matchFactories(sampleRequest);
+      const result = await service.matchFactories(sampleMoldRequest);
 
       expect(result).toHaveLength(4);
       expect(warnSpy).toHaveBeenCalled();

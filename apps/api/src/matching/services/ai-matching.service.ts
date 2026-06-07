@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MatchingSource } from '@prisma/client';
-import type {
-  Company,
-  FactoryProfile as FactoryProfileRow,
-} from '@prisma/client';
+import { ConfidenceTier, MatchingSource, Prisma } from '@prisma/client';
+import type { Company, FactoryProfile } from '@prisma/client';
 import type {
   FactoryRecommendation,
   QuoteRequestDraft,
@@ -12,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VectorSearchService } from './vector-search.service';
 
 const TOP_K = 4;
+const PREFILTER_TAKE = 20;
 const GPT_MODEL = 'gpt-4o';
 
 const PROCESS_TYPE_LABELS: Record<string, string> = {
@@ -23,15 +21,95 @@ const PROCESS_TYPE_LABELS: Record<string, string> = {
   heat: '열처리',
 };
 
-type FactoryRow = FactoryProfileRow & { company: Company };
+// Map broad 6대 공정 → Ppuri processHint substrings (KSIC industry codes are narrower).
+// '소성가공' covers 단조/압형/압연/압출/연신 — none of which contain the substring '소성가공'.
+const PROCESS_HINT_EXPANSIONS: Record<string, string[]> = {
+  주조: ['주조', '주물'],
+  금형: ['금형', '주형'],
+  소성가공: ['소성가공', '단조', '압형', '압연', '압출', '연신'],
+  용접: ['용접'],
+  표면처리: ['표면처리', '도금', '도장', '피막'],
+  열처리: ['열처리', '공업용로', '전기로'],
+};
 
-interface GPTMatchResult {
-  id: string;
-  aiReason: string;
+// CSV `region` is stored as short form ('경기'); BE tolerates long form on input.
+const REGION_NORMALIZE: Record<string, string> = {
+  서울특별시: '서울',
+  서울시: '서울',
+  경기도: '경기',
+  인천광역시: '인천',
+  인천시: '인천',
+  경상남도: '경남',
+  경상북도: '경북',
+  전라남도: '전남',
+  전라북도: '전북',
+  충청남도: '충남',
+  충청북도: '충북',
+  강원도: '강원',
+  강원특별자치도: '강원',
+  제주특별자치도: '제주',
+  제주도: '제주',
+  대구광역시: '대구',
+  대전광역시: '대전',
+  광주광역시: '광주',
+  부산광역시: '부산',
+  울산광역시: '울산',
+  세종특별자치시: '세종',
+  세종시: '세종',
+};
+
+// Synthesized KPI baselines per Oracle (2026-06-07) — honest conservative values for directory rows
+// that have no FactoryProfile. A-tier ≈ 인증 뿌리기업, B-tier ≈ 산업단지 검증.
+const TIER_KPI: Record<ConfidenceTier, KpiBundle> = {
+  A_CERTIFIED_ROOT: {
+    trustScore: 86,
+    deliveryRate: 88,
+    reorderRate: 65,
+    qualityScore: 86,
+    deliveryScore: 84,
+    priceCompetitiveness: 74,
+    estimateMin: 300,
+    estimateMax: 500,
+  },
+  B_LOCAL_STRONG_INSIDE: {
+    trustScore: 74,
+    deliveryRate: 78,
+    reorderRate: 52,
+    qualityScore: 74,
+    deliveryScore: 74,
+    priceCompetitiveness: 70,
+    estimateMin: 250,
+    estimateMax: 450,
+  },
+  C_BORDERLINE_INSIDE: {
+    trustScore: 60,
+    deliveryRate: 65,
+    reorderRate: 40,
+    qualityScore: 60,
+    deliveryScore: 60,
+    priceCompetitiveness: 65,
+    estimateMin: 200,
+    estimateMax: 400,
+  },
+  D_LOW_CONFIDENCE: {
+    trustScore: 50,
+    deliveryRate: 55,
+    reorderRate: 30,
+    qualityScore: 50,
+    deliveryScore: 50,
+    priceCompetitiveness: 60,
+    estimateMin: 200,
+    estimateMax: 400,
+  },
+};
+
+interface KpiBundle {
+  trustScore: number;
+  deliveryRate: number;
+  reorderRate: number;
   qualityScore: number;
   deliveryScore: number;
   priceCompetitiveness: number;
-  trustScore: number;
   estimateMin: number;
   estimateMax: number;
 }
@@ -44,6 +122,41 @@ interface ScoreBundle {
   trustScore: number;
   estimateMin: number;
   estimateMax: number;
+}
+
+interface Candidate {
+  company: Company;
+  factoryProfile: FactoryProfile | null;
+  kpi: KpiBundle;
+  processes: string[];
+}
+
+interface GPTMatchResult {
+  id: string;
+  aiReason: string;
+  qualityScore: number;
+  deliveryScore: number;
+  priceCompetitiveness: number;
+  trustScore: number;
+  estimateMin: number;
+  estimateMax: number;
+}
+
+function normalizeRegion(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return REGION_NORMALIZE[trimmed] ?? trimmed;
+}
+
+function deriveProcessesFromHint(
+  processHint: string | null,
+  requestedLabel: string,
+): string[] {
+  const labels = new Set<string>();
+  if (processHint) labels.add(processHint);
+  if (requestedLabel) labels.add(requestedLabel);
+  return Array.from(labels);
 }
 
 @Injectable()
@@ -68,27 +181,23 @@ export class AiMatchingService {
   async matchFactories(
     request: QuoteRequestDraft,
   ): Promise<FactoryRecommendation[]> {
-    const factories = await this.prisma.factoryProfile.findMany({
-      include: { company: true },
-    });
-
-    if (factories.length === 0) {
+    const candidates = await this.loadCandidates(request);
+    if (candidates.length === 0) {
       throw new Error(
-        'No factory profiles available. Run `pnpm --filter @rootmatching/api run prisma:seed` first.',
+        'No matching candidates available. Seed Ppuri Company directory (apps/api/scripts/seed-ppuri.ts) or FactoryProfile fixtures first.',
       );
     }
 
-    const factoryById = new Map(factories.map((f) => [f.companyId, f]));
-    const candidateIds = factories.map((f) => f.companyId);
+    const candidateById = new Map(candidates.map((c) => [c.company.id, c]));
+    const candidateIds = candidates.map((c) => c.company.id);
 
     const ranked = await this.vectorSearch.rankByEmbedding(
       this.describeRequest(request),
       candidateIds,
-      (id) => this.describeFactory(id, factoryById),
+      (id) => this.describeCandidate(this.requireCandidate(candidateById, id)),
     );
     const topIds = ranked.slice(0, TOP_K).map((r) => r.item);
 
-    // Compute fallback decision ONCE so source assignment matches the branch used.
     const useMockFallback = this.vectorSearch.shouldUseMockFallback();
     let recommendations: FactoryRecommendation[];
 
@@ -96,28 +205,15 @@ export class AiMatchingService {
       this.logger.warn(
         `Returning ${topIds.length} mock recommendations (OPENAI_API_KEY missing, NODE_ENV=${process.env.NODE_ENV ?? 'undefined'})`,
       );
-      recommendations = this.buildMockRecommendations(
-        topIds,
-        factoryById,
-        request,
+      recommendations = topIds.map((id) =>
+        this.toMockRecommendation(
+          this.requireCandidate(candidateById, id),
+          request,
+        ),
       );
     } else {
-      const gptResults = await this.callGPT4o(request, topIds, factoryById);
-      recommendations = gptResults
-        .map((gpt): FactoryRecommendation | null => {
-          const factory = factoryById.get(gpt.id);
-          if (!factory) return null;
-          return this.toRecommendation(factory, {
-            aiReason: gpt.aiReason,
-            qualityScore: gpt.qualityScore,
-            deliveryScore: gpt.deliveryScore,
-            priceCompetitiveness: gpt.priceCompetitiveness,
-            trustScore: gpt.trustScore,
-            estimateMin: gpt.estimateMin,
-            estimateMax: gpt.estimateMax,
-          });
-        })
-        .filter((r): r is FactoryRecommendation => r !== null);
+      const gptResults = await this.callGPT4o(request, topIds, candidateById);
+      recommendations = this.assembleFromGpt(gptResults, topIds, candidateById);
     }
 
     if (request.quoteRequestId) {
@@ -134,7 +230,98 @@ export class AiMatchingService {
     return recommendations;
   }
 
-  // Order must be preserved: FE first-card auto-selection depends on it.
+  private async loadCandidates(
+    request: QuoteRequestDraft,
+  ): Promise<Candidate[]> {
+    const koreanLabel =
+      PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
+    const hintExpansions = PROCESS_HINT_EXPANSIONS[koreanLabel] ?? [
+      koreanLabel,
+    ];
+    const region = normalizeRegion(request.region);
+
+    const tierFilter: Prisma.CompanyWhereInput = {
+      confidenceTier: {
+        in: [
+          ConfidenceTier.A_CERTIFIED_ROOT,
+          ConfidenceTier.B_LOCAL_STRONG_INSIDE,
+        ],
+      },
+    };
+    const processFilter: Prisma.CompanyWhereInput = {
+      OR: hintExpansions.map((h) => ({
+        processHint: { contains: h, mode: Prisma.QueryMode.insensitive },
+      })),
+    };
+
+    const tryQueries: Prisma.CompanyWhereInput[] = [];
+    if (region) {
+      tryQueries.push({ AND: [tierFilter, processFilter, { region }] });
+    }
+    tryQueries.push({ AND: [tierFilter, processFilter] });
+
+    for (const where of tryQueries) {
+      const companies = await this.prisma.company.findMany({
+        where,
+        include: { factoryProfile: true },
+        orderBy: [{ confidenceTier: 'asc' }, { name: 'asc' }],
+        take: PREFILTER_TAKE,
+      });
+      if (companies.length > 0) {
+        return companies.map((c) =>
+          this.buildCandidate(c, c.factoryProfile, koreanLabel),
+        );
+      }
+    }
+
+    const factoryProfiles = await this.prisma.factoryProfile.findMany({
+      include: { company: true },
+      take: PREFILTER_TAKE,
+    });
+    return factoryProfiles.map((fp) =>
+      this.buildCandidate(fp.company, fp, koreanLabel),
+    );
+  }
+
+  private buildCandidate(
+    company: Company,
+    factoryProfile: FactoryProfile | null,
+    requestedLabel: string,
+  ): Candidate {
+    if (factoryProfile) {
+      return {
+        company,
+        factoryProfile,
+        kpi: {
+          trustScore: factoryProfile.trustScore,
+          deliveryRate: factoryProfile.deliveryRate,
+          reorderRate: factoryProfile.reorderRate,
+          qualityScore: factoryProfile.qualityScore,
+          deliveryScore: factoryProfile.deliveryScore,
+          priceCompetitiveness: factoryProfile.priceCompetitiveness,
+          estimateMin: factoryProfile.estimateMin,
+          estimateMax: factoryProfile.estimateMax,
+        },
+        processes: factoryProfile.processes,
+      };
+    }
+    const tier = company.confidenceTier ?? ConfidenceTier.D_LOW_CONFIDENCE;
+    return {
+      company,
+      factoryProfile: null,
+      kpi: { ...TIER_KPI[tier] },
+      processes: deriveProcessesFromHint(company.processHint, requestedLabel),
+    };
+  }
+
+  private requireCandidate(map: Map<string, Candidate>, id: string): Candidate {
+    const candidate = map.get(id);
+    if (!candidate) {
+      throw new Error(`Candidate not found for id=${id}`);
+    }
+    return candidate;
+  }
+
   private async persistRecommendations(
     quoteRequestId: string,
     recommendations: FactoryRecommendation[],
@@ -183,8 +370,6 @@ export class AiMatchingService {
             estimateMin: rec.estimateMin,
             estimateMax: rec.estimateMax,
           },
-          // Refresh stored scores so the row matches the response the FE just saw —
-          // otherwise the recommendationId in acceptedQuoteId points at stale data.
           update: {
             score,
             qualityScore: rec.qualityScore,
@@ -201,118 +386,192 @@ export class AiMatchingService {
     );
   }
 
-  private buildMockRecommendations(
-    ids: string[],
-    factoryById: Map<string, FactoryRow>,
-    request: QuoteRequestDraft,
+  private assembleFromGpt(
+    gptResults: GPTMatchResult[],
+    topIds: string[],
+    candidateById: Map<string, Candidate>,
   ): FactoryRecommendation[] {
+    const knownIds = new Set(topIds);
+    const seenIds = new Set<string>();
+    const gptById = new Map<string, GPTMatchResult>();
+    for (const gpt of gptResults) {
+      if (!knownIds.has(gpt.id)) continue;
+      if (seenIds.has(gpt.id)) continue;
+      seenIds.add(gpt.id);
+      gptById.set(gpt.id, gpt);
+    }
+
+    return topIds.map((id) => {
+      const candidate = this.requireCandidate(candidateById, id);
+      const gpt = gptById.get(id);
+      if (gpt) {
+        return this.toRecommendation(candidate, {
+          aiReason: gpt.aiReason,
+          qualityScore: gpt.qualityScore,
+          deliveryScore: gpt.deliveryScore,
+          priceCompetitiveness: gpt.priceCompetitiveness,
+          trustScore: gpt.trustScore,
+          estimateMin: gpt.estimateMin,
+          estimateMax: gpt.estimateMax,
+        });
+      }
+      this.logger.warn(
+        `GPT response missing factoryId=${id}; padding with synthesized scores`,
+      );
+      return this.toRecommendation(candidate, this.padScores(candidate));
+    });
+  }
+
+  private padScores(candidate: Candidate): ScoreBundle {
+    const c = candidate.company;
+    const region = c.region ?? '미상 지역';
+    const hintLabel = c.processHint ?? '뿌리공정';
+    const tierLabel =
+      c.confidenceTier === ConfidenceTier.A_CERTIFIED_ROOT
+        ? '인증 뿌리기업'
+        : c.confidenceTier === ConfidenceTier.B_LOCAL_STRONG_INSIDE
+          ? '산업단지 검증 기업'
+          : '검증 기업';
+    return {
+      aiReason: `[자동 보강] ${region} 소재 ${tierLabel}로 ${hintLabel} 분야 후보. GPT 응답 누락분을 결정성 점수로 보강했습니다.`,
+      qualityScore: candidate.kpi.qualityScore,
+      deliveryScore: candidate.kpi.deliveryScore,
+      priceCompetitiveness: candidate.kpi.priceCompetitiveness,
+      trustScore: candidate.kpi.trustScore,
+      estimateMin: candidate.kpi.estimateMin,
+      estimateMax: candidate.kpi.estimateMax,
+    };
+  }
+
+  private toMockRecommendation(
+    candidate: Candidate,
+    request: QuoteRequestDraft,
+  ): FactoryRecommendation {
     const processLabel =
       PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
-
-    return ids
-      .map((id) => factoryById.get(id))
-      .filter((f): f is FactoryRow => f !== undefined)
-      .map((factory) => {
-        const matchesProcess = factory.processes.some((p) =>
-          p.includes(processLabel),
-        );
-        const reasonPrefix = matchesProcess
-          ? `[Mock · ${processLabel} 공정 매칭]`
-          : '[Mock · API key 미설정]';
-        const reasonBody = `${factory.company.name}이(가) ${factory.processes.join(', ')} 공정을 보유하고 있습니다.`;
-        return this.toRecommendation(factory, {
-          aiReason: `${reasonPrefix} ${reasonBody}`,
-          qualityScore: factory.qualityScore,
-          deliveryScore: factory.deliveryScore,
-          priceCompetitiveness: factory.priceCompetitiveness,
-          trustScore: factory.trustScore,
-          estimateMin: factory.estimateMin,
-          estimateMax: factory.estimateMax,
-        });
-      });
+    const matchesProcess = candidate.processes.some(
+      (p) => p.includes(processLabel) || processLabel.includes(p),
+    );
+    const reasonPrefix = matchesProcess
+      ? `[Mock · ${processLabel} 공정 매칭]`
+      : '[Mock · API key 미설정]';
+    const processSummary =
+      candidate.processes.length > 0
+        ? candidate.processes.join(', ')
+        : (candidate.company.processHint ?? '뿌리공정');
+    const reasonBody = `${candidate.company.name}이(가) ${processSummary} 분야에서 활동 중입니다.`;
+    return this.toRecommendation(candidate, {
+      aiReason: `${reasonPrefix} ${reasonBody}`,
+      qualityScore: candidate.kpi.qualityScore,
+      deliveryScore: candidate.kpi.deliveryScore,
+      priceCompetitiveness: candidate.kpi.priceCompetitiveness,
+      trustScore: candidate.kpi.trustScore,
+      estimateMin: candidate.kpi.estimateMin,
+      estimateMax: candidate.kpi.estimateMax,
+    });
   }
 
   private toRecommendation(
-    factory: FactoryRow,
+    candidate: Candidate,
     scores: ScoreBundle,
   ): FactoryRecommendation {
+    const c = candidate.company;
+    const fp = candidate.factoryProfile;
+    const location = fp?.location ?? c.address ?? c.region ?? '위치 미상';
     return {
-      id: factory.companyId,
-      name: factory.company.name,
-      location: factory.location ?? factory.company.region ?? '위치 미상',
-      processes: factory.processes,
+      id: c.id,
+      name: c.name,
+      location,
+      processes: candidate.processes,
       trustScore: scores.trustScore,
-      deliveryRate: factory.deliveryRate,
-      reorderRate: factory.reorderRate,
+      deliveryRate: candidate.kpi.deliveryRate,
+      reorderRate: candidate.kpi.reorderRate,
       estimateMin: scores.estimateMin,
       estimateMax: scores.estimateMax,
       aiReason: scores.aiReason,
       qualityScore: scores.qualityScore,
       deliveryScore: scores.deliveryScore,
       priceCompetitiveness: scores.priceCompetitiveness,
-      industrialComplex: factory.industrialComplex ?? undefined,
-      reorderCustomerCount: factory.reorderCustomerCount ?? undefined,
-      employeeCount: factory.company.employeeCount ?? undefined,
-      contactEmail: factory.company.contactEmail ?? undefined,
-      contactPhone: factory.company.contactPhone ?? undefined,
+      industrialComplex: fp?.industrialComplex ?? undefined,
+      reorderCustomerCount: fp?.reorderCustomerCount ?? undefined,
+      employeeCount: c.employeeCount ?? undefined,
+      contactEmail: c.contactEmail ?? undefined,
+      contactPhone: c.contactPhone ?? undefined,
+      externalId: c.externalId ?? undefined,
+      region: c.region ?? undefined,
+      industry: c.industry ?? undefined,
+      confidenceTier: c.confidenceTier ?? undefined,
+      processHint: c.processHint ?? undefined,
     } satisfies FactoryRecommendation;
   }
 
-  private describeFactory(
-    companyId: string,
-    factoryById: Map<string, FactoryRow>,
-  ): string {
-    const factory = factoryById.get(companyId);
-    if (!factory) return `공장 ID: ${companyId}`;
-
-    const qualityLine =
-      factory.qualitySatisfaction != null
-        ? `품질 만족도: ${factory.qualitySatisfaction}점`
-        : `품질 점수: ${factory.qualityScore}점`;
-
+  private describeCandidate(candidate: Candidate): string {
+    const fp = candidate.factoryProfile;
+    const c = candidate.company;
+    if (fp) {
+      const qualityLine =
+        fp.qualitySatisfaction != null
+          ? `품질 만족도: ${fp.qualitySatisfaction}점`
+          : `품질 점수: ${fp.qualityScore}점`;
+      return [
+        `공장명: ${c.name}`,
+        `위치: ${fp.location ?? c.region ?? '미상'}`,
+        `전문 공정: ${fp.specialty.join(', ')}`,
+        `보유 설비: ${fp.equipment.join(', ')}`,
+        `생산 가능 품목: ${fp.products.join(', ')}`,
+        `월 생산 가능량: ${fp.monthlyCapacity ?? '미상'}`,
+        `납기 준수율: ${fp.deliveryRate}%`,
+        qualityLine,
+        `재거래율: ${fp.reorderRate}%`,
+        `평균 응답 시간: ${fp.avgResponseTime ?? '미상'}`,
+        `주요 고객사: ${fp.clients.join(', ')}`,
+      ].join('\n');
+    }
     return [
-      `공장명: ${factory.company.name}`,
-      `위치: ${factory.location ?? factory.company.region ?? '미상'}`,
-      `전문 공정: ${factory.specialty.join(', ')}`,
-      `보유 설비: ${factory.equipment.join(', ')}`,
-      `생산 가능 품목: ${factory.products.join(', ')}`,
-      `월 생산 가능량: ${factory.monthlyCapacity ?? '미상'}`,
-      `납기 준수율: ${factory.deliveryRate}%`,
-      qualityLine,
-      `재거래율: ${factory.reorderRate}%`,
-      `평균 응답 시간: ${factory.avgResponseTime ?? '미상'}`,
-      `주요 고객사: ${factory.clients.join(', ')}`,
+      `공장명: ${c.name}`,
+      `지역: ${c.region ?? '미상'}`,
+      `주소: ${c.address ?? '미상'}`,
+      `대표 공정: ${c.processHint ?? '미분류'}`,
+      `대표자: ${c.representative ?? '미상'}`,
+      `신뢰 등급: ${c.confidenceTier ?? '미상'}`,
+      `출처: ${c.sourceTypes.length > 0 ? c.sourceTypes.join(', ') : '미상'}`,
     ].join('\n');
   }
 
   private describeRequest(request: QuoteRequestDraft): string {
     const processLabel =
       PROCESS_TYPE_LABELS[request.processType] ?? request.processType;
-    return [
+    const lines = [
       `프로젝트명: ${request.projectName}`,
       `공정 유형: ${request.processType} (${processLabel})`,
+    ];
+    if (request.region) lines.push(`희망 지역: ${request.region}`);
+    lines.push(
       `제작 품목: ${request.productItem}`,
       `예상 수량: ${request.estimatedQuantity}`,
       `희망 납기: ${request.desiredDeadline}`,
       `예산 범위: ${request.budgetRange}`,
       `상세 요구사항: ${request.detailRequirements}`,
-    ].join('\n');
+    );
+    return lines.join('\n');
   }
 
   private async callGPT4o(
     request: QuoteRequestDraft,
     factoryIds: string[],
-    factoryById: Map<string, FactoryRow>,
+    candidateById: Map<string, Candidate>,
   ): Promise<GPTMatchResult[]> {
     const factoryList = factoryIds
-      .map(
-        (id, i) =>
-          `[공장 ${i + 1}]\nID: ${id}\n${this.describeFactory(id, factoryById)}`,
-      )
+      .map((id, i) => {
+        const candidate = candidateById.get(id);
+        if (!candidate) return '';
+        return `[공장 ${i + 1}]\nID: ${id}\n${this.describeCandidate(candidate)}`;
+      })
+      .filter((s) => s.length > 0)
       .join('\n\n');
 
     const prompt = `당신은 뿌리산업 B2B 수주 매칭 전문가입니다.
-발주처의 요청 조건을 분석하여 각 공장의 적합도를 평가해주세요.
+발주처의 요청 조건을 분석하여 후보 공장 ${factoryIds.length}곳 각각의 적합도를 평가해주세요.
 
 [발주처 요청 조건]
 ${this.describeRequest(request)}
@@ -320,11 +579,13 @@ ${this.describeRequest(request)}
 [후보 공장 목록]
 ${factoryList}
 
-각 공장에 대해 아래 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
+⚠ 반드시 후보 공장 ${factoryIds.length}곳 모두에 대해 ${factoryIds.length}개의 매칭 객체를 빠짐없이 반환하세요. 누락·중복·신규 ID 금지. 위 목록의 ID를 그대로 복사하세요.
+
+아래 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
 {
   "matches": [
     {
-      "id": "공장 ID (그대로 복사)",
+      "id": "공장 ID (위 목록에서 그대로 복사)",
       "aiReason": "이 요청에 이 공장을 추천하는 핵심 이유 2문장 (한국어, 발주 조건과 공장 역량을 구체적으로 연결할 것)",
       "qualityScore": 85,
       "deliveryScore": 90,
@@ -374,6 +635,6 @@ ${factoryList}
       throw new Error('GPT-4o 응답이 비어 있습니다.');
     }
     const parsed = JSON.parse(content) as { matches: GPTMatchResult[] };
-    return parsed.matches;
+    return parsed.matches ?? [];
   }
 }

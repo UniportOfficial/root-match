@@ -7,6 +7,8 @@ export interface QuoteRequestDraft {
   budgetRange: string
   detailRequirements: string
   quoteRequestId?: string
+  // Optional pre-filter. Korean 시·도 ('경기', '인천', ...). BE normalizes '경기도' → '경기'.
+  region?: string
 }
 
 export interface FactoryRecommendation {
@@ -32,6 +34,16 @@ export interface FactoryRecommendation {
   contactEmail?: string
   contactPhone?: string
   recommendationId?: string
+  // Ppuri directory metadata — populated when candidate originates from Company directory (Phase 4).
+  externalId?: string
+  region?: string
+  industry?: string
+  confidenceTier?:
+    | 'A_CERTIFIED_ROOT'
+    | 'B_LOCAL_STRONG_INSIDE'
+    | 'C_BORDERLINE_INSIDE'
+    | 'D_LOW_CONFIDENCE'
+  processHint?: string
 }
 
 export interface FactoryPortfolioItem {

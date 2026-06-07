@@ -324,7 +324,7 @@ export default function MatchingResultPage() {
   }, [filteredFactories, loadState, selectedFactory])
 
   function goToDetail(id: string) {
-    router.push(`/factories/${id}`)
+    router.push(`/factories/${id}${isDemoMode ? '?demo=true' : ''}`)
   }
 
   function requestQuote(factory?: DemoFactoryRecommendation) {

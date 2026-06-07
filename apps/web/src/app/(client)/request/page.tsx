@@ -508,9 +508,9 @@ export default function ClientRequestPage() {
         'rm:matchingResults',
         JSON.stringify({ results, request, submittedAt: Date.now() }),
       )
-      router.push('/matching')
+      router.push(isDemoMode ? '/matching?demo=true' : '/matching')
     } catch {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !isDemoMode) {
         setLoadingStep(0)
         setSubmitError('AI 매칭 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
         return

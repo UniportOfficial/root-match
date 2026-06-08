@@ -4,13 +4,13 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Menu, PanelLeftOpen, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useMessagesUnreadCount } from '@/state/MessagesContext'
 import { useNotificationsUnreadCount } from '@/state/NotificationsContext'
 import { useUserState } from '@/state/UserContext'
 import { NotificationDropdown } from '@/components/notification/NotificationDropdown'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { HeaderMessagesButton } from '@/components/layout/HeaderMessagesButton'
 import { HeaderNewQuoteButton } from '@/components/layout/HeaderNewQuoteButton'
 import { HeaderPageTitle } from '@/components/layout/HeaderPageTitle'
 import { HeaderProfileDropdown } from '@/components/layout/HeaderProfileDropdown'
@@ -27,8 +27,6 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const notificationUnreadCount = useNotificationsUnreadCount()
-  const messageUnreadCount = useMessagesUnreadCount()
-  const totalUnreadCount = notificationUnreadCount + messageUnreadCount
   const { isAuthenticated } = useUserState()
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -94,6 +92,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-4">
           {isAuthenticated && <HeaderNewQuoteButton />}
+          {isAuthenticated && <HeaderMessagesButton className="hidden sm:inline-flex" />}
           <div className="relative">
             <Button
               variant="ghost"
@@ -101,15 +100,17 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
               type="button"
               onClick={() => setDropdownOpen((open) => !open)}
               className="relative"
-              aria-label={totalUnreadCount > 0 ? `알림 ${totalUnreadCount}개` : '알림'}
+              aria-label={
+                notificationUnreadCount > 0 ? `알림 ${notificationUnreadCount}개` : '알림'
+              }
             >
               <Bell className="h-5 w-5" />
-              {totalUnreadCount > 0 && (
+              {notificationUnreadCount > 0 && (
                 <span
                   className="absolute right-1 top-1 flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[12px] font-bold leading-none text-destructive-foreground ring-2 ring-card"
                   aria-hidden="true"
                 >
-                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
                 </span>
               )}
             </Button>

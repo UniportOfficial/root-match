@@ -5,7 +5,7 @@ const ACCOUNT_TYPE_VALUES = ['client', 'factory'] as const
 const USER_ROLE_VALUES = ['admin', 'member', 'operator'] as const
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/auth`,
   plugins: [
     inferAdditionalFields({
       user: {

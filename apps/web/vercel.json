@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/_api/:path*",
+      "destination": "https://root-match-boxygens-projects.vercel.app/:path*"
+    }
+  ]
+}

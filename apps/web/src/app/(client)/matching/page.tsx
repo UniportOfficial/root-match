@@ -750,6 +750,33 @@ export default function MatchingResultPage() {
                     <MatchingVerificationBadges factory={selectedFactory} layout="stack" />
                   </div>
 
+                  <dl className="mb-5 grid grid-cols-3 gap-2 rounded-xl bg-muted/60 p-3 text-center">
+                    <div>
+                      <dt className="text-kr-keep text-[12px] font-semibold text-muted-foreground">
+                        규모
+                      </dt>
+                      <dd className="mt-0.5 text-rm-body-sm font-bold text-foreground tabular-nums">
+                        {selectedFactory.employeeCount ?? '-'}명
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-kr-keep text-[12px] font-semibold text-muted-foreground">
+                        재거래
+                      </dt>
+                      <dd className="mt-0.5 text-rm-body-sm font-bold text-foreground tabular-nums">
+                        {selectedFactory.reorderRate}%
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-kr-keep text-[12px] font-semibold text-muted-foreground">
+                        거리
+                      </dt>
+                      <dd className="mt-0.5 text-rm-body-sm font-bold text-foreground tabular-nums">
+                        {selectedFactory.distanceKm ?? '-'}km
+                      </dd>
+                    </div>
+                  </dl>
+
                   <div className="space-y-4">
                     <ProgressMetric
                       icon={<Shield className="h-4 w-4 text-success" />}

@@ -51,6 +51,7 @@ function resolveRedirectTarget(fallback: string): string {
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<AuthTab>('login')
   const [submitError, setSubmitError] = useState('')
+  const [registerSuccess, setRegisterSuccess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const loginForm = useForm<LoginFormValues>({
@@ -70,6 +71,7 @@ export default function LoginPage() {
 
   async function submitLogin(values: LoginFormValues) {
     setSubmitError('')
+    setRegisterSuccess('')
     setIsSubmitting(true)
     const { error } = await authClient.signIn.email({
       email: values.email,
@@ -85,6 +87,7 @@ export default function LoginPage() {
 
   async function submitRegister(values: RegisterFormValues) {
     setSubmitError('')
+    setRegisterSuccess('')
     setIsSubmitting(true)
     const { error } = await authClient.signUp.email({
       email: values.email,
@@ -97,13 +100,17 @@ export default function LoginPage() {
       setSubmitError(error.message ?? '회원가입 중 오류가 발생했습니다')
       return
     }
-    router.push(resolveRedirectTarget('/dashboard'))
+    setRegisterSuccess(
+      `${values.email}로 인증 메일을 발송했어요. 메일함을 확인하고 인증 링크를 눌러 가입을 완료해주세요.`,
+    )
+    registerForm.reset()
   }
 
   function handleTabChange(value: string) {
     if (value !== 'login' && value !== 'register') return
     setActiveTab(value)
     setSubmitError('')
+    setRegisterSuccess('')
   }
 
   return (
@@ -141,6 +148,12 @@ export default function LoginPage() {
               {submitError && (
                 <p className="text-kr-pretty rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[15px] font-bold text-destructive">
                   {submitError}
+                </p>
+              )}
+
+              {registerSuccess && (
+                <p className="text-kr-pretty rounded-xl border border-success/20 bg-success-subtle px-4 py-3 text-[15px] font-bold text-success">
+                  {registerSuccess}
                 </p>
               )}
 

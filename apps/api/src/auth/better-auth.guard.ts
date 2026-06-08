@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { auth, type AuthSession } from './auth.config';
+import { getAuth, type AuthSession } from './auth.config';
 
 interface RequestWithSession extends Request {
   session?: AuthSession['session'];
@@ -16,7 +16,10 @@ interface RequestWithSession extends Request {
 export class BetterAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestWithSession>();
-    const { fromNodeHeaders } = await import('better-auth/node');
+    const [{ fromNodeHeaders }, auth] = await Promise.all([
+      import('better-auth/node'),
+      getAuth(),
+    ]);
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });

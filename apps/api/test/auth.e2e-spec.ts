@@ -7,7 +7,7 @@ import request from 'supertest';
 import { toNodeHandler } from 'better-auth/node';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { auth } from '../src/auth/auth.config';
+import { getAuth } from '../src/auth/auth.config';
 import { prisma } from '../src/prisma/prisma.client';
 
 describe('Auth e2e (W2-2)', () => {
@@ -28,7 +28,7 @@ describe('Auth e2e (W2-2)', () => {
     const expressApp = (app as NestExpressApplication)
       .getHttpAdapter()
       .getInstance();
-    expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
+    expressApp.all('/api/auth/{*splat}', toNodeHandler(await getAuth()));
     app.use(json({ limit: '10mb' }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
     await app.init();

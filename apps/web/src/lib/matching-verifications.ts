@@ -1,4 +1,4 @@
-import type { FactoryRecommendation } from '@rootmatching/shared'
+import type { CompanyDetail, FactoryRecommendation } from '@rootmatching/shared'
 import type { VerificationState, VerificationType } from '@/components/profile/VerificationBadge'
 
 export interface MatchingVerification {
@@ -191,5 +191,87 @@ export function deriveMatchingVerifications(factory: DerivableFactory): Matching
     deriveEquipment(factory),
     deriveCertification(factory),
     deriveOnsite(factory),
+  ]
+}
+
+function companyDetailToDerivableFactory(company: CompanyDetail): DerivableFactory {
+  const profile = company.factoryProfile
+  const processes = profile?.specialty.length
+    ? profile.specialty
+    : profile?.processes.length
+      ? profile.processes
+      : []
+
+  return {
+    id: company.id,
+    name: company.name,
+    location: profile?.location ?? company.address ?? company.region,
+    processes,
+    trustScore: profile?.trustScore ?? 80,
+    region: company.region,
+    industry: company.industry,
+    confidenceTier: company.confidenceTier,
+    processHint: company.processHint,
+    externalId: company.externalId,
+  }
+}
+
+function deriveCompanyEquipment(company: CompanyDetail): MatchingVerification {
+  const equipment = company.factoryProfile?.equipment ?? []
+  if (equipment.length > 0) {
+    return {
+      type: 'equipment',
+      label: '장비',
+      state: 'verified',
+      evidence: `보유 설비 ${equipment.length}종: ${equipment.slice(0, 3).join(' · ')}${
+        equipment.length > 3 ? ' 외' : ''
+      }`,
+    }
+  }
+  return deriveEquipment(companyDetailToDerivableFactory(company))
+}
+
+function deriveCompanyCertification(company: CompanyDetail): MatchingVerification {
+  if (company.certifications.length > 0) {
+    return {
+      type: 'certification',
+      label: '인증',
+      state: 'verified',
+      evidence: `보유 인증 ${company.certifications.length}건: ${company.certifications
+        .slice(0, 3)
+        .join(' · ')}${company.certifications.length > 3 ? ' 외' : ''}`,
+    }
+  }
+  return deriveCertification(companyDetailToDerivableFactory(company))
+}
+
+function deriveCompanyOnsite(company: CompanyDetail): MatchingVerification {
+  if (company.factoryProfile?.verified === true) {
+    return {
+      type: 'onsite',
+      label: '현장',
+      state: 'verified',
+      evidence: '거점 매니저 현장 방문 완료 (인증 공장)',
+    }
+  }
+  if (company.factoryProfile && company.factoryProfile.isSynthesized === false) {
+    return {
+      type: 'onsite',
+      label: '현장',
+      state: 'pending',
+      evidence: '공장 프로필 등록 완료 — 현장 방문 일정 협의 중',
+    }
+  }
+  return deriveOnsite(companyDetailToDerivableFactory(company))
+}
+
+export function deriveCompanyVerifications(company: CompanyDetail): MatchingVerification[] {
+  const derivable = companyDetailToDerivableFactory(company)
+  return [
+    deriveBusiness(derivable),
+    deriveLocation(derivable),
+    deriveCompanyEquipment(company),
+    deriveCompanyCertification(company),
+    deriveCompanyOnsite(company),
   ]
 }

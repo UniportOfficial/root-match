@@ -57,11 +57,11 @@ export const auth = betterAuth({
 
   advanced: {
     useSecureCookies: betterAuthUrl.startsWith('https://'),
-    ...(isProduction
+    ...(isProduction && process.env.AUTH_COOKIE_DOMAIN
       ? {
           crossSubDomainCookies: {
             enabled: true,
-            domain: 'rootmatching.com',
+            domain: process.env.AUTH_COOKIE_DOMAIN,
           },
         }
       : {}),

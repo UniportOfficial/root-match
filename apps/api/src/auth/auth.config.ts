@@ -1,6 +1,3 @@
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { openAPI } from 'better-auth/plugins';
 import { AccountType, UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../prisma/prisma.client';
@@ -39,63 +36,82 @@ export function assertSameSet(
 assertSameSet('UserRole', Object.values(UserRole), USER_ROLE_VALUES);
 assertSameSet('AccountType', Object.values(AccountType), ACCOUNT_TYPE_VALUES);
 
-export const auth = betterAuth({
-  baseURL: betterAuthUrl,
-  secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [webOrigin],
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+// Lazy factory — better-auth and its plugins are ESM-only, so we defer the
+// top-level import to runtime via dynamic import() and cache the resolved
+// instance via a Promise singleton (race-safe across concurrent cold starts).
+// Return type is inferred to preserve the precise Auth<options-with-additionalFields> shape.
+let authPromise: ReturnType<typeof buildAuth> | undefined;
 
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: isProduction,
-  },
+async function buildAuth() {
+  const [{ betterAuth }, { prismaAdapter }, { openAPI }] = await Promise.all([
+    import('better-auth'),
+    import('better-auth/adapters/prisma'),
+    import('better-auth/plugins'),
+  ]);
+  return betterAuth({
+    baseURL: betterAuthUrl,
+    secret: process.env.BETTER_AUTH_SECRET,
+    trustedOrigins: [webOrigin],
+    database: prismaAdapter(prisma, { provider: 'postgresql' }),
 
-  logger: {
-    level: isProduction ? 'warn' : 'info',
-    disabled: process.env.NODE_ENV === 'test',
-  },
-
-  advanced: {
-    useSecureCookies: betterAuthUrl.startsWith('https://'),
-    ...(isProduction && process.env.AUTH_COOKIE_DOMAIN
-      ? {
-          crossSubDomainCookies: {
-            enabled: true,
-            domain: process.env.AUTH_COOKIE_DOMAIN,
-          },
-        }
-      : {}),
-    defaultCookieAttributes: {
-      sameSite: 'lax',
-      path: '/',
-      httpOnly: true,
-      secure: betterAuthUrl.startsWith('https://'),
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: isProduction,
     },
-  },
 
-  // Q6: role server-managed (input:false), accountType user-selected (input:true).
-  // accountType requires explicit validator.input because Better Auth
-  // packages/better-auth/src/db/to-zod.ts L27-L35 maps Array type to z.any().
-  user: {
-    additionalFields: {
-      role: {
-        type: [...USER_ROLE_VALUES],
-        required: true,
-        defaultValue: 'member',
-        input: false,
-      },
-      accountType: {
-        type: [...ACCOUNT_TYPE_VALUES],
-        required: true,
-        defaultValue: 'client',
-        input: true,
-        validator: { input: z.enum(ACCOUNT_TYPE_VALUES) },
+    logger: {
+      level: isProduction ? 'warn' : 'info',
+      disabled: process.env.NODE_ENV === 'test',
+    },
+
+    advanced: {
+      useSecureCookies: betterAuthUrl.startsWith('https://'),
+      ...(isProduction && process.env.AUTH_COOKIE_DOMAIN
+        ? {
+            crossSubDomainCookies: {
+              enabled: true,
+              domain: process.env.AUTH_COOKIE_DOMAIN,
+            },
+          }
+        : {}),
+      defaultCookieAttributes: {
+        sameSite: 'lax',
+        path: '/',
+        httpOnly: true,
+        secure: betterAuthUrl.startsWith('https://'),
       },
     },
-  },
 
-  plugins: [openAPI({})],
-});
+    // Q6: role server-managed (input:false), accountType user-selected (input:true).
+    // accountType requires explicit validator.input because Better Auth
+    // packages/better-auth/src/db/to-zod.ts L27-L35 maps Array type to z.any().
+    user: {
+      additionalFields: {
+        role: {
+          type: [...USER_ROLE_VALUES],
+          required: true,
+          defaultValue: 'member',
+          input: false,
+        },
+        accountType: {
+          type: [...ACCOUNT_TYPE_VALUES],
+          required: true,
+          defaultValue: 'client',
+          input: true,
+          validator: { input: z.enum(ACCOUNT_TYPE_VALUES) },
+        },
+      },
+    },
 
-export type AuthSession = typeof auth.$Infer.Session;
+    plugins: [openAPI({})],
+  });
+}
+
+export function getAuth() {
+  return (authPromise ??= buildAuth());
+}
+
+export type AuthSession = Awaited<
+  ReturnType<typeof getAuth>
+>['$Infer']['Session'];
 export type AuthUser = AuthSession['user'];

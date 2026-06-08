@@ -8,7 +8,7 @@ import { json, urlencoded } from 'express';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import helmet from 'helmet';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
-import { auth } from './auth/auth.config';
+import { getAuth } from './auth/auth.config';
 import { swaggerExtraModels } from './openapi/swagger-extra-models';
 
 /**
@@ -207,7 +207,10 @@ export function setupSwagger(app: INestApplication): void {
 }
 
 export async function configureApp(app: NestExpressApplication): Promise<void> {
-  const { toNodeHandler } = await import('better-auth/node');
+  const [{ toNodeHandler }, auth] = await Promise.all([
+    import('better-auth/node'),
+    getAuth(),
+  ]);
   app.useLogger(app.get(Logger));
 
   const isProd = process.env.NODE_ENV === 'production';

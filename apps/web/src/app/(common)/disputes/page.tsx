@@ -19,6 +19,7 @@ import { AppBadge } from '@/components/ui/AppBadge'
 import { Badge, type BadgeProps } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { TransactionStatusTabs } from '@/components/transactions/TransactionStatusTabs'
 import { disputeCases } from '@/data/disputeData'
 import { cn } from '@/lib/cn'
 
@@ -51,6 +52,7 @@ export default function DisputeListPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl">
+        <TransactionStatusTabs current="disputes" />
         <header className="mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-ct-soft">
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

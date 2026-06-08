@@ -96,7 +96,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
           <div className="relative">
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               type="button"
               onClick={() => setDropdownOpen((open) => !open)}
               className="relative"

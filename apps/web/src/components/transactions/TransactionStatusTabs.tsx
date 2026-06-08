@@ -28,7 +28,7 @@ interface TransactionStatusTabsProps {
 export function TransactionStatusTabs({ current, className }: TransactionStatusTabsProps) {
   return (
     <nav
-      aria-label="거래 단계"
+      aria-label="거래 상태"
       className={cn(
         'mb-6 inline-flex max-w-full flex-wrap gap-1 rounded-pill bg-muted/50 p-1',
         className,

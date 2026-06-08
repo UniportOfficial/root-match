@@ -18,7 +18,7 @@ export function HeaderMessagesButton({ className }: HeaderMessagesButtonProps) {
       href="/messages"
       aria-label={ariaLabel}
       className={cn(
-        'relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'relative inline-flex h-12 w-12 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className,
       )}
     >

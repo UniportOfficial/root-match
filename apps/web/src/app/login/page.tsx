@@ -6,6 +6,17 @@ import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Factory,
+  Lock,
+  Mail,
+  ShoppingCart,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 import { AppButton } from '@/components/ui/AppButton'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -114,214 +125,328 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-      <div className="mx-auto max-w-compact-col space-y-6 sm:space-y-8">
-        <header className="text-center">
-          <Logo variant="primary" size="md" className="mx-auto" />
-          <h1 className="text-kr-balance mt-5 text-[24px] font-bold text-foreground sm:text-[28px]">
-            로그인 / 회원가입
-          </h1>
-          <p className="text-kr-pretty mt-2 text-[15px] text-muted-foreground">
-            발주처와 공장을 안전하게 연결하기 위한 시작 단계입니다.
-          </p>
-        </header>
+    <main className="relative min-h-screen overflow-hidden bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,hsl(var(--accent))_0,transparent_28%),radial-gradient(circle_at_82%_12%,hsl(var(--success-subtle))_0,transparent_26%),linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(hsl(var(--border))_1px,transparent_1px)] bg-[length:22px_22px] opacity-40" />
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl grid-cols-1 items-center gap-8 py-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,500px)] lg:gap-12 lg:py-10">
+        <section className="space-y-7 text-center lg:text-left">
+          <div className="flex justify-center lg:justify-start">
+            <Logo variant="primary" size="lg" priority />
+          </div>
 
-        <Card className="border-border bg-card shadow-ct-soft">
-          <CardHeader className="p-4 pb-0 sm:p-6 sm:pb-0">
-            <CardTitle className="text-kr-pretty text-[18px] font-bold text-foreground sm:text-[20px]">
-              계정 접속
-            </CardTitle>
-            <CardDescription className="text-kr-pretty text-[15px]">
-              기존 계정으로 로그인하거나 새 계정을 만들어 역할을 선택하세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
-              <TabsList className="grid h-11 w-full grid-cols-2 bg-muted p-1">
-                {(['login', 'register'] as const).map((tab) => (
-                  <TabsTrigger key={tab} value={tab} className="text-kr-keep text-[16px] font-bold">
-                    {tabStyles[tab]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+          <div className="space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-pill border border-border bg-card/80 px-4 py-2 text-kr-keep text-rm-caption font-bold text-primary shadow-toss-sm backdrop-blur-sm">
+              <Sparkles className="h-4 w-4" />
+              안심 계약을 위한 계정 접속
+            </div>
+            <h1 className="text-kr-balance text-rm-h1-m font-bold tracking-tight text-foreground sm:text-rm-h1 lg:text-rm-display">
+              제조 의뢰와 공장 견적을 더 선명하게 연결합니다
+            </h1>
+            <p className="text-kr-pretty mx-auto max-w-2xl text-rm-body leading-8 text-muted-foreground lg:mx-0">
+              RootMatch 계정으로 견적 요청, 공장 추천, 거래 진행 상황을 한곳에서 안전하게
+              관리하세요.
+            </p>
+          </div>
 
-              {submitError && (
-                <p className="text-kr-pretty rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[15px] font-bold text-destructive">
-                  {submitError}
-                </p>
-              )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-2xl">
+            {['역할별 화면 안내', '인증 메일 확인', '안심 거래 흐름'].map((item) => (
+              <div
+                key={item}
+                className="flex min-h-tap-min items-center justify-center gap-2 rounded-2xl border border-border bg-card/75 px-4 py-3 text-kr-keep text-rm-body-sm font-bold text-foreground shadow-toss-sm backdrop-blur-sm"
+              >
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
-              {registerSuccess && (
-                <p className="text-kr-pretty rounded-xl border border-success/20 bg-success-subtle px-4 py-3 text-[15px] font-bold text-success">
-                  {registerSuccess}
-                </p>
-              )}
+        <section className="w-full">
+          <Card className="overflow-hidden rounded-3xl border border-border/70 bg-card/95 shadow-ct-card backdrop-blur-xl">
+            <CardHeader className="space-y-3 p-5 pb-0 sm:p-7 sm:pb-0">
+              <CardTitle className="text-kr-pretty text-rm-h2-m font-bold tracking-tight text-foreground sm:text-rm-h2">
+                시작할 계정을 선택하세요
+              </CardTitle>
+              <CardDescription className="text-kr-pretty text-rm-body-sm leading-7 text-muted-foreground sm:text-rm-body-d">
+                기존 계정은 로그인하고, 처음이라면 역할을 선택해 가입을 진행하세요.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-7">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
+                <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl border border-border bg-muted/70 p-1.5 shadow-inner">
+                  {(['login', 'register'] as const).map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className="min-h-tap-min rounded-xl text-kr-keep text-rm-body-d font-bold text-muted-foreground transition-all data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-ct-soft"
+                    >
+                      {tabStyles[tab]}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              <TabsContent value="login" className="mt-0">
-                <form
-                  onSubmit={loginForm.handleSubmit(submitLogin)}
-                  className="space-y-4 sm:space-y-5"
-                >
-                  <Field
-                    htmlFor="login-email"
-                    label="이메일"
-                    error={loginForm.formState.errors.email?.message}
-                  >
-                    <Input
-                      id="login-email"
-                      type="email"
-                      autoComplete="email"
-                      className="h-12 rounded-lg bg-card text-[17px]"
-                      {...loginForm.register('email')}
-                    />
-                  </Field>
-                  <Field
-                    htmlFor="login-password"
-                    label="비밀번호"
-                    error={loginForm.formState.errors.password?.message}
-                  >
-                    <Input
-                      id="login-password"
-                      type="password"
-                      autoComplete="current-password"
-                      className="h-12 rounded-lg bg-card text-[17px]"
-                      {...loginForm.register('password')}
-                    />
-                  </Field>
-                  <AppButton type="submit" size="lg" fullWidth disabled={isSubmitting}>
-                    {isSubmitting ? '로그인 중...' : '로그인'}
-                  </AppButton>
-                </form>
-              </TabsContent>
+                {submitError && (
+                  <AuthNotice tone="error" icon={<AlertCircle className="h-5 w-5" />}>
+                    {submitError}
+                  </AuthNotice>
+                )}
 
-              <TabsContent value="register" className="mt-0">
-                <form
-                  onSubmit={registerForm.handleSubmit(submitRegister)}
-                  className="space-y-4 sm:space-y-5"
-                >
-                  <Field
-                    htmlFor="register-name"
-                    label="이름"
-                    error={registerForm.formState.errors.name?.message}
+                {registerSuccess && (
+                  <AuthNotice tone="success" icon={<CheckCircle2 className="h-5 w-5" />}>
+                    {registerSuccess}
+                  </AuthNotice>
+                )}
+
+                <TabsContent value="login" className="mt-0">
+                  <form
+                    onSubmit={loginForm.handleSubmit(submitLogin)}
+                    className="space-y-5 sm:space-y-6"
                   >
-                    <Input
-                      id="register-name"
-                      type="text"
-                      className="h-12 rounded-lg bg-card text-[17px]"
-                      {...registerForm.register('name')}
-                    />
-                  </Field>
-                  <Field
-                    htmlFor="register-email"
-                    label="이메일"
-                    error={registerForm.formState.errors.email?.message}
+                    <Field
+                      htmlFor="login-email"
+                      label="이메일"
+                      icon={<Mail className="h-5 w-5" />}
+                      error={loginForm.formState.errors.email?.message}
+                    >
+                      <Input
+                        id="login-email"
+                        type="email"
+                        autoComplete="email"
+                        className="h-14 rounded-2xl border-border bg-background/80 pl-12 text-rm-body shadow-toss-sm transition-all focus-visible:ring-2 focus-visible:ring-primary/30"
+                        {...loginForm.register('email')}
+                      />
+                    </Field>
+                    <Field
+                      htmlFor="login-password"
+                      label="비밀번호"
+                      icon={<Lock className="h-5 w-5" />}
+                      error={loginForm.formState.errors.password?.message}
+                    >
+                      <Input
+                        id="login-password"
+                        type="password"
+                        autoComplete="current-password"
+                        className="h-14 rounded-2xl border-border bg-background/80 pl-12 text-rm-body shadow-toss-sm transition-all focus-visible:ring-2 focus-visible:ring-primary/30"
+                        {...loginForm.register('password')}
+                      />
+                    </Field>
+                    <AppButton
+                      type="submit"
+                      size="lg"
+                      fullWidth
+                      disabled={isSubmitting}
+                      loading={isSubmitting}
+                      className="tap-primary rounded-2xl text-rm-body-d font-bold shadow-ct-soft"
+                    >
+                      {isSubmitting ? '로그인 중...' : '로그인'}
+                    </AppButton>
+                  </form>
+                </TabsContent>
+
+                <TabsContent value="register" className="mt-0">
+                  <form
+                    onSubmit={registerForm.handleSubmit(submitRegister)}
+                    className="space-y-5 sm:space-y-6"
                   >
-                    <Input
-                      id="register-email"
-                      type="email"
-                      autoComplete="email"
-                      className="h-12 rounded-lg bg-card text-[17px]"
-                      {...registerForm.register('email')}
-                    />
-                  </Field>
-                  <Field
-                    htmlFor="register-password"
-                    label="비밀번호"
-                    error={registerForm.formState.errors.password?.message}
-                  >
-                    <Input
-                      id="register-password"
-                      type="password"
-                      autoComplete="new-password"
-                      className="h-12 rounded-lg bg-card text-[17px]"
-                      {...registerForm.register('password')}
-                    />
-                  </Field>
-                  <fieldset className="rounded-xl border border-border bg-muted p-4">
-                    <legend className="text-kr-keep px-2 text-[16px] font-bold text-foreground">
-                      계정 유형
-                    </legend>
+                    <Field
+                      htmlFor="register-name"
+                      label="이름"
+                      icon={<User className="h-5 w-5" />}
+                      error={registerForm.formState.errors.name?.message}
+                    >
+                      <Input
+                        id="register-name"
+                        type="text"
+                        className="h-14 rounded-2xl border-border bg-background/80 pl-12 text-rm-body shadow-toss-sm transition-all focus-visible:ring-2 focus-visible:ring-primary/30"
+                        {...registerForm.register('name')}
+                      />
+                    </Field>
+                    <Field
+                      htmlFor="register-email"
+                      label="이메일"
+                      icon={<Mail className="h-5 w-5" />}
+                      error={registerForm.formState.errors.email?.message}
+                    >
+                      <Input
+                        id="register-email"
+                        type="email"
+                        autoComplete="email"
+                        className="h-14 rounded-2xl border-border bg-background/80 pl-12 text-rm-body shadow-toss-sm transition-all focus-visible:ring-2 focus-visible:ring-primary/30"
+                        {...registerForm.register('email')}
+                      />
+                    </Field>
+                    <Field
+                      htmlFor="register-password"
+                      label="비밀번호"
+                      icon={<Lock className="h-5 w-5" />}
+                      error={registerForm.formState.errors.password?.message}
+                    >
+                      <Input
+                        id="register-password"
+                        type="password"
+                        autoComplete="new-password"
+                        className="h-14 rounded-2xl border-border bg-background/80 pl-12 text-rm-body shadow-toss-sm transition-all focus-visible:ring-2 focus-visible:ring-primary/30"
+                        {...registerForm.register('password')}
+                      />
+                    </Field>
+                    <fieldset className="rounded-3xl border border-border bg-muted/60 p-4 sm:p-5">
+                      <legend className="text-kr-keep px-2 text-rm-body-d font-bold text-foreground">
+                        계정 유형
+                      </legend>
+                      <Controller
+                        control={registerForm.control}
+                        name="accountType"
+                        render={({ field }) => (
+                          <RadioGroup
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
+                          >
+                            <AccountTypeOption
+                              value="client"
+                              icon={<ShoppingCart className="h-6 w-6" />}
+                              title="발주처"
+                              description="견적을 요청하는 회사"
+                            />
+                            <AccountTypeOption
+                              value="factory"
+                              icon={<Factory className="h-6 w-6" />}
+                              title="공장"
+                              description="견적을 제공하는 공장"
+                            />
+                          </RadioGroup>
+                        )}
+                      />
+                    </fieldset>
                     <Controller
                       control={registerForm.control}
-                      name="accountType"
+                      name="terms"
                       render={({ field }) => (
-                        <RadioGroup
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2"
-                        >
-                          <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-[16px] font-semibold text-foreground transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:text-primary">
-                            <RadioGroupItem value="client" />
-                            <span className="text-kr-keep">발주처 (client)</span>
-                          </Label>
-                          <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-[16px] font-semibold text-foreground transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:text-primary">
-                            <RadioGroupItem value="factory" />
-                            <span className="text-kr-keep">공장 (factory)</span>
-                          </Label>
-                        </RadioGroup>
+                        <Label className="flex min-h-tap-min cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/80 p-4 text-rm-body-d font-semibold text-foreground shadow-toss-sm transition-colors hover:bg-accent/40">
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => field.onChange(checked === true)}
+                            className="mt-1 h-5 w-5 rounded-md"
+                          />
+                          <span className="text-kr-pretty">
+                            서비스 이용약관과 개인정보 처리방침에 동의합니다.
+                          </span>
+                        </Label>
                       )}
                     />
-                  </fieldset>
-                  <Controller
-                    control={registerForm.control}
-                    name="terms"
-                    render={({ field }) => (
-                      <Label className="flex items-start gap-3 rounded-xl border border-border bg-muted p-4 text-[16px] font-semibold text-foreground">
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(checked === true)}
-                          className="mt-1"
-                        />
-                        <span className="text-kr-pretty">
-                          서비스 이용약관과 개인정보 처리방침에 동의합니다.
-                        </span>
-                      </Label>
+                    {registerForm.formState.errors.terms?.message && (
+                      <p className="text-kr-pretty text-rm-body-sm font-semibold text-destructive">
+                        {registerForm.formState.errors.terms.message}
+                      </p>
                     )}
-                  />
-                  {registerForm.formState.errors.terms?.message && (
-                    <p className="text-kr-pretty text-[15px] font-semibold text-destructive">
-                      {registerForm.formState.errors.terms.message}
-                    </p>
-                  )}
-                  <AppButton type="submit" size="lg" fullWidth disabled={isSubmitting}>
-                    {isSubmitting ? '가입 중...' : '회원가입'}
-                  </AppButton>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                    <AppButton
+                      type="submit"
+                      size="lg"
+                      fullWidth
+                      disabled={isSubmitting}
+                      loading={isSubmitting}
+                      className="tap-primary rounded-2xl text-rm-body-d font-bold shadow-ct-soft"
+                    >
+                      {isSubmitting ? '가입 중...' : '회원가입'}
+                    </AppButton>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
-        <Link
-          href="/"
-          className="text-kr-keep inline-flex w-full justify-center text-[15px] font-bold text-muted-foreground transition hover:text-primary"
-        >
-          ← 처음으로
-        </Link>
+          <Link
+            href="/"
+            className="text-kr-keep mx-auto mt-5 inline-flex min-h-tap-min w-full items-center justify-center gap-2 rounded-2xl text-rm-body-sm font-bold text-muted-foreground transition hover:bg-card/70 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            처음으로
+          </Link>
+        </section>
       </div>
     </main>
+  )
+}
+
+function AuthNotice({
+  tone,
+  icon,
+  children,
+}: {
+  tone: 'error' | 'success'
+  icon: ReactNode
+  children: ReactNode
+}) {
+  const toneClass =
+    tone === 'error'
+      ? 'border-destructive/25 bg-destructive/10 text-destructive'
+      : 'border-success/25 bg-success-subtle text-success'
+
+  return (
+    <p
+      className={`text-kr-pretty flex items-start gap-3 rounded-2xl border px-4 py-3 text-rm-body-sm font-bold ${toneClass}`}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <span>{children}</span>
+    </p>
+  )
+}
+
+function AccountTypeOption({
+  value,
+  icon,
+  title,
+  description,
+}: {
+  value: 'client' | 'factory'
+  icon: ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <Label className="group flex min-h-[112px] cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card p-4 text-foreground shadow-toss-sm transition-all hover:border-primary/30 hover:bg-accent/40 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-ct-soft">
+      <RadioGroupItem value={value} className="mt-1 h-5 w-5 shrink-0" />
+      <span className="flex flex-1 flex-col gap-2">
+        <span className="flex items-center gap-2 text-primary">
+          {icon}
+          <span className="text-kr-keep text-rm-body-d font-bold text-foreground group-has-[[data-state=checked]]:text-primary">
+            {title}
+          </span>
+        </span>
+        <span className="text-kr-pretty text-rm-body-sm font-semibold leading-6 text-muted-foreground">
+          {description}
+        </span>
+      </span>
+    </Label>
   )
 }
 
 function Field({
   htmlFor,
   label,
+  icon,
   error,
   children,
 }: {
   htmlFor: string
   label: string
+  icon: ReactNode
   error?: string
   children: ReactNode
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-kr-keep text-[16px] font-semibold text-foreground">
+    <div className="space-y-2">
+      <Label htmlFor={htmlFor} className="text-kr-keep text-rm-body-d font-bold text-foreground">
         {label}
       </Label>
-      {children}
+      <div className="relative">
+        <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted-foreground">
+          {icon}
+        </span>
+        {children}
+      </div>
       {error && (
-        <p className="text-kr-pretty text-[15px] font-semibold text-destructive">{error}</p>
+        <p className="text-kr-pretty text-rm-body-sm font-semibold text-destructive">{error}</p>
       )}
     </div>
   )

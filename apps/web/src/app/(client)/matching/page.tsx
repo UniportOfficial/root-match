@@ -8,13 +8,11 @@ import {
   ChevronUp,
   Clock,
   MapPin,
-  RefreshCw,
   Settings,
   Shield,
   Sparkles,
   TrendingUp,
   Trophy,
-  UsersRound,
   Wallet,
   Zap,
 } from 'lucide-react'
@@ -38,7 +36,6 @@ import {
 } from '@/components/ui/select'
 import { EscrowMiniStepper } from '@/components/matching/EscrowMiniStepper'
 import { MatchingVerificationBadges } from '@/components/matching/MatchingVerificationBadges'
-import { StandardWorkflowStepper } from '@/components/matching/StandardWorkflowStepper'
 import { cn } from '@/lib/cn'
 import { useDemoMode } from '@/lib/demo-mode'
 import { useWorkflowDispatch } from '@/state/WorkflowContext'
@@ -495,8 +492,6 @@ export default function MatchingResultPage() {
           </CardHeader>
         </Card>
 
-        <StandardWorkflowStepper currentStep={2} className="mb-6" />
-
         <Card className="mb-6 border-border bg-card shadow-ct-soft">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4">
@@ -634,71 +629,8 @@ export default function MatchingResultPage() {
                     </div>
 
                     <div className="mb-4">
-                      <p className="text-kr-keep mb-2 text-[13px] font-bold text-muted-foreground">
-                        공장 검증 5종
-                      </p>
                       <MatchingVerificationBadges factory={factory} />
                     </div>
-
-                    <dl className="mb-4 grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-success-bg">
-                          <Clock className={cn('h-4 w-4', deliveryTone.text)} />
-                        </div>
-                        <div>
-                          <dt className="text-kr-keep text-xs text-muted-foreground">
-                            납기 준수율
-                          </dt>
-                          <dd className={cn('text-sm font-black', deliveryTone.text)}>
-                            {factory.deliveryRate}%
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-light">
-                          <RefreshCw className="h-4 w-4 text-brand" />
-                        </div>
-                        <div>
-                          <dt className="text-kr-keep text-xs text-muted-foreground">재거래율</dt>
-                          <dd className="text-sm font-semibold text-foreground">
-                            {factory.reorderRate}% · {factory.reorderCustomerCount ?? '-'}곳
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted">
-                          <MapPin className="h-4 w-4 text-ink-700" />
-                        </div>
-                        <div>
-                          <dt className="text-kr-keep text-xs text-muted-foreground">거리</dt>
-                          <dd className="text-sm font-semibold text-foreground">
-                            {factory.distanceKm ?? '-'}km
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted">
-                          <UsersRound className="h-4 w-4 text-ink-700" />
-                        </div>
-                        <div>
-                          <dt className="text-kr-keep text-xs text-muted-foreground">규모</dt>
-                          <dd className="text-sm font-semibold text-foreground">
-                            {factory.employeeCount ?? '-'}명
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="col-span-2 flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50">
-                          <Wallet className="h-4 w-4 text-warning" />
-                        </div>
-                        <div>
-                          <dt className="text-kr-keep text-xs text-muted-foreground">예상 견적</dt>
-                          <dd className="text-sm font-semibold text-foreground">
-                            {formatPrice(factory.estimateMin)} ~ {formatPrice(factory.estimateMax)}
-                          </dd>
-                        </div>
-                      </div>
-                    </dl>
 
                     <div className="mb-4 flex items-start gap-2 rounded-xl bg-brand-light p-3">
                       <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
@@ -737,8 +669,6 @@ export default function MatchingResultPage() {
                         ))}
                       </ul>
                     )}
-
-                    <EscrowMiniStepper currentStep={2} className="mb-4" />
 
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       {isSelected ? (
@@ -861,10 +791,10 @@ export default function MatchingResultPage() {
                     fullWidth
                     className="text-kr-keep mt-5"
                   >
-                    <Check className="h-4 w-4" />이 공장으로 견적 진행
+                    <Check className="h-4 w-4" />이 공장에 견적 요청 보내기
                   </Button>
                   <p className="text-kr-pretty mt-2 text-center text-[13px] text-muted-foreground">
-                    선택 후 계약·에스크로 결제 단계로 넘어갑니다.
+                    요청 발송 후 견적 수신·계약·에스크로 결제 단계로 진행됩니다.
                   </p>
                 </CardContent>
               ) : (

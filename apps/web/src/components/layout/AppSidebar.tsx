@@ -1,103 +1,26 @@
 'use client'
 
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  AlertTriangle,
-  BarChart3,
-  Building2,
-  Factory,
-  FileSignature,
-  FileText,
-  Inbox,
-  LayoutDashboard,
-  MessageSquare,
-  PackageCheck,
-  PanelLeftClose,
-  Search,
-  Settings,
-  Sparkles,
-  User,
-  type LucideIcon,
-} from 'lucide-react'
+import { PanelLeftClose } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 import { useUserState } from '@/state/UserContext'
+import { buildSidebarNav } from '@/lib/sidebar-nav'
 import { cn } from '@/lib/utils'
-
-type SidebarAccountType = 'client' | 'factory' | 'operator'
-
-interface NavItem {
-  href: string
-  label: string
-  icon: LucideIcon
-}
-
-interface NavGroup {
-  title: string
-  items: NavItem[]
-}
+import type { AccountType } from '@rootmatching/shared'
 
 interface AppSidebarProps {
   className?: string
   onNavigate?: () => void
-  /** Desktop only. Mobile Sheet은 컴포넌트 자체의 X 버튼 사용. */
   onClose?: () => void
-}
-
-export function buildNavGroups(accountType: SidebarAccountType | null): NavGroup[] {
-  const common: NavGroup = {
-    title: '공통',
-    items: [
-      { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
-      { href: '/messages', label: '메시지', icon: MessageSquare },
-      { href: '/companies', label: '기업 디렉토리', icon: Building2 },
-    ],
-  }
-  const client: NavGroup = {
-    title: '발주처',
-    items: [
-      { href: '/request', label: '견적 요청', icon: FileText },
-      { href: '/matching', label: 'AI 매칭', icon: Sparkles },
-      { href: '/requests', label: '내 요청', icon: Inbox },
-    ],
-  }
-  const factory: NavGroup = {
-    title: '공장',
-    items: [
-      { href: '/factory/onboarding', label: '공장 등록', icon: Factory },
-      { href: '/factory/requests', label: '받은 요청', icon: Inbox },
-      { href: '/quotes', label: '공개 견적', icon: Search },
-    ],
-  }
-  const txn: NavGroup = {
-    title: '거래/분쟁',
-    items: [
-      { href: '/contracts', label: '계약 현황', icon: FileSignature },
-      { href: '/transactions', label: '거래 현황', icon: PackageCheck },
-      { href: '/disputes', label: '분쟁 중재', icon: AlertTriangle },
-    ],
-  }
-  const mypage: NavGroup = {
-    title: '마이페이지',
-    items: [
-      { href: '/mypage', label: '프로필', icon: User },
-      { href: '/mypage/analytics', label: '활동 분석', icon: BarChart3 },
-      { href: '/mypage/settings', label: '설정', icon: Settings },
-    ],
-  }
-
-  if (!accountType) return [common]
-  if (accountType === 'client') return [common, client, txn, mypage]
-  if (accountType === 'factory') return [common, factory, txn, mypage]
-  return [common, client, factory, txn, mypage]
 }
 
 export function AppSidebar({ className, onNavigate, onClose }: AppSidebarProps) {
   const pathname = usePathname()
   const { currentUser } = useUserState()
-  const accountType = currentUser?.accountType ?? null
-  const navGroups = useMemo(() => buildNavGroups(accountType), [accountType])
+  const accountType = (currentUser?.accountType as AccountType | undefined) ?? null
+  const nav = useMemo(() => buildSidebarNav(accountType), [accountType])
 
   return (
     <div className={cn('flex h-full flex-col overflow-y-auto bg-card px-3 py-4', className)}>
@@ -118,38 +41,42 @@ export function AppSidebar({ className, onNavigate, onClose }: AppSidebarProps) 
         )}
       </div>
 
-      <nav className="flex-1 space-y-5">
-        {navGroups.map((group) => (
-          <section key={group.title}>
-            <h2 className="mb-1.5 px-3 text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
-              {group.title}
-            </h2>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+      <nav className="flex-1" aria-label="주요 메뉴">
+        <ul className="space-y-1">
+          {nav.items.map((item, index) => {
+            const Icon = item.icon
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const isPrimaryCta = item.style === 'primary-cta'
+            const showDividerAfter = nav.dividerAfterIndex === index
 
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={onNavigate}
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-[16px] font-semibold transition',
-                        active
+            return (
+              <Fragment key={item.href}>
+                <li>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'flex min-h-tap-min items-center gap-3 rounded-xl px-3 py-2.5 text-rm-body-d font-semibold transition-colors',
+                      isPrimaryCta
+                        ? 'bg-primary text-primary-foreground shadow-toss-sm hover:bg-primary/90 hover:shadow-toss-md'
+                        : active
                           ? 'bg-accent text-accent-foreground'
                           : 'text-foreground/80 hover:bg-muted hover:text-foreground',
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="text-kr-keep truncate">{item.label}</span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
-        ))}
+                      isPrimaryCta && active && 'shadow-toss-md',
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="text-kr-keep truncate">{item.label}</span>
+                  </Link>
+                </li>
+                {showDividerAfter && (
+                  <li role="separator" aria-hidden="true" className="mx-3 my-2 h-px bg-border/60" />
+                )}
+              </Fragment>
+            )
+          })}
+        </ul>
       </nav>
     </div>
   )

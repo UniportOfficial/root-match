@@ -4,7 +4,6 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
 import { auth, type AuthSession } from './auth.config';
 
@@ -17,6 +16,7 @@ interface RequestWithSession extends Request {
 export class BetterAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestWithSession>();
+    const { fromNodeHeaders } = await import('better-auth/node');
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });

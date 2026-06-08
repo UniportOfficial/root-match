@@ -791,10 +791,10 @@ export default function MatchingResultPage() {
                     fullWidth
                     className="text-kr-keep mt-5"
                   >
-                    <Check className="h-4 w-4" />이 공장에 견적 요청 보내기
+                    <Check className="h-4 w-4" />이 공장으로 진행하기
                   </Button>
                   <p className="text-kr-pretty mt-2 text-center text-[13px] text-muted-foreground">
-                    요청 발송 후 견적 수신·계약·에스크로 결제 단계로 진행됩니다.
+                    계약 조건 검토 후 에스크로 결제 단계로 진행됩니다.
                   </p>
                 </CardContent>
               ) : (

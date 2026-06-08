@@ -16,6 +16,7 @@ import type { TransactionRole } from '@rootmatching/shared'
 import { Badge, type BadgeProps } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { TransactionStatusTabs } from '@/components/transactions/TransactionStatusTabs'
 import { transactionCases } from '@/data/transactionData'
 import { cn } from '@/lib/cn'
 
@@ -67,6 +68,7 @@ export default function TransactionListPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl">
+        <TransactionStatusTabs current="transactions" />
         <header className="mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-ct-soft">
           <div className="p-6 sm:p-8">
             <div className="text-kr-keep mb-4 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-primary">

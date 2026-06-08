@@ -331,6 +331,11 @@ export default function MatchingResultPage() {
     }
 
     workflowDispatch({
+      type: 'workflow/setSelectedFactory',
+      payload: factoryToStore ?? null,
+    })
+
+    workflowDispatch({
       type: 'workflow/setSelectedRecommendationId',
       payload: factoryToStore?.recommendationId ?? null,
     })

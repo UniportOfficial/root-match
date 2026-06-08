@@ -20,7 +20,7 @@ async function bootstrap(): Promise<Express> {
     new ExpressAdapter(expressApp),
     { bodyParser: false, bufferLogs: true },
   );
-  configureApp(app);
+  await configureApp(app);
   await app.init();
   return expressApp;
 }

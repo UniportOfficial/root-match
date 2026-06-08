@@ -11,6 +11,7 @@ import { NotificationDropdown } from '@/components/notification/NotificationDrop
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { HeaderNewQuoteButton } from '@/components/layout/HeaderNewQuoteButton'
 import { HeaderPageTitle } from '@/components/layout/HeaderPageTitle'
 import { HeaderProfileDropdown } from '@/components/layout/HeaderProfileDropdown'
 
@@ -92,6 +93,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
         </form>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-4">
+          {isAuthenticated && <HeaderNewQuoteButton />}
           <div className="relative">
             <Button
               variant="ghost"

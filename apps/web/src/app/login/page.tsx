@@ -128,7 +128,7 @@ export default function LoginPage() {
     <main className="relative min-h-screen overflow-hidden bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,hsl(var(--accent))_0,transparent_28%),radial-gradient(circle_at_82%_12%,hsl(var(--success-subtle))_0,transparent_26%),linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)]" />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(hsl(var(--border))_1px,transparent_1px)] bg-[length:22px_22px] opacity-40" />
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl grid-cols-1 items-center gap-8 py-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,500px)] lg:gap-12 lg:py-10">
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl grid-cols-1 items-start gap-8 py-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,500px)] lg:gap-12 lg:py-10">
         <section className="space-y-7 text-center lg:text-left">
           <div className="flex justify-center lg:justify-start">
             <Logo variant="primary" size="lg" priority />
@@ -200,7 +200,7 @@ export default function LoginPage() {
                 <TabsContent value="login" className="mt-0">
                   <form
                     onSubmit={loginForm.handleSubmit(submitLogin)}
-                    className="space-y-5 sm:space-y-6"
+                    className="space-y-6 sm:space-y-7"
                   >
                     <Field
                       htmlFor="login-email"
@@ -246,7 +246,7 @@ export default function LoginPage() {
                 <TabsContent value="register" className="mt-0">
                   <form
                     onSubmit={registerForm.handleSubmit(submitRegister)}
-                    className="space-y-5 sm:space-y-6"
+                    className="space-y-6 sm:space-y-7"
                   >
                     <Field
                       htmlFor="register-name"
@@ -289,7 +289,7 @@ export default function LoginPage() {
                         {...registerForm.register('password')}
                       />
                     </Field>
-                    <fieldset className="rounded-3xl border border-border bg-muted/60 p-4 sm:p-5">
+                    <fieldset className="rounded-3xl border border-border bg-card p-4 shadow-toss-sm sm:p-5">
                       <legend className="text-kr-keep px-2 text-rm-body-d font-bold text-foreground">
                         계정 유형
                       </legend>
@@ -300,7 +300,7 @@ export default function LoginPage() {
                           <RadioGroup
                             value={field.value}
                             onValueChange={field.onChange}
-                            className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
+                            className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
                           >
                             <AccountTypeOption
                               value="client"
@@ -322,11 +322,11 @@ export default function LoginPage() {
                       control={registerForm.control}
                       name="terms"
                       render={({ field }) => (
-                        <Label className="flex min-h-tap-min cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/80 p-4 text-rm-body-d font-semibold text-foreground shadow-toss-sm transition-colors hover:bg-accent/40">
+                        <Label className="flex min-h-tap-min cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/80 p-4 text-rm-body-d font-semibold leading-7 text-foreground shadow-toss-sm transition-all hover:bg-accent/40 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent/60 has-[[data-state=checked]]:shadow-ct-soft">
                           <Checkbox
                             checked={field.value}
                             onCheckedChange={(checked) => field.onChange(checked === true)}
-                            className="mt-1 h-5 w-5 rounded-md"
+                            className="mt-0.5 h-6 w-6 rounded-md"
                           />
                           <span className="text-kr-pretty">
                             서비스 이용약관과 개인정보 처리방침에 동의합니다.
@@ -345,7 +345,7 @@ export default function LoginPage() {
                       fullWidth
                       disabled={isSubmitting}
                       loading={isSubmitting}
-                      className="tap-primary rounded-2xl text-rm-body-d font-bold shadow-ct-soft"
+                      className="rounded-2xl text-rm-body-d font-bold shadow-rm-card transition-shadow hover:shadow-toss-md"
                     >
                       {isSubmitting ? '가입 중...' : '회원가입'}
                     </AppButton>
@@ -357,7 +357,7 @@ export default function LoginPage() {
 
           <Link
             href="/"
-            className="text-kr-keep mx-auto mt-5 inline-flex min-h-tap-min w-full items-center justify-center gap-2 rounded-2xl text-rm-body-sm font-bold text-muted-foreground transition hover:bg-card/70 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="text-kr-keep mx-auto mt-5 inline-flex min-h-tap-min w-full items-center justify-center gap-2 rounded-2xl text-rm-body-sm font-bold text-foreground/70 transition hover:bg-card/80 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ArrowLeft className="h-4 w-4" />
             처음으로
@@ -404,8 +404,9 @@ function AccountTypeOption({
   description: string
 }) {
   return (
-    <Label className="group flex min-h-[112px] cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card p-4 text-foreground shadow-toss-sm transition-all hover:border-primary/30 hover:bg-accent/40 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-ct-soft">
-      <RadioGroupItem value={value} className="mt-1 h-5 w-5 shrink-0" />
+    <Label className="group relative flex min-h-[112px] cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card p-4 pr-12 text-foreground shadow-toss-sm transition-all hover:border-primary/30 hover:bg-accent/40 hover:shadow-ct-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/30 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background has-[[data-state=checked]]:border-2 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-toss-md">
+      <RadioGroupItem value={value} className="absolute h-5 w-5 opacity-0" />
+      <CheckCircle2 className="absolute right-4 top-4 h-6 w-6 text-primary opacity-0 transition-opacity group-has-[[data-state=checked]]:opacity-100" />
       <span className="flex flex-1 flex-col gap-2">
         <span className="flex items-center gap-2 text-primary">
           {icon}

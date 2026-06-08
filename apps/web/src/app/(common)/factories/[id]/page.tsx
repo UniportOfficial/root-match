@@ -21,8 +21,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { EscrowMiniStepper } from '@/components/matching/EscrowMiniStepper'
+import { MatchingVerificationBadges } from '@/components/matching/MatchingVerificationBadges'
 import { getServerSession } from '@/lib/auth-server'
 import { fetchCompanyDetailServer } from '@/lib/companies-api'
+import { deriveCompanyVerifications } from '@/lib/matching-verifications'
 import { getDemoCompanyDetail } from '@/lib/demo-companies'
 import { isDemoFallbackEnabled, isDemoModeSearch } from '@/lib/demo-policy'
 
@@ -69,6 +72,7 @@ export default async function FactoryDetailPage({ params, searchParams }: PagePr
   const displayLocation = profile?.location ?? company.address ?? company.region ?? '위치 정보 미상'
   const headline = buildHeadline(company)
   const verified = profile?.verified ?? false
+  const verifications = deriveCompanyVerifications(company)
 
   return (
     <div className="bg-background">
@@ -133,6 +137,11 @@ export default async function FactoryDetailPage({ params, searchParams }: PagePr
             )}
           </CardContent>
         </Card>
+
+        <section className="my-8" aria-label="공장 검증 5종">
+          <p className="text-kr-keep mb-3 text-[15px] font-bold text-foreground">공장 검증 5종</p>
+          <MatchingVerificationBadges verifications={verifications} />
+        </section>
 
         {profile && (
           <section className="my-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -230,24 +239,27 @@ export default async function FactoryDetailPage({ params, searchParams }: PagePr
             </Card>
 
             {showQuoteCta && (
-              <Card className="border-border bg-ink-950 text-white shadow-ct-soft">
-                <CardContent className="p-6">
-                  <ShieldCheck className="h-10 w-10 text-brand-light" />
-                  <h2 className="text-kr-pretty mt-4 text-[18px] font-bold sm:text-[20px]">
-                    이 공장에 견적을 요청해보세요
-                  </h2>
-                  <p className="text-kr-pretty mt-2 text-sm leading-6 text-white/70">
-                    도면과 수량을 공유하면 생산 가능 여부와 예상 단가를 빠르게 확인할 수 있습니다.
-                  </p>
-                  <Separator className="my-4 bg-white/20" />
-                  <Button asChild fullWidth className="mt-5">
-                    <Link href={`/factory/requests/${company.id}`}>
-                      견적 요청하기
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              <>
+                <EscrowMiniStepper currentStep={1} variant="vertical" />
+                <Card className="border-border bg-ink-950 text-white shadow-ct-soft">
+                  <CardContent className="p-6">
+                    <ShieldCheck className="h-10 w-10 text-brand-light" />
+                    <h2 className="text-kr-pretty mt-4 text-[18px] font-bold sm:text-[20px]">
+                      이 공장에 견적을 요청해보세요
+                    </h2>
+                    <p className="text-kr-pretty mt-2 text-sm leading-6 text-white/70">
+                      도면과 수량을 공유하면 생산 가능 여부와 예상 단가를 빠르게 확인할 수 있습니다.
+                    </p>
+                    <Separator className="my-4 bg-white/20" />
+                    <Button asChild fullWidth className="mt-5">
+                      <Link href={`/factory/requests/${company.id}`}>
+                        견적 요청하기
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </aside>
         </div>

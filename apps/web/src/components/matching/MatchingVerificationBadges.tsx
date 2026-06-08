@@ -2,21 +2,24 @@
 
 import type { FactoryRecommendation } from '@rootmatching/shared'
 import { VerificationBadge } from '@/components/profile/VerificationBadge'
-import { deriveMatchingVerifications } from '@/lib/matching-verifications'
+import {
+  deriveMatchingVerifications,
+  type MatchingVerification,
+} from '@/lib/matching-verifications'
 import { cn } from '@/lib/cn'
 
-interface MatchingVerificationBadgesProps {
-  factory: FactoryRecommendation
+type MatchingVerificationBadgesProps = {
   className?: string
   layout?: 'grid' | 'stack'
-}
+} & ({ factory: FactoryRecommendation } | { verifications: MatchingVerification[] })
 
 export function MatchingVerificationBadges({
-  factory,
   className,
   layout = 'grid',
+  ...source
 }: MatchingVerificationBadgesProps) {
-  const verifications = deriveMatchingVerifications(factory)
+  const verifications =
+    'verifications' in source ? source.verifications : deriveMatchingVerifications(source.factory)
 
   return (
     <div

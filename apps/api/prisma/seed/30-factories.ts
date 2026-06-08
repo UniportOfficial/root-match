@@ -1,5 +1,5 @@
 import { AccountType, Prisma, PrismaClient, User } from '@prisma/client';
-import { auth } from '../../src/auth/auth.config';
+import { getAuth } from '../../src/auth/auth.config';
 
 const SEED_PASSWORD = 'TempPass!2026';
 
@@ -340,7 +340,9 @@ async function ensureFactoryUser(
   });
 
   if (!existing) {
-    await auth.api.signUpEmail({
+    await (
+      await getAuth()
+    ).api.signUpEmail({
       body: {
         email: entry.email,
         password: SEED_PASSWORD,

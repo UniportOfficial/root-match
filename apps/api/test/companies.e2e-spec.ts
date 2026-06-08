@@ -7,7 +7,7 @@ import { json, urlencoded } from 'express';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { auth } from '../src/auth/auth.config';
+import { getAuth } from '../src/auth/auth.config';
 
 const seedPassword = 'TempPass!2026';
 
@@ -67,7 +67,7 @@ describe('Companies e2e (W2-5)', () => {
     const expressApp = (app as NestExpressApplication)
       .getHttpAdapter()
       .getInstance();
-    expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
+    expressApp.all('/api/auth/{*splat}', toNodeHandler(await getAuth()));
     app.use(json({ limit: '10mb' }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
     await app.init();

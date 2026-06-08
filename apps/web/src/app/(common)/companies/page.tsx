@@ -3,7 +3,7 @@
 import { Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight, Building2, Heart, Search } from 'lucide-react'
+import { ArrowRight, Building2, ChevronDown, Heart, Loader2, Search } from 'lucide-react'
 import { AppBadge } from '@/components/ui/AppBadge'
 import { AppButton } from '@/components/ui/AppButton'
 import { Badge } from '@/components/ui/badge'
@@ -20,8 +20,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { companySizes, industries, regions } from '@/data/companies'
 import {
+  useCompaniesActions,
   useCompaniesDispatch,
-  useCompaniesFiltered,
   useCompaniesState,
 } from '@/state/CompaniesContext'
 
@@ -80,9 +80,10 @@ function CompaniesPageShell() {
 
 function CompaniesPageContent() {
   const searchParams = useSearchParams()
-  const { filter, favorites } = useCompaniesState()
+  const { filter, favorites, companies, total, hasMore, loadMoreStatus, status } =
+    useCompaniesState()
   const dispatch = useCompaniesDispatch()
-  const filteredCompanies = useCompaniesFiltered()
+  const { loadMore } = useCompaniesActions()
 
   useEffect(() => {
     const keywordFromQuery = searchParams.get('keyword')
@@ -90,6 +91,11 @@ function CompaniesPageContent() {
 
     dispatch({ type: 'companies/setFilter', payload: { keyword: keywordFromQuery } })
   }, [dispatch, searchParams])
+
+  const isLoadingMore = loadMoreStatus === 'loading'
+  const isInitialLoading = status === 'loading'
+  const loadedCount = companies.length
+  const remaining = Math.max(total - loadedCount, 0)
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -105,6 +111,15 @@ function CompaniesPageContent() {
           <p className="text-kr-pretty mt-3 text-base leading-8 text-muted-foreground sm:text-lg">
             조건에 맞는 기업을 찾아 협업을 시작하세요.
           </p>
+          {status === 'ready' && total > 0 && (
+            <p
+              className="text-kr-keep mt-3 inline-flex items-center gap-2 rounded-full bg-brand-light px-4 py-2 text-[15px] font-bold text-brand"
+              aria-live="polite"
+            >
+              <Building2 className="h-4 w-4" />
+              전체 {total.toLocaleString('ko-KR')}개 · {loadedCount.toLocaleString('ko-KR')}개 표시
+            </p>
+          )}
         </header>
 
         <Card className="mb-6 border-border bg-card shadow-ct-soft">
@@ -214,7 +229,7 @@ function CompaniesPageContent() {
         </Card>
 
         <main className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-          {filteredCompanies.map((company) => {
+          {companies.map((company) => {
             const isFavorite = favorites.includes(company.id)
 
             return (
@@ -288,7 +303,7 @@ function CompaniesPageContent() {
             )
           })}
 
-          {filteredCompanies.length === 0 && (
+          {companies.length === 0 && !isInitialLoading && (
             <Card className="border-border bg-card p-12 text-center shadow-ct-soft sm:col-span-2 lg:col-span-3">
               <Building2 className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="text-kr-pretty mt-4 text-lg font-semibold text-muted-foreground">
@@ -297,6 +312,36 @@ function CompaniesPageContent() {
             </Card>
           )}
         </main>
+
+        {hasMore && (
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <AppButton
+              type="button"
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                void loadMore()
+              }}
+              disabled={isLoadingMore}
+              className="text-kr-keep min-w-[320px] tap-primary text-[17px] font-bold"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  불러오는 중...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-5 w-5" aria-hidden="true" />더 보기 (남은{' '}
+                  {remaining.toLocaleString('ko-KR')}개)
+                </>
+              )}
+            </AppButton>
+            <p className="text-kr-keep text-[15px] font-semibold text-foreground/70">
+              한 번에 100개씩 추가로 불러옵니다
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

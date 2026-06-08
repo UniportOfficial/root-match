@@ -1,4 +1,5 @@
 import { AccountType, UserRole } from '@prisma/client';
+import { Resend } from 'resend';
 import { z } from 'zod';
 import { prisma } from '../prisma/prisma.client';
 
@@ -57,6 +58,50 @@ async function buildAuth() {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: isProduction,
+    },
+
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        if (!process.env.RESEND_API_KEY) {
+          throw new Error('RESEND_API_KEY is not configured');
+        }
+        const verificationUrl = url.replace(
+          /^https?:\/\/[^/]+\/api\/auth/,
+          `${webOrigin}/_api/api/auth`,
+        );
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { error } = await resend.emails.send({
+          from: process.env.AUTH_EMAIL_FROM ?? 'onboarding@resend.dev',
+          to: user.email,
+          subject: 'RootMatch 이메일 인증을 완료해주세요',
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+              <h1 style="font-size: 20px; margin: 0 0 16px;">RootMatch 이메일 인증</h1>
+              <p style="font-size: 15px; line-height: 1.6; color: #4b5563;">
+                ${user.name}님, 가입을 환영합니다.
+              </p>
+              <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 24px;">
+                아래 버튼을 눌러 이메일 인증을 완료해주세요.
+              </p>
+              <p style="margin: 0 0 24px;">
+                <a href="${verificationUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                  이메일 인증하기
+                </a>
+              </p>
+              <p style="font-size: 13px; color: #6b7280; line-height: 1.6;">
+                버튼이 작동하지 않으면 다음 링크를 복사해 주세요:<br />
+                <a href="${verificationUrl}" style="color: #2563eb; word-break: break-all;">${verificationUrl}</a>
+              </p>
+            </div>
+          `,
+        });
+        if (error) {
+          throw new Error(`Resend email send failed: ${error.message}`);
+        }
+      },
     },
 
     logger: {

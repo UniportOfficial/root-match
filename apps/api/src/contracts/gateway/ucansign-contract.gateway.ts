@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UCanSignClient } from '../ucansign.client';
 import type {
   ContractGateway,
@@ -10,11 +11,22 @@ import type {
 
 @Injectable()
 export class UCanSignContractGateway implements ContractGateway {
-  constructor(private readonly client: UCanSignClient) {}
+  private readonly logger = new Logger(UCanSignContractGateway.name);
+
+  constructor(
+    private readonly client: UCanSignClient,
+    private readonly config: ConfigService,
+  ) {}
 
   async createDocument(
     input: CreateGatewayDocumentInput,
   ): Promise<GatewayDocumentCreated> {
+    const forcedRecipient = this.resolveForcedRecipient();
+    if (forcedRecipient) {
+      this.logger.warn(
+        `UCANSIGN_FORCE_RECIPIENT_EMAIL active — all signing recipients redirected to ${forcedRecipient}`,
+      );
+    }
     const result = await this.client.createDocumentFromTemplate({
       templateId: input.templateId,
       documentName: input.documentName,
@@ -24,7 +36,7 @@ export class UCanSignContractGateway implements ContractGateway {
       configExpireMinute: input.expiryMinutes,
       participants: input.participants.map((p) => ({
         name: p.name,
-        signingContactInfo: p.email ?? p.phone,
+        signingContactInfo: forcedRecipient ?? p.email ?? p.phone,
         signingOrder: p.signingOrder,
         signingMethodType: p.signingMethodType,
         authentications: p.authType ? [p.authType] : [],
@@ -75,5 +87,11 @@ export class UCanSignContractGateway implements ContractGateway {
       input.redirectUrl,
     );
     return { url: file.url, expiresAt: file.expiresAt };
+  }
+
+  private resolveForcedRecipient(): string | null {
+    const raw = this.config.get<string>('UCANSIGN_FORCE_RECIPIENT_EMAIL');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
   }
 }

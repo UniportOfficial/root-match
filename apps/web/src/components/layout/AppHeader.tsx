@@ -1,30 +1,23 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bell, Menu, PanelLeftOpen, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMessagesUnreadCount } from '@/state/MessagesContext'
 import { useNotificationsUnreadCount } from '@/state/NotificationsContext'
 import { useUserState } from '@/state/UserContext'
-import { Logo } from '@/components/brand/Logo'
 import { NotificationDropdown } from '@/components/notification/NotificationDropdown'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { HeaderPageTitle } from '@/components/layout/HeaderPageTitle'
+import { HeaderProfileDropdown } from '@/components/layout/HeaderProfileDropdown'
 
 interface AppHeaderProps {
   className?: string
-  /** Desktop sidebar가 collapse된 상태인지 — true면 open trigger를 desktop에서 노출. */
   sidebarHidden?: boolean
   onOpenSidebar?: () => void
-}
-
-function getInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return '?'
-  return trimmed.slice(0, 1).toUpperCase()
 }
 
 export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: AppHeaderProps) {
@@ -35,7 +28,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
   const notificationUnreadCount = useNotificationsUnreadCount()
   const messageUnreadCount = useMessagesUnreadCount()
   const totalUnreadCount = notificationUnreadCount + messageUnreadCount
-  const { currentUser, isAuthenticated } = useUserState()
+  const { isAuthenticated } = useUserState()
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -51,8 +44,8 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
         className,
       )}
     >
-      <div className="flex h-full items-center justify-between gap-3 lg:gap-5">
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
+      <div className="flex h-full items-center gap-3 lg:gap-5">
+        <div className="flex shrink-0 items-center gap-2 lg:gap-3">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="lg:hidden" aria-label="메뉴 열기">
@@ -68,41 +61,35 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
           </Sheet>
 
           {sidebarHidden && onOpenSidebar && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                type="button"
-                onClick={onOpenSidebar}
-                className="hidden lg:inline-flex"
-                aria-label="사이드바 열기"
-                title="사이드바 열기"
-              >
-                <PanelLeftOpen className="h-5 w-5" />
-              </Button>
-              <Logo
-                variant="primary"
-                size="md"
-                className="hidden lg:block"
-                alt="RootMatch — 홈으로"
-              />
-            </>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              type="button"
+              onClick={onOpenSidebar}
+              className="hidden lg:inline-flex"
+              aria-label="사이드바 열기"
+              title="사이드바 열기"
+            >
+              <PanelLeftOpen className="h-5 w-5" />
+            </Button>
           )}
-
-          <form onSubmit={submitSearch} className="min-w-0 flex-1 sm:max-w-md">
-            <label className="relative block">
-              <span className="sr-only">검색</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                type="search"
-                placeholder="기업, 키워드 검색"
-                className="h-10 w-full rounded-lg border border-input bg-muted/50 pl-9 pr-3 text-[16px] font-medium text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card focus:ring-2 focus:ring-ring/20"
-              />
-            </label>
-          </form>
         </div>
+
+        <HeaderPageTitle className="hidden flex-1 min-w-0 sm:block lg:flex-none lg:max-w-[240px]" />
+
+        <form onSubmit={submitSearch} className="min-w-0 flex-1 sm:max-w-md lg:max-w-xl">
+          <label className="relative block">
+            <span className="sr-only">검색</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              type="search"
+              placeholder="기업, 키워드 검색"
+              className="h-10 w-full rounded-lg border border-input bg-muted/50 pl-9 pr-3 text-rm-body-d font-medium text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card focus:ring-2 focus:ring-ring/20"
+            />
+          </label>
+        </form>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-4">
           <div className="relative">
@@ -127,27 +114,8 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
             <NotificationDropdown open={dropdownOpen} onClose={() => setDropdownOpen(false)} />
           </div>
 
-          {isAuthenticated && currentUser ? (
-            <Link
-              href="/mypage"
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
-              aria-label={`${currentUser.name} 마이페이지로 이동`}
-            >
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-primary-foreground"
-                aria-hidden="true"
-              >
-                {getInitial(currentUser.name)}
-              </span>
-              <span className="hidden text-left leading-tight sm:block">
-                <span className="text-kr-keep block text-[14px] font-bold text-foreground">
-                  {currentUser.name}
-                </span>
-                <span className="text-kr-keep block text-[12px] font-semibold text-muted-foreground">
-                  {currentUser.position ?? '회원'}
-                </span>
-              </span>
-            </Link>
+          {isAuthenticated ? (
+            <HeaderProfileDropdown />
           ) : (
             <Button variant="secondary" size="default" onClick={() => router.push('/login')}>
               로그인

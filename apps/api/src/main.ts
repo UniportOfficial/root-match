@@ -20,7 +20,7 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  configureApp(app);
+  await configureApp(app);
   setupSwagger(app);
   await app.listen(process.env.PORT ?? 3001);
 }

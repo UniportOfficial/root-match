@@ -7,7 +7,7 @@ import { json, urlencoded } from 'express';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { auth } from '../src/auth/auth.config';
+import { getAuth } from '../src/auth/auth.config';
 import { captureRawBodyForWebhooks } from '../src/bootstrap';
 import {
   CONTRACT_GATEWAY,
@@ -132,7 +132,7 @@ describe('Contracts e2e (STEP 6)', () => {
     const expressApp = (app as NestExpressApplication)
       .getHttpAdapter()
       .getInstance();
-    expressApp.all('/api/auth/{*splat}', toNodeHandler(auth));
+    expressApp.all('/api/auth/{*splat}', toNodeHandler(await getAuth()));
     app.use(json({ limit: '10mb', verify: captureRawBodyForWebhooks }));
     app.use(urlencoded({ extended: true, limit: '10mb' }));
     await app.init();

@@ -270,38 +270,33 @@ export default function MatchingResultPage() {
       setLoadState('ready')
     }
 
+    const storedValue = window.sessionStorage.getItem(MATCHING_RESULTS_KEY)
+
+    if (storedValue) {
+      try {
+        const parsedValue: unknown = JSON.parse(storedValue)
+
+        if (
+          isMatchingResultsPayload(parsedValue) &&
+          Date.now() - parsedValue.submittedAt <= STALE_AFTER_MS
+        ) {
+          setFactories(parsedValue.results)
+          setRequest(parsedValue.request)
+          setSelectedFactory(parsedValue.results[0] ?? null)
+          setLoadState('ready')
+          return
+        }
+      } catch {
+        setLoadState('loading')
+      }
+    }
+
     if (isDemoMode) {
       showDemoFactories()
       return
     }
 
-    const storedValue = window.sessionStorage.getItem(MATCHING_RESULTS_KEY)
-
-    if (!storedValue) {
-      setLoadState('empty')
-      return
-    }
-
-    try {
-      const parsedValue: unknown = JSON.parse(storedValue)
-
-      if (!isMatchingResultsPayload(parsedValue)) {
-        setLoadState('empty')
-        return
-      }
-
-      if (Date.now() - parsedValue.submittedAt > STALE_AFTER_MS) {
-        setLoadState('empty')
-        return
-      }
-
-      setFactories(parsedValue.results)
-      setRequest(parsedValue.request)
-      setSelectedFactory(parsedValue.results[0] ?? null)
-      setLoadState('ready')
-    } catch {
-      setLoadState('empty')
-    }
+    setLoadState('empty')
   }, [isDemoMode])
 
   const filteredFactories = useMemo(() => {

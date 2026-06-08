@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TransactionStatusTabs } from '@/components/transactions/TransactionStatusTabs'
 import { listMyContracts, type ContractListItem } from '@/lib/contracts-api'
 
 type StatusFilter = ContractStatus | 'all'
@@ -127,6 +128,7 @@ export default function ContractListPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl">
+        <TransactionStatusTabs current="contracts" />
         <header className="mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-ct-soft">
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

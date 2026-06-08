@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Bell, Menu, PanelLeftOpen, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useNotificationsUnreadCount } from '@/state/NotificationsContext'
@@ -21,13 +21,25 @@ interface AppHeaderProps {
   onOpenSidebar?: () => void
 }
 
+function getSearchPlaceholder(pathname: string): string {
+  if (pathname === '/companies' || pathname.startsWith('/companies/')) return '기업명·키워드 검색'
+  if (pathname === '/requests' || pathname.startsWith('/requests/')) return '내 요청에서 검색'
+  if (pathname === '/factory/requests' || pathname.startsWith('/factory/requests/'))
+    return '받은 요청에서 검색'
+  if (pathname === '/quotes' || pathname.startsWith('/quotes/')) return '공개 견적에서 검색'
+  if (pathname === '/contracts' || pathname.startsWith('/contracts/')) return '계약에서 검색'
+  return '기업·키워드 검색'
+}
+
 export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: AppHeaderProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [keyword, setKeyword] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const notificationUnreadCount = useNotificationsUnreadCount()
   const { isAuthenticated } = useUserState()
+  const searchPlaceholder = getSearchPlaceholder(pathname)
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -84,7 +96,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               type="search"
-              placeholder="기업, 키워드 검색"
+              placeholder={searchPlaceholder}
               className="h-10 w-full rounded-lg border border-input bg-muted/50 pl-9 pr-3 text-rm-body-d font-medium text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card focus:ring-2 focus:ring-ring/20"
             />
           </label>

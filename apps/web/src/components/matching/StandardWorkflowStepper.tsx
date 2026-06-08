@@ -1,7 +1,7 @@
 'use client'
 
-import { Check } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { MiniHorizontalStepper } from './MiniHorizontalStepper'
 
 interface StandardWorkflowStepperProps {
   currentStep?: number
@@ -41,55 +41,14 @@ export function StandardWorkflowStepper({
         </span>
       </header>
 
-      <ol className="flex items-stretch gap-1 overflow-x-auto pb-1" role="list">
-        {WORKFLOW_STEPS.map((label, index) => {
-          const stepNumber = index + 1
-          const isDone = stepNumber < currentStep
-          const isCurrent = stepNumber === currentStep
-          const isLast = stepNumber === WORKFLOW_STEPS.length
-
-          return (
-            <li
-              key={label}
-              className="flex flex-1 min-w-[64px] items-center gap-1"
-              aria-current={isCurrent ? 'step' : undefined}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className={cn(
-                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition',
-                    isDone
-                      ? 'bg-brand text-primary-foreground'
-                      : isCurrent
-                        ? 'bg-brand text-primary-foreground ring-4 ring-brand-light'
-                        : 'bg-card text-brand ring-1 ring-brand-light',
-                  )}
-                  aria-hidden="true"
-                >
-                  {isDone ? <Check className="h-3.5 w-3.5" /> : stepNumber}
-                </div>
-                <span
-                  className={cn(
-                    'text-kr-keep whitespace-nowrap text-[12px] font-bold',
-                    isDone || isCurrent ? 'text-brand' : 'text-muted-foreground',
-                  )}
-                >
-                  {label}
-                </span>
-              </div>
-              {!isLast && (
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    'mt-3.5 h-0.5 flex-1 rounded-full',
-                    isDone ? 'bg-brand' : 'bg-brand-light',
-                  )}
-                />
-              )}
-            </li>
-          )
-        })}
-      </ol>
+      <MiniHorizontalStepper
+        steps={WORKFLOW_STEPS}
+        currentStep={currentStep}
+        theme="brand"
+        ariaLabel="11단계 표준 워크플로 진행 상태"
+        minStepWidthClass="min-w-[64px]"
+        className="overflow-x-auto pb-1"
+      />
     </section>
   )
 }

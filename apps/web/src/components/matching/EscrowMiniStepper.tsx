@@ -2,6 +2,7 @@
 
 import { Check, Shield } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { MiniHorizontalStepper } from './MiniHorizontalStepper'
 
 interface EscrowMiniStepperProps {
   currentStep?: number
@@ -83,55 +84,12 @@ export function EscrowMiniStepper({
           })}
         </ol>
       ) : (
-        <ol className="flex items-start gap-1" role="list">
-          {ESCROW_STEPS.map((label, index) => {
-            const stepNumber = index + 1
-            const isDone = stepNumber < currentStep
-            const isCurrent = stepNumber === currentStep
-            const isLast = stepNumber === ESCROW_STEPS.length
-
-            return (
-              <li
-                key={label}
-                className="flex flex-1 min-w-0 items-start gap-1"
-                aria-current={isCurrent ? 'step' : undefined}
-              >
-                <div className="flex min-w-0 flex-col items-center gap-1">
-                  <div
-                    className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition',
-                      isDone
-                        ? 'bg-escrow text-escrow-foreground'
-                        : isCurrent
-                          ? 'bg-escrow text-escrow-foreground ring-4 ring-escrow/20'
-                          : 'bg-card text-escrow ring-1 ring-escrow/30',
-                    )}
-                    aria-hidden="true"
-                  >
-                    {isDone ? <Check className="h-3.5 w-3.5" /> : stepNumber}
-                  </div>
-                  <span
-                    className={cn(
-                      'text-kr-keep whitespace-nowrap text-[12px] font-bold',
-                      isDone || isCurrent ? 'text-escrow' : 'text-muted-foreground',
-                    )}
-                  >
-                    {label}
-                  </span>
-                </div>
-                {!isLast && (
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      'mt-3 h-0.5 flex-1 rounded-full',
-                      isDone ? 'bg-escrow' : 'bg-escrow/20',
-                    )}
-                  />
-                )}
-              </li>
-            )
-          })}
-        </ol>
+        <MiniHorizontalStepper
+          steps={ESCROW_STEPS}
+          currentStep={currentStep}
+          theme="escrow"
+          ariaLabel="안심결제 8단계 진행 상태"
+        />
       )}
     </section>
   )

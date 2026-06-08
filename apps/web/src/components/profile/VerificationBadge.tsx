@@ -11,6 +11,9 @@ export type VerificationType =
   | 'client'
   | 'escrow'
   | 'certification'
+  | 'location'
+  | 'equipment'
+  | 'onsite'
 export type VerificationState = 'verified' | 'pending' | 'missing'
 
 interface VerificationBadgeProps {
@@ -56,6 +59,9 @@ const typeDescriptions: Record<VerificationType, string> = {
   client: '발주 기업의 기본 정보를 확인합니다.',
   escrow: '안전결제 이용 가능 여부를 확인합니다.',
   certification: '등록된 인증과 자격 정보를 확인합니다.',
+  location: '공장 위치와 가동 지역 정보를 확인합니다.',
+  equipment: '보유 설비와 가공 공정 정보를 확인합니다.',
+  onsite: '거점 매니저의 현장 방문 결과를 확인합니다.',
 }
 
 export function VerificationBadge({ type, state, evidence, label }: VerificationBadgeProps) {

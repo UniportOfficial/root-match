@@ -36,6 +36,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EscrowMiniStepper } from '@/components/matching/EscrowMiniStepper'
+import { MatchingVerificationBadges } from '@/components/matching/MatchingVerificationBadges'
+import { StandardWorkflowStepper } from '@/components/matching/StandardWorkflowStepper'
 import { cn } from '@/lib/cn'
 import { useDemoMode } from '@/lib/demo-mode'
 import { useWorkflowDispatch } from '@/state/WorkflowContext'
@@ -492,6 +495,8 @@ export default function MatchingResultPage() {
           </CardHeader>
         </Card>
 
+        <StandardWorkflowStepper currentStep={2} className="mb-6" />
+
         <Card className="mb-6 border-border bg-card shadow-ct-soft">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4">
@@ -590,10 +595,11 @@ export default function MatchingResultPage() {
                     <div className="mb-4 rounded-2xl border border-brand-light bg-brand-light/40 p-4">
                       <div className="mb-2 flex items-end justify-between">
                         <span className="text-kr-keep text-sm font-bold text-brand">
-                          AI 매칭 점수
+                          AI 매칭 적합도
                         </span>
                         <span className="text-3xl font-black tabular-nums text-foreground">
                           {matchScore}
+                          <span className="ml-0.5 text-xl font-extrabold text-brand">%</span>
                         </span>
                       </div>
                       <Progress
@@ -625,6 +631,13 @@ export default function MatchingResultPage() {
                           <span className="tabular-nums">{factory.distanceKm ?? '-'}km</span>
                         </span>
                       </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="text-kr-keep mb-2 text-[13px] font-bold text-muted-foreground">
+                        공장 검증 5종
+                      </p>
+                      <MatchingVerificationBadges factory={factory} />
                     </div>
 
                     <dl className="mb-4 grid grid-cols-2 gap-3">
@@ -725,6 +738,8 @@ export default function MatchingResultPage() {
                       </ul>
                     )}
 
+                    <EscrowMiniStepper currentStep={2} className="mb-4" />
+
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       {isSelected ? (
                         <span className="text-kr-keep inline-flex items-center gap-1.5 rounded-full bg-brand-light px-3 py-1.5 text-[13px] font-extrabold text-brand">
@@ -798,6 +813,13 @@ export default function MatchingResultPage() {
                   </div>
                   <Separator className="mb-4" />
 
+                  <div className="mb-5">
+                    <p className="text-kr-keep mb-2 text-[13px] font-bold text-muted-foreground">
+                      공장 검증 5종
+                    </p>
+                    <MatchingVerificationBadges factory={selectedFactory} layout="stack" />
+                  </div>
+
                   <div className="space-y-4">
                     <ProgressMetric
                       icon={<Shield className="h-4 w-4 text-success" />}
@@ -830,6 +852,8 @@ export default function MatchingResultPage() {
                       {selectedFactory.aiReason}
                     </p>
                   </div>
+
+                  <EscrowMiniStepper currentStep={2} variant="vertical" className="mt-5" />
 
                   <Button
                     type="button"

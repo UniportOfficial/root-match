@@ -58,6 +58,44 @@ async function buildAuth() {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: isProduction,
+      sendResetPassword: async ({ user, token }) => {
+        if (!process.env.RESEND_API_KEY) {
+          throw new Error('RESEND_API_KEY is not configured');
+        }
+        const resetUrl = `${webOrigin}/reset-password?token=${token}`;
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { error } = await resend.emails.send({
+          from: process.env.AUTH_EMAIL_FROM ?? 'onboarding@resend.dev',
+          to: user.email,
+          subject: 'RootMatch 비밀번호 재설정 안내',
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+              <h1 style="font-size: 20px; margin: 0 0 16px;">RootMatch 비밀번호 재설정</h1>
+              <p style="font-size: 15px; line-height: 1.6; color: #4b5563;">
+                ${user.name ?? ''}님, 안녕하세요.
+              </p>
+              <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 24px;">
+                아래 버튼을 눌러 새 비밀번호를 설정해주세요. 본인이 요청하지 않았다면 이 메일을 무시해도 됩니다.
+              </p>
+              <p style="margin: 0 0 24px;">
+                <a href="${resetUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                  비밀번호 재설정하기
+                </a>
+              </p>
+              <p style="font-size: 13px; color: #6b7280; line-height: 1.6;">
+                버튼이 작동하지 않으면 다음 링크를 복사해 주세요:<br />
+                <a href="${resetUrl}" style="color: #2563eb; word-break: break-all;">${resetUrl}</a>
+              </p>
+              <p style="font-size: 12px; color: #9ca3af; line-height: 1.6; margin-top: 24px;">
+                이 링크는 보안을 위해 일정 시간 후 만료됩니다.
+              </p>
+            </div>
+          `,
+        });
+        if (error) {
+          throw new Error(`Resend email send failed: ${error.message}`);
+        }
+      },
     },
 
     emailVerification: {

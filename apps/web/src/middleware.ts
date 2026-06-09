@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSessionCookie } from 'better-auth/cookies'
 
-const PUBLIC_ROUTES = new Set<string>(['/', '/login', '/role-select'])
+const PUBLIC_ROUTES = new Set<string>([
+  '/',
+  '/login',
+  '/role-select',
+  '/forgot-password',
+  '/reset-password',
+])
 
 // Optimistic-redirect pattern per Better Auth docs `integrations/next.mdx:155-177,299-326`.
 // `getSessionCookie()` only checks cookie presence — it does NOT validate the session.

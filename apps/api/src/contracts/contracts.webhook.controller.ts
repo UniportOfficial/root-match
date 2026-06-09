@@ -43,6 +43,7 @@ export class ContractsWebhookController {
   private readonly logger = new Logger(ContractsWebhookController.name);
   private readonly secret: string | undefined;
   private readonly headerName: string;
+  private readonly allowUnsigned: boolean;
 
   constructor(
     private readonly contracts: ContractsService,
@@ -52,10 +53,18 @@ export class ContractsWebhookController {
     this.headerName =
       this.config.get<string>('UCANSIGN_WEBHOOK_SIGNATURE_HEADER') ??
       'x-ucansign-signature';
+    this.allowUnsigned =
+      this.config.get<string>('UCANSIGN_ALLOW_UNSIGNED_WEBHOOK') === 'true';
 
-    if (!this.secret && this.isProduction()) {
+    if (!this.secret && this.isProduction() && !this.allowUnsigned) {
       this.logger.error(
-        'UCANSIGN_WEBHOOK_SECRET unset under NODE_ENV=production — webhook will reject all calls.',
+        'UCANSIGN_WEBHOOK_SECRET unset under NODE_ENV=production — webhook will reject all calls. Set UCANSIGN_ALLOW_UNSIGNED_WEBHOOK=true to opt-in to customValue5 fallback.',
+      );
+    }
+
+    if (!this.secret && this.allowUnsigned) {
+      this.logger.warn(
+        'UCANSIGN_ALLOW_UNSIGNED_WEBHOOK=true — webhook signature verification skipped. Security boundary relies on customValue5 + idempotency hash only.',
       );
     }
   }
@@ -77,7 +86,7 @@ export class ContractsWebhookController {
 
     if (this.secret) {
       this.verifySignature(headers, rawBuffer);
-    } else if (this.isProduction()) {
+    } else if (this.isProduction() && !this.allowUnsigned) {
       throw new UnauthorizedException(
         'Webhook signature verification not configured',
       );

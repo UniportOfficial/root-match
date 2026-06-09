@@ -7,12 +7,16 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
+  CircleDollarSign,
+  Clock3,
   FileText,
   Mail,
   MapPin,
   MessageCircle,
+  ShieldCheck,
   RefreshCw,
   Sparkles,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +36,21 @@ interface SupportingStat {
   deltaTone: 'success' | 'muted'
   testId: string
 }
+
+type FinanceField =
+  | 'currentMonthAmount'
+  | 'escrowBalance'
+  | 'settlementPending'
+  | 'settlementCompleted'
+
+type StatusField = 'pending' | 'awaitingResponse' | 'decisionRequired' | 'ongoing'
+
+const formatKoreanWon = (value: number) =>
+  new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'KRW',
+    maximumFractionDigits: 0,
+  }).format(value)
 
 export default function DashboardPage() {
   const { currentUser } = useUserState()
@@ -88,6 +107,124 @@ export default function DashboardPage() {
           delta: '기업 지역 데이터 기준',
           deltaTone: 'muted',
           testId: 'dashboard-stat-active-regions',
+        },
+      ]
+    : []
+
+  const mockFields = summary?.meta.mockFields ?? []
+  const hasMockField = (field: string) => mockFields.includes(field)
+  const hasStatusMockField = (field: StatusField) =>
+    mockFields.includes(`quoteRequestStatusCounts.${field}`)
+
+  const financeCards: Array<{
+    title: string
+    description: string
+    value: string
+    field: FinanceField
+    icon: LucideIcon
+    testId: string
+    tone: string
+  }> = summary
+    ? [
+        {
+          title: '이번 달 거래액',
+          description: '완료·진행 거래 합산 기준',
+          value: formatKoreanWon(summary.currentMonthAmount),
+          field: 'currentMonthAmount',
+          icon: CircleDollarSign,
+          testId: 'kpi-current-month-amount',
+          tone: 'border-primary/20 bg-primary/5 text-primary',
+        },
+        {
+          title: '안심결제 예치금',
+          description: '안전하게 보관 중인 금액',
+          value: formatKoreanWon(summary.escrowBalance),
+          field: 'escrowBalance',
+          icon: ShieldCheck,
+          testId: 'kpi-escrow-balance',
+          tone: 'border-[#7C3AED]/30 bg-[#7C3AED]/5 text-[#7C3AED]',
+        },
+        {
+          title: '정산 대기',
+          description: '확인 후 지급 예정 금액',
+          value: formatKoreanWon(summary.settlementPending),
+          field: 'settlementPending',
+          icon: Clock3,
+          testId: 'kpi-settlement-pending',
+          tone: 'border-warning/30 bg-warning-subtle text-warning-foreground',
+        },
+        {
+          title: '정산 완료',
+          description: '지급 처리가 끝난 금액',
+          value: formatKoreanWon(summary.settlementCompleted),
+          field: 'settlementCompleted',
+          icon: Wallet,
+          testId: 'kpi-settlement-completed',
+          tone: 'border-success/30 bg-success-subtle text-success',
+        },
+      ]
+    : []
+
+  const statusCards: Array<{
+    title: string
+    count: number
+    field: StatusField
+    activeCopy: string
+    emptyCopy: string
+    href: string
+    cta: string
+    icon: LucideIcon
+    testId: string
+    tone: string
+  }> = summary
+    ? [
+        {
+          title: '접수 대기',
+          count: summary.quoteRequestStatusCounts.pending,
+          field: 'pending',
+          activeCopy: '새 견적 요청을 검토해 주세요.',
+          emptyCopy: '대기 중인 새 요청이 없습니다. 필요한 품목을 새로 등록해 보세요.',
+          href: '/request',
+          cta: '새 견적 요청 작성하기',
+          icon: FileText,
+          testId: 'status-pending',
+          tone: 'border-info/30 bg-info-subtle text-info',
+        },
+        {
+          title: '응답 대기',
+          count: summary.quoteRequestStatusCounts.awaitingResponse,
+          field: 'awaitingResponse',
+          activeCopy: '공장 답변을 기다리는 요청입니다.',
+          emptyCopy: '현재 기다리는 답변이 없습니다. 진행 현황을 확인하세요.',
+          href: '/requests',
+          cta: '내 요청 목록 보기',
+          icon: MessageCircle,
+          testId: 'status-awaiting-response',
+          tone: 'border-warning/30 bg-warning-subtle text-warning-foreground',
+        },
+        {
+          title: '결정 필요',
+          count: summary.quoteRequestStatusCounts.decisionRequired,
+          field: 'decisionRequired',
+          activeCopy: '견적 선택 또는 계약 전환이 필요합니다.',
+          emptyCopy: '지금 선택할 견적은 없습니다. 추천 결과를 먼저 확인하세요.',
+          href: '/matching',
+          cta: 'AI 매칭 결과 보기',
+          icon: Sparkles,
+          testId: 'status-decision-required',
+          tone: 'border-primary/30 bg-primary/5 text-primary',
+        },
+        {
+          title: '거래 진행',
+          count: summary.quoteRequestStatusCounts.ongoing,
+          field: 'ongoing',
+          activeCopy: '계약 후 진행 중인 거래입니다.',
+          emptyCopy: '진행 중인 거래가 없습니다. 새 매칭에서 시작할 수 있습니다.',
+          href: '/transactions',
+          cta: '거래 목록 확인하기',
+          icon: RefreshCw,
+          testId: 'status-ongoing',
+          tone: 'border-[#7C3AED]/30 bg-[#7C3AED]/5 text-[#7C3AED]',
         },
       ]
     : []
@@ -391,6 +528,139 @@ export default function DashboardPage() {
             </>
           )}
         </section>
+
+        {!summaryError && (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-kr-pretty text-[20px] font-bold text-foreground sm:text-[22px]">
+                정산 KPI
+              </h2>
+              <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                이번 달 거래와 안심결제 흐름을 한눈에 확인하세요.
+              </p>
+            </div>
+
+            {showSkeleton ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-44 animate-pulse rounded-2xl bg-muted shadow-ct-soft" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {financeCards.map((card) => {
+                  const Icon = card.icon
+                  return (
+                    <Card
+                      key={card.testId}
+                      data-testid={card.testId}
+                      className={cn(
+                        'bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card',
+                        card.tone,
+                      )}
+                    >
+                      <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <p className="text-kr-keep text-[14px] font-bold text-foreground">
+                              {card.title}
+                            </p>
+                            <p className="text-kr-pretty text-[13px] leading-5 text-muted-foreground">
+                              {card.description}
+                            </p>
+                          </div>
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-card/80 shadow-ct-soft">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          <p className="break-keep text-[24px] font-extrabold leading-tight tabular-nums text-foreground sm:text-[26px]">
+                            {card.value}
+                          </p>
+                          {hasMockField(card.field) && (
+                            <Badge variant="warning" size="sm" className="text-kr-keep">
+                              (시뮬레이션 데이터)
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!summaryError && (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-kr-pretty text-[20px] font-bold text-foreground sm:text-[22px]">
+                거래 상태
+              </h2>
+              <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                대기·응답·결정·진행 단계를 빠르게 점검하세요.
+              </p>
+            </div>
+
+            {showSkeleton ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-muted shadow-ct-soft" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {statusCards.map((card) => {
+                  const Icon = card.icon
+                  const hasItems = card.count > 0
+                  return (
+                    <Card
+                      key={card.testId}
+                      data-testid={card.testId}
+                      className={cn(
+                        'bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card',
+                        card.tone,
+                      )}
+                    >
+                      <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <p className="text-kr-keep text-[14px] font-bold text-foreground">
+                              {card.title}
+                            </p>
+                            {hasStatusMockField(card.field) && (
+                              <Badge variant="warning" size="sm" className="text-kr-keep">
+                                (시뮬레이션 데이터)
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-card/80 shadow-ct-soft">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          <p className="text-[30px] font-extrabold leading-none tabular-nums text-foreground">
+                            {hasItems ? `${card.count.toLocaleString('ko-KR')}건` : '대기 없음'}
+                          </p>
+                          <p className="text-kr-pretty text-[14px] leading-6 text-muted-foreground">
+                            {hasItems ? card.activeCopy : card.emptyCopy}
+                          </p>
+                          <Link
+                            href={card.href}
+                            className="text-kr-keep inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-bold text-primary transition hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                          >
+                            {card.cta} <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">

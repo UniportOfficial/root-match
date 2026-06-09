@@ -192,7 +192,13 @@ function ContractPageContent() {
     setSubmitError(null)
 
     if (!clientContactValid || !factoryContactValid) {
-      setSubmitError('참여자 연락처를 모두 확인하고 다시 진행해주세요')
+      const target =
+        !clientContactValid && !factoryContactValid
+          ? '발주처와 공장 담당자'
+          : !clientContactValid
+            ? '발주처 담당자'
+            : '공장 담당자'
+      setSubmitError(`${target}의 이메일을 입력하고 저장한 후 다시 시도해주세요`)
       return
     }
 

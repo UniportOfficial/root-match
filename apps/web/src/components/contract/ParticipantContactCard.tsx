@@ -52,6 +52,37 @@ function validateParticipantContact(value: ParticipantContactValue): {
   return { valid: !errors.name && !errors.email && !errors.phone, errors }
 }
 
+function ReadOnlyField({
+  label,
+  value,
+  required,
+}: {
+  label: string
+  value: string
+  required?: boolean
+}) {
+  const trimmed = value.trim()
+  const showWarning = !trimmed && Boolean(required)
+  return (
+    <div className={`rounded-lg p-3 ${showWarning ? 'bg-danger-bg' : 'bg-muted'}`}>
+      <dt
+        className={`text-kr-keep text-[13px] font-semibold ${
+          showWarning ? 'text-danger' : 'text-muted-foreground'
+        }`}
+      >
+        {label}
+      </dt>
+      <dd
+        className={`text-kr-pretty mt-1 text-[16px] font-bold ${
+          showWarning ? 'text-danger' : 'text-foreground'
+        }`}
+      >
+        {showWarning ? '입력 필요' : trimmed || '-'}
+      </dd>
+    </div>
+  )
+}
+
 const ParticipantContactCard = React.memo(function ParticipantContactCard({
   role,
   title,
@@ -88,6 +119,17 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
     const validation = validateParticipantContact(defaultValue)
     onValidityChange?.(validation.valid)
   }, [defaultValue, onValidityChange])
+
+  const hasAutoEditedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (hasAutoEditedRef.current) return
+    if (isEditing) return
+    const validation = validateParticipantContact(defaultValue)
+    if (!validation.valid) {
+      hasAutoEditedRef.current = true
+      setIsEditing(true)
+    }
+  }, [defaultValue, isEditing])
 
   const clearErrors = React.useCallback(() => {
     setNameError(undefined)
@@ -148,30 +190,9 @@ const ParticipantContactCard = React.memo(function ParticipantContactCard({
         </CardHeader>
         <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
           <dl className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-muted p-3">
-              <dt className="text-kr-keep text-[13px] font-semibold text-muted-foreground">
-                담당자명
-              </dt>
-              <dd className="text-kr-pretty mt-1 text-[16px] font-bold text-foreground">
-                {defaultValue.name || '-'}
-              </dd>
-            </div>
-            <div className="rounded-lg bg-muted p-3">
-              <dt className="text-kr-keep text-[13px] font-semibold text-muted-foreground">
-                이메일
-              </dt>
-              <dd className="text-kr-pretty mt-1 text-[16px] font-bold text-foreground">
-                {defaultValue.email || '-'}
-              </dd>
-            </div>
-            <div className="rounded-lg bg-muted p-3">
-              <dt className="text-kr-keep text-[13px] font-semibold text-muted-foreground">
-                전화번호
-              </dt>
-              <dd className="text-kr-pretty mt-1 text-[16px] font-bold text-foreground">
-                {defaultValue.phone || '-'}
-              </dd>
-            </div>
+            <ReadOnlyField label="담당자명" value={defaultValue.name} required />
+            <ReadOnlyField label="이메일" value={defaultValue.email} required />
+            <ReadOnlyField label="전화번호" value={defaultValue.phone} />
           </dl>
           {helperText ? (
             <p className="text-kr-pretty mt-3 text-[14px] text-muted-foreground">{helperText}</p>

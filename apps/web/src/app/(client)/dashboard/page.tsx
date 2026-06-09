@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   ArrowRight,
@@ -24,11 +25,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
+import { MatchingVerificationBadges } from '@/components/matching/MatchingVerificationBadges'
 import { fetchCompanySummary } from '@/lib/companies-api'
+import type { MatchingVerification } from '@/lib/matching-verifications'
 import { useCompaniesState } from '@/state/CompaniesContext'
 import { useUserState } from '@/state/UserContext'
 import { cn } from '@/lib/utils'
-import type { CompanySummaryResponse } from '@rootmatching/shared'
+import type { Company, CompanySummaryResponse } from '@rootmatching/shared'
 
 interface SupportingStat {
   title: string
@@ -78,10 +81,71 @@ const formatKoreanWon = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value)
 
+const recommendationScores = [82, 79, 76] as const
+
+const getRecommendationScore = (index: number) => recommendationScores[index] ?? 76
+
+const buildCompanyVerifications = (company: Company): MatchingVerification[] => {
+  const hasCertifiedRootTier = company.confidenceTier === 'A_CERTIFIED_ROOT'
+  const certificationEvidence = company.certifications.length
+    ? `보유 인증 ${company.certifications.slice(0, 2).join(' · ')}`
+    : hasCertifiedRootTier
+      ? '국가뿌리산업진흥센터 등록 기업'
+      : company.confidenceTier
+        ? `신뢰 등급 ${company.confidenceTier} 추가 확인 중`
+        : '인증 자료 확인 예정'
+
+  return [
+    {
+      type: 'business',
+      label: '사업자',
+      state: company.externalId ? 'verified' : 'pending',
+      evidence: company.externalId
+        ? `외부 등록 ID ${company.externalId} 매핑 완료`
+        : '사업자 등록 정보를 확인 중입니다.',
+    },
+    {
+      type: 'location',
+      label: '위치',
+      state: company.region ? 'verified' : 'pending',
+      evidence: company.region
+        ? `${company.region} 권역 데이터 확인`
+        : '권역 정보를 보강 중입니다.',
+    },
+    {
+      type: 'equipment',
+      label: '장비',
+      state: company.processHint || company.industry ? 'verified' : 'pending',
+      evidence: company.processHint
+        ? `공정 힌트: ${company.processHint}`
+        : company.industry
+          ? `업종 기반 공정 후보: ${company.industry}`
+          : '보유 장비 정보를 확인 중입니다.',
+    },
+    {
+      type: 'certification',
+      label: '인증',
+      state: company.certifications.length || hasCertifiedRootTier ? 'verified' : 'pending',
+      evidence: certificationEvidence,
+    },
+    {
+      type: 'onsite',
+      label: '현장',
+      state: hasCertifiedRootTier || company.sourceTypes?.length ? 'verified' : 'pending',
+      evidence: company.sourceTypes?.length
+        ? `출처 ${company.sourceTypes.slice(0, 2).join(' · ')} 기반 현장 데이터 확인`
+        : hasCertifiedRootTier
+          ? '인증 풀 기반 현장 검증 완료'
+          : '현장 방문 일정을 확인 중입니다.',
+    },
+  ]
+}
+
 export default function DashboardPage() {
+  const router = useRouter()
   const { currentUser } = useUserState()
   const { companies } = useCompaniesState()
-  const recentCompanies = companies.slice(0, 3)
+  const aiRecommendedCompanies = companies.slice(0, 3)
 
   const [retryCount, setRetryCount] = useState(0)
   const [summary, setSummary] = useState<CompanySummaryResponse | null>(null)
@@ -105,6 +169,17 @@ export default function DashboardPage() {
   }, [retryCount])
 
   const handleRetry = () => setRetryCount((c) => c + 1)
+
+  const openFactoryDetail = (companyId: string) => {
+    router.push(`/factories/${companyId}`)
+  }
+
+  const handleRecommendationKeyDown = (event: KeyboardEvent<HTMLElement>, companyId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openFactoryDetail(companyId)
+    }
+  }
 
   const showSkeleton = !minElapsed || !fetchDone
 
@@ -999,57 +1074,98 @@ export default function DashboardPage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-kr-pretty text-[20px] font-bold text-foreground sm:text-[22px]">
-                최근 등록 기업
+                오늘의 AI 추천 (시뮬레이션)
               </h2>
               <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
-                기업 디렉토리에서 불러온 최신 기업입니다.
+                기업 디렉토리 최신 3곳을 기준으로 만든 데모 추천입니다.
               </p>
             </div>
             <Link
-              href="/companies"
+              href="/matching"
               className="text-kr-keep hidden shrink-0 text-[14px] font-bold text-primary hover:underline sm:inline-flex"
             >
-              전체 보기 →
+              AI 매칭 결과 보기 →
             </Link>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {recentCompanies.map((company) => (
-              <Card
-                key={company.id}
-                className="group border-border bg-card shadow-ct-soft transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-ct-card"
-              >
-                <CardContent className="flex h-full flex-col p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                      <Building2 className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-kr-pretty truncate text-[17px] font-bold text-foreground">
-                        {company.name}
-                      </h3>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge variant="slate" size="sm" className="text-kr-keep">
-                          {company.industry}
-                        </Badge>
-                        <Badge variant="slate" size="sm" className="text-kr-keep">
-                          {company.region}
-                        </Badge>
+            {aiRecommendedCompanies.map((company, index) => {
+              const score = getRecommendationScore(index)
+              const cardNumber = index + 1
+              return (
+                <Card
+                  key={company.id}
+                  data-testid={`dashboard-ai-recommendation-card-${cardNumber}`}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`${company.name} 상세 보기`}
+                  onClick={() => openFactoryDetail(company.id)}
+                  onKeyDown={(event) => handleRecommendationKeyDown(event, company.id)}
+                  className="group cursor-pointer border-primary/20 bg-card shadow-ct-soft transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-ct-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  <CardContent className="flex h-full flex-col gap-5 p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-ct-soft">
+                          <Sparkles className="h-5 w-5" />
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="warning" size="sm" className="text-kr-keep">
+                              (시뮬레이션 매칭)
+                            </Badge>
+                            <Badge variant="success" size="sm" className="text-kr-keep">
+                              {score}점 추천
+                            </Badge>
+                          </div>
+                          <h3 className="text-kr-pretty text-[18px] font-extrabold leading-snug text-foreground">
+                            {company.name}
+                          </h3>
+                        </div>
                       </div>
+                      <span className="text-kr-keep shrink-0 rounded-xl bg-primary px-3 py-2 text-[16px] font-extrabold leading-none text-primary-foreground shadow-toss-sm">
+                        {score}%
+                      </span>
                     </div>
-                  </div>
-                  <p className="text-kr-pretty mt-4 line-clamp-2 flex-1 text-[14px] leading-6 text-muted-foreground">
-                    {company.description}
-                  </p>
-                  <Link
-                    href={`/factories/${company.id}`}
-                    className="text-kr-keep mt-4 inline-flex items-center gap-1 text-[14px] font-bold text-primary transition group-hover:gap-2"
-                  >
-                    기업 상세 보기 <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="slate" size="sm" className="text-kr-keep">
+                        {company.industry}
+                      </Badge>
+                      <Badge variant="slate" size="sm" className="text-kr-keep">
+                        {company.region}
+                      </Badge>
+                    </div>
+
+                    <p className="text-kr-pretty line-clamp-2 text-[15px] leading-6 text-muted-foreground">
+                      {company.description}
+                    </p>
+
+                    <p className="text-kr-keep rounded-xl bg-accent px-4 py-3 text-[15px] font-bold text-primary">
+                      귀사 견적 이력과 {score}% 매칭
+                    </p>
+
+                    <div
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
+                      <MatchingVerificationBadges
+                        verifications={buildCompanyVerifications(company)}
+                        className="grid-cols-1 sm:grid-cols-2"
+                      />
+                    </div>
+
+                    <Link
+                      href={`/factories/${company.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      className="text-kr-keep mt-auto inline-flex min-h-10 items-center gap-1 rounded-lg text-[15px] font-bold text-primary transition group-hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    >
+                      기업 상세 보기 <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </section>
       </div>

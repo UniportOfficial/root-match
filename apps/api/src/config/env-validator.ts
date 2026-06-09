@@ -31,9 +31,8 @@ const prodEnvSchema = z
     UCANSIGN_API_KEY: z
       .string()
       .min(1, 'UCANSIGN_API_KEY is required in production'),
-    UCANSIGN_WEBHOOK_SECRET: z
-      .string()
-      .min(1, 'UCANSIGN_WEBHOOK_SECRET is required in production'),
+    UCANSIGN_WEBHOOK_SECRET: z.string().optional(),
+    UCANSIGN_ALLOW_UNSIGNED_WEBHOOK: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
     MATCHING_MOCK_FALLBACK: z.enum(['true', 'false']).optional(),
   })
@@ -44,6 +43,16 @@ const prodEnvSchema = z
       message:
         'Either OPENAI_API_KEY or MATCHING_MOCK_FALLBACK="true" must be set in production',
       path: ['OPENAI_API_KEY'],
+    },
+  )
+  .refine(
+    (data) =>
+      data.UCANSIGN_WEBHOOK_SECRET !== undefined ||
+      data.UCANSIGN_ALLOW_UNSIGNED_WEBHOOK !== undefined,
+    {
+      message:
+        'Either UCANSIGN_WEBHOOK_SECRET or UCANSIGN_ALLOW_UNSIGNED_WEBHOOK must be set in production',
+      path: ['UCANSIGN_WEBHOOK_SECRET'],
     },
   );
 

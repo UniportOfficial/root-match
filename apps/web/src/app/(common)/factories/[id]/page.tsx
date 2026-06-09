@@ -129,7 +129,7 @@ export default async function FactoryDetailPage({ params, searchParams }: PagePr
             </div>
             {showQuoteCta && (
               <Button asChild>
-                <Link href={`/factory/requests/${company.id}`}>
+                <Link href={`/request?factoryId=${company.id}`}>
                   견적 요청하기
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -252,7 +252,7 @@ export default async function FactoryDetailPage({ params, searchParams }: PagePr
                     </p>
                     <Separator className="my-4 bg-white/20" />
                     <Button asChild fullWidth className="mt-5">
-                      <Link href={`/factory/requests/${company.id}`}>
+                      <Link href={`/request?factoryId=${company.id}`}>
                         견적 요청하기
                         <ArrowRight className="h-4 w-4" />
                       </Link>

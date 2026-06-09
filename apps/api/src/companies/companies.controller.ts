@@ -39,6 +39,11 @@ export class CompaniesController {
     return this.companiesService.updateMyCompany(user.id, body);
   }
 
+  @Get('summary')
+  getSummary(@CurrentUser() user: AuthSession['user']) {
+    return this.companiesService.getSummary(user.id);
+  }
+
   @Get(':id')
   get(@Param('id') id: string): Promise<CompanyDetail> {
     return this.companiesService.getById(id);

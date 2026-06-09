@@ -1,4 +1,10 @@
-import type { CompanyDetail, CompanyListQuery, CompanyListResponse } from '@rootmatching/shared'
+import { CompanySummaryResponseSchema } from '@rootmatching/shared'
+import type {
+  CompanyDetail,
+  CompanyListQuery,
+  CompanyListResponse,
+  CompanySummaryResponse,
+} from '@rootmatching/shared'
 
 export type FetchCompaniesResult =
   | { ok: true; data: CompanyListResponse }
@@ -11,6 +17,11 @@ export type FetchCompanyDetailResult =
       reason: 'unauthenticated' | 'not-found' | 'error'
       message: string
     }
+
+export interface FetchCompanySummaryOptions {
+  apiUrl?: string
+  cookie?: string
+}
 
 function buildQueryString(query: CompanyListQuery): string {
   const params = new URLSearchParams()
@@ -45,6 +56,23 @@ export async function fetchCompanies(
     const message = error instanceof Error ? error.message : 'network error'
     return { ok: false, message }
   }
+}
+
+export async function fetchCompanySummary(
+  options: FetchCompanySummaryOptions = {},
+): Promise<CompanySummaryResponse> {
+  const apiUrl = options.apiUrl ?? process.env.NEXT_PUBLIC_API_URL ?? ''
+  const response = await fetch(`${apiUrl}/companies/summary`, {
+    credentials: 'include',
+    headers: options.cookie ? { cookie: options.cookie } : undefined,
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+
+  const json: unknown = await response.json()
+  return CompanySummaryResponseSchema.parse(json)
 }
 
 async function readDetailResponse(response: Response): Promise<FetchCompanyDetailResult> {

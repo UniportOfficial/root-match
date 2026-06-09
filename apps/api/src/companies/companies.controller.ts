@@ -27,8 +27,11 @@ export class CompaniesController {
   }
 
   @Get('me')
-  getMe(@CurrentUser() user: AuthSession['user']): Promise<Company> {
-    return this.companiesService.getMyCompany(user.id);
+  async getMe(
+    @CurrentUser() user: AuthSession['user'],
+  ): Promise<{ company: Company | null }> {
+    const company = await this.companiesService.findMyCompany(user.id);
+    return { company };
   }
 
   @Patch('me')

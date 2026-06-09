@@ -49,12 +49,14 @@ export class ContractsWebhookController {
     private readonly contracts: ContractsService,
     private readonly config: ConfigService,
   ) {
-    this.secret = this.config.get<string>('UCANSIGN_WEBHOOK_SECRET');
+    const rawSecret = this.config.get<string>('UCANSIGN_WEBHOOK_SECRET');
+    this.secret =
+      rawSecret && rawSecret.trim().length > 0 ? rawSecret : undefined;
     this.headerName =
       this.config.get<string>('UCANSIGN_WEBHOOK_SIGNATURE_HEADER') ??
       'x-ucansign-signature';
     this.allowUnsigned =
-      this.config.get<string>('UCANSIGN_ALLOW_UNSIGNED_WEBHOOK') === 'true';
+      this.config.get<string>('UCANSIGN_ALLOW_UNSIGNED_WEBHOOK') !== undefined;
 
     if (!this.secret && this.isProduction() && !this.allowUnsigned) {
       this.logger.error(

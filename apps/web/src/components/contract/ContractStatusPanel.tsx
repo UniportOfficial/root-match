@@ -179,7 +179,9 @@ export function ContractStatusPanel({
     setActionMessage(null)
     setErrorMessage(null)
     try {
-      const redirectUrl = encodeURIComponent(`${window.location.origin}/contract`)
+      const redirectUrl = encodeURIComponent(
+        `${window.location.origin}/contract?contractId=${encodeURIComponent(contractId)}`,
+      )
       const response = await fetch(
         `${apiUrl}/contracts/${contractId}/embed/sign?redirectUrl=${redirectUrl}`,
         { credentials: 'include' },

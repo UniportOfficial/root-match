@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -59,12 +59,20 @@ function resolveRedirectTarget(fallback: string): string {
   return target
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [activeTab, setActiveTab] = useState<AuthTab>('login')
   const [submitError, setSubmitError] = useState('')
   const [registerSuccess, setRegisterSuccess] = useState('')
+  const [resetSuccess, setResetSuccess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('reset') === 'success') {
+      setResetSuccess('비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.')
+    }
+  }, [searchParams])
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -197,6 +205,12 @@ export default function LoginPage() {
                   </AuthNotice>
                 )}
 
+                {resetSuccess && (
+                  <AuthNotice tone="success" icon={<CheckCircle2 className="h-5 w-5" />}>
+                    {resetSuccess}
+                  </AuthNotice>
+                )}
+
                 <TabsContent value="login" className="mt-0">
                   <form
                     onSubmit={loginForm.handleSubmit(submitLogin)}
@@ -240,6 +254,12 @@ export default function LoginPage() {
                     >
                       {isSubmitting ? '로그인 중...' : '로그인'}
                     </AppButton>
+                    <Link
+                      href="/forgot-password"
+                      className="text-kr-keep mx-auto inline-flex min-h-tap-min items-center justify-center text-rm-body-sm font-bold text-primary transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                      비밀번호를 잊으셨나요?
+                    </Link>
                   </form>
                 </TabsContent>
 
@@ -365,6 +385,14 @@ export default function LoginPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
 

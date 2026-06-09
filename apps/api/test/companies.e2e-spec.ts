@@ -86,10 +86,12 @@ describe('Companies e2e (W2-5)', () => {
       .expect(200);
 
     expect(response.body).toMatchObject({
-      name: '테크솔루션',
-      industry: 'IT/소프트웨어',
-      region: '서울',
-      contactEmail: 'contact@techsolution.co.kr',
+      company: {
+        name: '테크솔루션',
+        industry: 'IT/소프트웨어',
+        region: '서울',
+        contactEmail: 'contact@techsolution.co.kr',
+      },
     });
   });
 
@@ -102,10 +104,12 @@ describe('Companies e2e (W2-5)', () => {
       .expect(200);
 
     expect(response.body).toMatchObject({
-      name: '박공장 가공소',
-      industry: '제조/생산',
-      region: '경기',
-      contactEmail: 'factory@example.kr',
+      company: {
+        name: '박공장 가공소',
+        industry: '제조/생산',
+        region: '경기',
+        contactEmail: 'factory@example.kr',
+      },
     });
   });
 

@@ -143,6 +143,28 @@ describe('CompaniesService', () => {
     });
   });
 
+  describe('findMyCompany', () => {
+    it('returns the company when found', async () => {
+      const company = makeCompany({ userId: 'user-1' });
+      prisma.company.findUnique.mockResolvedValue(company);
+
+      const result = await service.findMyCompany('user-1');
+
+      expect(result).toBe(company);
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
+    });
+
+    it('returns null instead of throwing when company missing', async () => {
+      prisma.company.findUnique.mockResolvedValue(null);
+
+      const result = await service.findMyCompany('user-1');
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('listCompanies', () => {
     it('returns paginated items with default ordering', async () => {
       const companies = [makeCompany(), makeCompany({ id: 'company-b' })];

@@ -99,8 +99,9 @@ async function fetchMyCompany(): Promise<Company | null> {
       console.warn('Failed to load company: HTTP', response.status)
       return null
     }
-    const data = (await response.json()) as BackendCompany
-    return backendCompanyToShared(data)
+    const data = (await response.json()) as { company: BackendCompany | null }
+    if (!data.company) return null
+    return backendCompanyToShared(data.company)
   } catch (error) {
     console.warn('Failed to load company: network error', error)
     return null

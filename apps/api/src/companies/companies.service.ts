@@ -106,6 +106,12 @@ export class CompaniesService {
     return company;
   }
 
+  findMyCompany(userId: string): Promise<Company | null> {
+    return this.prisma.company.findUnique({
+      where: { userId },
+    });
+  }
+
   async getById(id: string): Promise<CompanyDetail> {
     const company = await this.prisma.company.findUnique({
       where: { id },

@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertCircle,
   CreditCard,
@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProcessStepper } from '@/components/ui/ProcessStepper'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { reconstructContractWorkflow } from '@/lib/contract-reconstruct'
 import { mapContractError } from '@/lib/contracts-api'
 import { useUserState } from '@/state/UserContext'
 import { useWorkflowDispatch, useWorkflowState } from '@/state/WorkflowContext'
@@ -60,11 +61,18 @@ const paymentMethods = [
 const fallbackTransactionId = 'TXN-2026-018'
 const envExpiryMinutes = Number(process.env.NEXT_PUBLIC_CONTRACT_EXPIRY_MINUTES) || undefined
 
-export default function ContractPage() {
+function ContractPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlContractId = searchParams.get('contractId')
   const workflowState = useWorkflowState()
   const workflowDispatch = useWorkflowDispatch()
   const { currentUser, isAuthenticated } = useUserState()
+  const [reconstructState, setReconstructState] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle')
+  const [reconstructError, setReconstructError] = useState<string | null>(null)
+  const reconstructStartedRef = useRef(false)
   const request = workflowState.matchingResults?.request
   const selectedFactory = workflowState.selectedFactory
   const [paymentMethod, setPaymentMethod] = useState('escrow')
@@ -106,6 +114,57 @@ export default function ContractPage() {
   const clientCompanyName =
     isAuthenticated && currentUser?.company ? currentUser.company.name : '테크솔루션 주식회사'
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+
+  useEffect(() => {
+    if (!workflowState.hydrated) return
+    if (!urlContractId) return
+    if (reconstructStartedRef.current) return
+    const alreadyHydrated =
+      workflowState.contractId === urlContractId && workflowState.selectedFactory !== null
+    if (alreadyHydrated) {
+      setReconstructState('success')
+      return
+    }
+    reconstructStartedRef.current = true
+    setReconstructState('loading')
+    setReconstructError(null)
+    void (async () => {
+      const result = await reconstructContractWorkflow(apiUrl, urlContractId)
+      if (!result.ok) {
+        setReconstructError(result.message)
+        setReconstructState('error')
+        return
+      }
+      workflowDispatch({
+        type: 'workflow/setSelectedFactory',
+        payload: result.data.factory,
+      })
+      workflowDispatch({
+        type: 'workflow/setContractId',
+        payload: result.data.contractId,
+      })
+      if (result.data.quoteRequestId) {
+        workflowDispatch({
+          type: 'workflow/setQuoteRequestId',
+          payload: result.data.quoteRequestId,
+        })
+      }
+      if (result.data.acceptedQuoteId) {
+        workflowDispatch({
+          type: 'workflow/setSelectedRecommendationId',
+          payload: result.data.acceptedQuoteId,
+        })
+      }
+      setReconstructState('success')
+    })()
+  }, [
+    apiUrl,
+    urlContractId,
+    workflowDispatch,
+    workflowState.contractId,
+    workflowState.hydrated,
+    workflowState.selectedFactory,
+  ])
 
   const completeWorkflowForTransaction = useCallback(() => {
     if (!selectedFactory) return
@@ -222,7 +281,7 @@ export default function ContractPage() {
     router.push(`/transactions/${fallbackTransactionId}`)
   }
 
-  if (!workflowState.hydrated) {
+  if (!workflowState.hydrated || reconstructState === 'loading') {
     return (
       <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[60vh] max-w-5xl flex-col items-center justify-center gap-6">
@@ -232,7 +291,9 @@ export default function ContractPage() {
               계약 정보를 준비 중입니다
             </h2>
             <p className="text-kr-pretty mt-2 text-muted-foreground">
-              선택한 공장과 견적 조건을 불러오고 있어요
+              {urlContractId
+                ? '서명을 마치고 돌아오신 계약 정보를 복구하고 있어요'
+                : '선택한 공장과 견적 조건을 불러오고 있어요'}
             </p>
           </div>
         </div>
@@ -241,6 +302,7 @@ export default function ContractPage() {
   }
 
   if (!selectedFactory) {
+    const isReconstructFailure = urlContractId && reconstructState === 'error'
     return (
       <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center">
@@ -250,13 +312,20 @@ export default function ContractPage() {
                 <Settings className="h-8 w-8 text-brand" />
               </div>
               <h1 className="text-kr-pretty text-2xl font-bold text-foreground">
-                선택한 공장이 없습니다.
+                {isReconstructFailure
+                  ? '계약 정보를 불러오지 못했습니다.'
+                  : '선택한 공장이 없습니다.'}
               </h1>
               <p className="text-kr-pretty mt-3 text-base leading-7 text-muted-foreground">
-                선택한 공장이 없습니다. 매칭에서 공장을 먼저 선택해주세요.
+                {isReconstructFailure
+                  ? (reconstructError ??
+                    '잠시 후 다시 시도해주세요. 문제가 계속되면 거래 목록에서 진행 상황을 확인하세요.')
+                  : '선택한 공장이 없습니다. 매칭에서 공장을 먼저 선택해주세요.'}
               </p>
               <Button asChild className="mt-6 text-kr-keep">
-                <Link href="/matching">매칭으로 이동</Link>
+                <Link href={isReconstructFailure ? '/transactions' : '/matching'}>
+                  {isReconstructFailure ? '거래 목록으로' : '매칭으로 이동'}
+                </Link>
               </Button>
             </CardContent>
           </Card>
@@ -468,6 +537,14 @@ export default function ContractPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ContractPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContractPageContent />
+    </Suspense>
   )
 }
 

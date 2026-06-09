@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PanelLeftClose } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
+import { SidebarUserMenu } from '@/components/layout/SidebarUserMenu'
 import { useUserState } from '@/state/UserContext'
 import { buildSidebarNav } from '@/lib/sidebar-nav'
 import { cn } from '@/lib/utils'
@@ -78,6 +79,10 @@ export function AppSidebar({ className, onNavigate, onClose }: AppSidebarProps) 
           })}
         </ul>
       </nav>
+
+      <div data-testid="sidebar-footer" className="mt-auto border-t border-border/40 pt-3">
+        <SidebarUserMenu />
+      </div>
     </div>
   )
 }

@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { HeaderMessagesButton } from '@/components/layout/HeaderMessagesButton'
+import { HeaderMiniProfile } from '@/components/layout/HeaderMiniProfile'
 import { HeaderNewQuoteButton } from '@/components/layout/HeaderNewQuoteButton'
 import { HeaderPageTitle } from '@/components/layout/HeaderPageTitle'
-import { HeaderProfileDropdown } from '@/components/layout/HeaderProfileDropdown'
 
 interface AppHeaderProps {
   className?: string
@@ -130,7 +130,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
           </div>
 
           {isAuthenticated ? (
-            <HeaderProfileDropdown />
+            <HeaderMiniProfile onOpenMobile={() => setMobileNavOpen(true)} />
           ) : (
             <Button variant="secondary" size="default" onClick={() => router.push('/login')}>
               로그인

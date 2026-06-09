@@ -102,7 +102,7 @@ export function AppHeader({ className, sidebarHidden = false, onOpenSidebar }: A
           </label>
         </form>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-4">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-4">
           {isAuthenticated && <HeaderNewQuoteButton />}
           {isAuthenticated && <HeaderMessagesButton className="hidden sm:inline-flex" />}
           <div className="relative">

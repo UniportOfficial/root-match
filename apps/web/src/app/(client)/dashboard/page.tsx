@@ -19,9 +19,11 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { fetchCompanySummary } from '@/lib/companies-api'
 import { useCompaniesState } from '@/state/CompaniesContext'
 import { useUserState } from '@/state/UserContext'
@@ -44,6 +46,30 @@ type FinanceField =
   | 'settlementCompleted'
 
 type StatusField = 'pending' | 'awaitingResponse' | 'decisionRequired' | 'ongoing'
+
+const monthlyAmountChartConfig = {
+  amount: {
+    label: '거래액',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig
+
+const formatCompactKoreanWon = (value: number) => {
+  if (value >= 100_000_000) {
+    return `${Math.round(value / 100_000_000).toLocaleString('ko-KR')}억`
+  }
+
+  if (value >= 10_000) {
+    return `${Math.round(value / 10_000).toLocaleString('ko-KR')}만`
+  }
+
+  return value.toLocaleString('ko-KR')
+}
+
+const getBarWidth = (value: number, maxValue: number) => {
+  if (value <= 0 || maxValue <= 0) return '0%'
+  return `${Math.max((value / maxValue) * 100, 8)}%`
+}
 
 const formatKoreanWon = (value: number) =>
   new Intl.NumberFormat('ko-KR', {
@@ -228,6 +254,94 @@ export default function DashboardPage() {
         },
       ]
     : []
+
+  const funnelStages = summary
+    ? [
+        {
+          label: '접수 대기',
+          count: summary.quoteRequestStatusCounts.pending,
+          helper: '새 요청 검토',
+          tone: 'bg-info',
+        },
+        {
+          label: '응답 대기',
+          count: summary.quoteRequestStatusCounts.awaitingResponse,
+          helper: '공장 답변 대기',
+          tone: 'bg-warning',
+        },
+        {
+          label: '결정 필요',
+          count: summary.quoteRequestStatusCounts.decisionRequired,
+          helper: '견적 선택 필요',
+          tone: 'bg-primary',
+        },
+        {
+          label: '거래 진행',
+          count: summary.quoteRequestStatusCounts.ongoing,
+          helper: '계약 후 진행',
+          tone: 'bg-success',
+        },
+      ]
+    : []
+  const maxFunnelCount = Math.max(...funnelStages.map((stage) => stage.count), 0)
+
+  const monthlyChartData = summary
+    ? [
+        {
+          month: '전전월',
+          amount: Math.round(summary.currentMonthAmount * 0.72),
+          label: formatCompactKoreanWon(Math.round(summary.currentMonthAmount * 0.72)),
+        },
+        {
+          month: '지난달',
+          amount: Math.round(summary.currentMonthAmount * 0.86),
+          label: formatCompactKoreanWon(Math.round(summary.currentMonthAmount * 0.86)),
+        },
+        {
+          month: '이번 달',
+          amount: summary.currentMonthAmount,
+          label: formatCompactKoreanWon(summary.currentMonthAmount),
+        },
+      ]
+    : []
+
+  const tierDistribution = summary
+    ? [
+        {
+          id: 'tier-bar-A',
+          label: 'A',
+          name: 'A 인증 뿌리기업',
+          count: summary.confidenceTierCounts.A_CERTIFIED_ROOT,
+          tone: 'bg-success',
+        },
+        {
+          id: 'tier-bar-B',
+          label: 'B',
+          name: 'B 권역 강기업',
+          count: summary.confidenceTierCounts.B_LOCAL_STRONG_INSIDE,
+          tone: 'bg-info',
+        },
+        {
+          id: 'tier-bar-C',
+          label: 'C',
+          name: 'C 경계 후보',
+          count: summary.confidenceTierCounts.C_BORDERLINE_INSIDE,
+          tone: 'bg-warning',
+        },
+        {
+          id: 'tier-bar-D',
+          label: 'D',
+          name: 'D 낮은 신뢰도',
+          count: summary.confidenceTierCounts.D_LOW_CONFIDENCE,
+          tone: 'bg-muted-foreground',
+        },
+      ]
+    : []
+  const maxTierCount = Math.max(...tierDistribution.map((tier) => tier.count), 0)
+  const maxRegionCount = Math.max(
+    ...(summary?.regionDistribution.map((region) => region.count) ?? []),
+    0,
+  )
 
   return (
     <div className="bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -657,6 +771,225 @@ export default function DashboardPage() {
                     </Card>
                   )
                 })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!summaryError && (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-kr-pretty text-[20px] font-bold text-foreground sm:text-[22px]">
+                운영 흐름 시각화
+              </h2>
+              <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                상태, 거래액, 신뢰 등급, 권역 분포를 숫자와 함께 확인하세요.
+              </p>
+            </div>
+
+            {showSkeleton ? (
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-80 animate-pulse rounded-2xl bg-muted shadow-ct-soft" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <Card
+                  data-testid="dashboard-funnel-chart"
+                  className="border-border bg-card shadow-ct-soft"
+                >
+                  <CardContent className="space-y-5 p-5 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-kr-pretty text-[18px] font-bold text-foreground">
+                          요청 처리 퍼널
+                        </h3>
+                        <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                          접수부터 거래 진행까지 4단계로 단순화했습니다.
+                        </p>
+                      </div>
+                      <Badge variant="info" size="sm" className="text-kr-keep">
+                        단계별 건수
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-4">
+                      {funnelStages.map((stage) => (
+                        <div key={stage.label} className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-kr-keep text-[15px] font-bold text-foreground">
+                                {stage.label}
+                              </p>
+                              <p className="text-kr-keep text-[13px] text-muted-foreground">
+                                {stage.helper}
+                              </p>
+                            </div>
+                            <p className="text-[18px] font-extrabold tabular-nums text-foreground">
+                              {stage.count.toLocaleString('ko-KR')}건
+                            </p>
+                          </div>
+                          <div className="h-4 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={cn('h-full rounded-full', stage.tone)}
+                              style={{ width: getBarWidth(stage.count, maxFunnelCount) }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  data-testid="dashboard-monthly-amount-chart"
+                  className="border-border bg-card shadow-ct-soft"
+                >
+                  <CardContent className="space-y-5 p-5 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-kr-pretty text-[18px] font-bold text-foreground">
+                          월별 거래액
+                        </h3>
+                        <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                          이번 달 거래액 기준으로 만든 3개월 추이입니다.
+                        </p>
+                      </div>
+                      <Badge variant="warning" size="sm" className="text-kr-keep">
+                        (시뮬레이션 데이터)
+                      </Badge>
+                    </div>
+
+                    <ChartContainer
+                      config={monthlyAmountChartConfig}
+                      className="min-h-[240px] w-full text-[13px]"
+                    >
+                      <BarChart
+                        data={monthlyChartData}
+                        margin={{ top: 28, right: 8, left: 8, bottom: 0 }}
+                      >
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
+                        <YAxis hide domain={[0, 'dataMax']} />
+                        <Bar dataKey="amount" fill="var(--color-amount)" radius={[10, 10, 4, 4]}>
+                          <LabelList
+                            dataKey="label"
+                            position="top"
+                            className="fill-foreground text-[13px] font-bold"
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      {monthlyChartData.map((item) => (
+                        <div key={item.month} className="rounded-xl bg-muted px-3 py-2">
+                          <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
+                            {item.month}
+                          </p>
+                          <p className="text-kr-keep text-[15px] font-extrabold text-foreground">
+                            {formatKoreanWon(item.amount)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  data-testid="dashboard-tier-distribution"
+                  className="border-border bg-card shadow-ct-soft"
+                >
+                  <CardContent className="space-y-5 p-5 sm:p-6">
+                    <div>
+                      <h3 className="text-kr-pretty text-[18px] font-bold text-foreground">
+                        신뢰 등급 분포
+                      </h3>
+                      <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                        A/B/C/D 등급별 등록 기업 수입니다.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {tierDistribution.map((tier) => (
+                        <div key={tier.id} className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-[16px] font-extrabold text-primary">
+                                {tier.label}
+                              </span>
+                              <div>
+                                <p className="text-kr-keep text-[15px] font-bold text-foreground">
+                                  {tier.name}
+                                </p>
+                                <p className="text-kr-keep text-[13px] text-muted-foreground">
+                                  등급 {tier.label} 기업
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-[18px] font-extrabold tabular-nums text-foreground">
+                              {tier.count.toLocaleString('ko-KR')}곳
+                            </p>
+                          </div>
+                          <div className="h-4 overflow-hidden rounded-full bg-muted">
+                            <div
+                              id={tier.id}
+                              data-testid={tier.id}
+                              className={cn('h-full rounded-full', tier.tone)}
+                              style={{ width: getBarWidth(tier.count, maxTierCount) }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  data-testid="dashboard-region-distribution"
+                  className="border-border bg-card shadow-ct-soft"
+                >
+                  <CardContent className="space-y-5 p-5 sm:p-6">
+                    <div>
+                      <h3 className="text-kr-pretty text-[18px] font-bold text-foreground">
+                        권역별 기업 분포
+                      </h3>
+                      <p className="text-kr-pretty mt-1 text-[14px] text-muted-foreground">
+                        요약 API가 제공한 상위 권역을 그대로 표시합니다.
+                      </p>
+                    </div>
+
+                    {summary!.regionDistribution.length > 0 ? (
+                      <div className="space-y-4">
+                        {summary!.regionDistribution.map((region) => (
+                          <div key={region.region} className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-kr-keep text-[15px] font-bold text-foreground">
+                                {region.region}
+                              </p>
+                              <p className="text-[18px] font-extrabold tabular-nums text-foreground">
+                                {region.count.toLocaleString('ko-KR')}곳
+                              </p>
+                            </div>
+                            <div className="h-4 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: getBarWidth(region.count, maxRegionCount) }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl bg-muted px-4 py-5">
+                        <p className="text-kr-pretty text-[15px] font-bold text-muted-foreground">
+                          표시할 권역 데이터가 아직 없습니다.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
           </section>

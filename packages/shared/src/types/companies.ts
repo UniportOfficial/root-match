@@ -65,6 +65,51 @@ export interface CompanyListResponse {
   limit: number
 }
 
+export interface QuoteRequestStatusCounts {
+  pending: number
+  awaitingResponse: number
+  decisionRequired: number
+  ongoing: number
+}
+
+export interface ConfidenceTierCounts {
+  A_CERTIFIED_ROOT: number
+  B_LOCAL_STRONG_INSIDE: number
+  C_BORDERLINE_INSIDE: number
+  D_LOW_CONFIDENCE: number
+}
+
+export interface RegionDistributionItem {
+  region: string
+  count: number
+}
+
+export interface MonthlyAmountItem {
+  month: string
+  amount: number
+  isCurrent: boolean
+}
+
+export interface CompanySummaryResponse {
+  totalCompanies: number
+  verifiedCompanies: number
+  activeRegions: number
+  confidenceTierCounts: ConfidenceTierCounts
+  regionDistribution: RegionDistributionItem[]
+  quoteRequestStatusCounts: QuoteRequestStatusCounts
+  pendingInquiries: number
+  currentMonthAmount: number
+  escrowBalance: number
+  settlementPending: number
+  settlementPendingDueDate: string
+  settlementCompleted: number
+  monthlyAmounts: MonthlyAmountItem[]
+  unreadMessages: number
+  meta: {
+    mockFields: string[]
+  }
+}
+
 export interface CompanyFactoryProfile {
   isSynthesized: boolean
   location: string | null

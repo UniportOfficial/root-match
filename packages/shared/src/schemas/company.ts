@@ -41,3 +41,48 @@ export const CompanyListQuerySchema = z
   .meta({ id: 'CompanyListQuery' })
 
 export type CompanyListQueryParsed = z.infer<typeof CompanyListQuerySchema>
+
+export const QuoteRequestStatusCountsSchema = z.object({
+  pending: z.number().int().nonnegative(),
+  awaitingResponse: z.number().int().nonnegative(),
+  decisionRequired: z.number().int().nonnegative(),
+  ongoing: z.number().int().nonnegative(),
+})
+
+export const ConfidenceTierCountsSchema = z.object({
+  A_CERTIFIED_ROOT: z.number().int().nonnegative(),
+  B_LOCAL_STRONG_INSIDE: z.number().int().nonnegative(),
+  C_BORDERLINE_INSIDE: z.number().int().nonnegative(),
+  D_LOW_CONFIDENCE: z.number().int().nonnegative(),
+})
+
+export const RegionDistributionItemSchema = z.object({
+  region: z.string(),
+  count: z.number().int().nonnegative(),
+})
+
+export const MonthlyAmountItemSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+  amount: z.number().nonnegative(),
+  isCurrent: z.boolean(),
+})
+
+export const CompanySummaryResponseSchema = z.object({
+  totalCompanies: z.number().int().nonnegative(),
+  verifiedCompanies: z.number().int().nonnegative(),
+  activeRegions: z.number().int().nonnegative(),
+  confidenceTierCounts: ConfidenceTierCountsSchema,
+  regionDistribution: z.array(RegionDistributionItemSchema),
+  quoteRequestStatusCounts: QuoteRequestStatusCountsSchema,
+  pendingInquiries: z.number().int().nonnegative(),
+  currentMonthAmount: z.number().nonnegative(),
+  escrowBalance: z.number().nonnegative(),
+  settlementPending: z.number().nonnegative(),
+  settlementPendingDueDate: z.string(),
+  settlementCompleted: z.number().nonnegative(),
+  monthlyAmounts: z.array(MonthlyAmountItemSchema),
+  unreadMessages: z.number().int().nonnegative(),
+  meta: z.object({
+    mockFields: z.array(z.string()),
+  }),
+})

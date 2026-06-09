@@ -224,7 +224,7 @@ export default function DashboardPage() {
     field: FinanceField
     icon: LucideIcon
     testId: string
-    tone: string
+    iconChipClass: string
   }> = summary
     ? [
         {
@@ -234,7 +234,7 @@ export default function DashboardPage() {
           field: 'currentMonthAmount',
           icon: CircleDollarSign,
           testId: 'kpi-current-month-amount',
-          tone: 'border-primary/20 bg-primary/5 text-primary',
+          iconChipClass: 'bg-primary/10 text-primary',
         },
         {
           title: '안심결제 예치금',
@@ -243,7 +243,7 @@ export default function DashboardPage() {
           field: 'escrowBalance',
           icon: ShieldCheck,
           testId: 'kpi-escrow-balance',
-          tone: 'border-[#7C3AED]/30 bg-[#7C3AED]/5 text-[#7C3AED]',
+          iconChipClass: 'bg-[#7C3AED]/10 text-[#7C3AED]',
         },
         {
           title: '정산 대기',
@@ -252,7 +252,7 @@ export default function DashboardPage() {
           field: 'settlementPending',
           icon: Clock3,
           testId: 'kpi-settlement-pending',
-          tone: 'border-warning/30 bg-warning-subtle text-warning-foreground',
+          iconChipClass: 'bg-warning/15 text-warning-foreground',
         },
         {
           title: '정산 완료',
@@ -261,7 +261,7 @@ export default function DashboardPage() {
           field: 'settlementCompleted',
           icon: Wallet,
           testId: 'kpi-settlement-completed',
-          tone: 'border-success/30 bg-success-subtle text-success',
+          iconChipClass: 'bg-success/15 text-success',
         },
       ]
     : []
@@ -276,7 +276,8 @@ export default function DashboardPage() {
     cta: string
     icon: LucideIcon
     testId: string
-    tone: string
+    iconChipClass: string
+    activeCountClass: string
   }> = summary
     ? [
         {
@@ -289,7 +290,8 @@ export default function DashboardPage() {
           cta: '새 견적 요청 작성하기',
           icon: FileText,
           testId: 'status-pending',
-          tone: 'border-info/30 bg-info-subtle text-info',
+          iconChipClass: 'bg-info/15 text-info',
+          activeCountClass: 'text-info',
         },
         {
           title: '응답 대기',
@@ -301,7 +303,8 @@ export default function DashboardPage() {
           cta: '내 요청 목록 보기',
           icon: MessageCircle,
           testId: 'status-awaiting-response',
-          tone: 'border-warning/30 bg-warning-subtle text-warning-foreground',
+          iconChipClass: 'bg-warning/15 text-warning-foreground',
+          activeCountClass: 'text-warning-foreground',
         },
         {
           title: '결정 필요',
@@ -313,7 +316,8 @@ export default function DashboardPage() {
           cta: 'AI 매칭 결과 보기',
           icon: Sparkles,
           testId: 'status-decision-required',
-          tone: 'border-primary/30 bg-primary/5 text-primary',
+          iconChipClass: 'bg-primary/10 text-primary',
+          activeCountClass: 'text-primary',
         },
         {
           title: '거래 진행',
@@ -325,7 +329,8 @@ export default function DashboardPage() {
           cta: '거래 목록 확인하기',
           icon: RefreshCw,
           testId: 'status-ongoing',
-          tone: 'border-[#7C3AED]/30 bg-[#7C3AED]/5 text-[#7C3AED]',
+          iconChipClass: 'bg-[#7C3AED]/10 text-[#7C3AED]',
+          activeCountClass: 'text-[#7C3AED]',
         },
       ]
     : []
@@ -488,7 +493,12 @@ export default function DashboardPage() {
                       {summaryError}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleRetry} className="shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRetry}
+                    className="min-h-tap-min shrink-0"
+                  >
                     <RefreshCw className="h-4 w-4" />
                     다시 시도
                   </Button>
@@ -498,63 +508,69 @@ export default function DashboardPage() {
                   <Link
                     href="/companies"
                     className={cn(
-                      'group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                      'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10',
+                      'group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-foreground transition-colors',
+                      'hover:bg-muted/50',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                     )}
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/80 shadow-ct-soft">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <Building2 className="h-5 w-5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-kr-keep text-[13px] font-bold opacity-80">등록된 공장</p>
-                      <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums">
+                      <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
+                        등록된 공장
+                      </p>
+                      <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums text-foreground">
                         {summary!.totalCompanies.toLocaleString('ko-KR')}곳
                       </p>
                     </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </Link>
 
                   {summary!.pendingInquiries > 0 ? (
                     <Link
                       href="/requests"
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                        'border-warning/30 bg-warning-subtle text-warning-foreground hover:bg-warning/10',
+                        'group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-foreground transition-colors',
+                        'hover:bg-muted/50',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                       )}
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/80 shadow-ct-soft">
+                      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning-foreground">
                         <MessageCircle className="h-5 w-5" />
+                        <span
+                          className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-card"
+                          aria-hidden="true"
+                        />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-kr-keep text-[13px] font-bold opacity-80">
+                        <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
                           답장 필요한 문의
                         </p>
-                        <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums">
+                        <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums text-foreground">
                           {summary!.pendingInquiries.toLocaleString('ko-KR')}건
                         </p>
                       </div>
-                      <ArrowRight className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-x-0.5" />
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   ) : (
                     <Link
                       href="/request"
                       data-testid="dashboard-inquiry-empty-cta"
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                        'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
+                        'group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-foreground transition-colors',
+                        'hover:bg-muted/50',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                       )}
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/80 shadow-ct-soft">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                         <FileText className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-kr-keep text-[13px] font-bold opacity-80">
+                        <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
                           답장 필요한 문의 없음
                         </p>
-                        <p className="text-kr-keep text-[14px] font-semibold leading-tight">
+                        <p className="text-kr-keep text-[14px] font-semibold leading-tight text-foreground">
                           새 견적 요청 작성하기 →
                         </p>
                       </div>
@@ -565,42 +581,46 @@ export default function DashboardPage() {
                     <Link
                       href="/messages"
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                        'border-info/30 bg-info-subtle text-info hover:bg-info/10',
+                        'group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-foreground transition-colors',
+                        'hover:bg-muted/50',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                       )}
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/80 shadow-ct-soft">
+                      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/15 text-info">
                         <Mail className="h-5 w-5" />
+                        <span
+                          className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-card"
+                          aria-hidden="true"
+                        />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-kr-keep text-[13px] font-bold opacity-80">
+                        <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
                           미확인 메시지
                         </p>
-                        <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums">
+                        <p className="text-kr-keep text-[22px] font-extrabold leading-tight tabular-nums text-foreground">
                           {summary!.unreadMessages.toLocaleString('ko-KR')}건
                         </p>
                       </div>
-                      <ArrowRight className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-x-0.5" />
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   ) : (
                     <Link
                       href="/messages"
                       data-testid="dashboard-message-empty-cta"
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                        'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
+                        'group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-foreground transition-colors',
+                        'hover:bg-muted/50',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                       )}
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card/80 shadow-ct-soft">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                         <Mail className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-kr-keep text-[13px] font-bold opacity-80">
+                        <p className="text-kr-keep text-[13px] font-bold text-muted-foreground">
                           미확인 메시지 없음
                         </p>
-                        <p className="text-kr-keep text-[14px] font-semibold leading-tight">
+                        <p className="text-kr-keep text-[14px] font-semibold leading-tight text-foreground">
                           받은 메시지 확인하기 →
                         </p>
                       </div>
@@ -625,7 +645,12 @@ export default function DashboardPage() {
                     {summaryError}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleRetry} className="shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  className="min-h-tap-min shrink-0"
+                >
                   <RefreshCw className="h-4 w-4" />
                   다시 시도
                 </Button>
@@ -658,7 +683,7 @@ export default function DashboardPage() {
                       </p>
                       <Link
                         href="/matching"
-                        className="text-kr-keep mt-4 inline-flex items-center gap-1 text-[14px] font-bold opacity-90 transition hover:gap-2 hover:opacity-100"
+                        className="text-kr-keep mt-4 inline-flex min-h-tap-min items-center gap-1 text-[14px] font-bold opacity-90 transition hover:gap-2 hover:opacity-100"
                       >
                         추천 결과 보기 <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
@@ -743,10 +768,7 @@ export default function DashboardPage() {
                     <Card
                       key={card.testId}
                       data-testid={card.testId}
-                      className={cn(
-                        'bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card',
-                        card.tone,
-                      )}
+                      className="border-border bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card"
                     >
                       <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
                         <div className="flex items-start justify-between gap-3">
@@ -758,12 +780,17 @@ export default function DashboardPage() {
                               {card.description}
                             </p>
                           </div>
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-card/80 shadow-ct-soft">
+                          <span
+                            className={cn(
+                              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                              card.iconChipClass,
+                            )}
+                          >
                             <Icon className="h-5 w-5" />
                           </span>
                         </div>
                         <div className="space-y-3">
-                          <p className="break-keep text-[24px] font-extrabold leading-tight tabular-nums text-foreground sm:text-[26px]">
+                          <p className="break-keep text-[28px] font-extrabold leading-tight tabular-nums text-foreground sm:text-[32px]">
                             {card.value}
                           </p>
                           {hasMockField(card.field) && (
@@ -807,10 +834,7 @@ export default function DashboardPage() {
                     <Card
                       key={card.testId}
                       data-testid={card.testId}
-                      className={cn(
-                        'bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card',
-                        card.tone,
-                      )}
+                      className="border-border bg-card shadow-ct-soft transition-shadow hover:shadow-ct-card"
                     >
                       <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
                         <div className="flex items-start justify-between gap-3">
@@ -824,12 +848,22 @@ export default function DashboardPage() {
                               </Badge>
                             )}
                           </div>
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-card/80 shadow-ct-soft">
+                          <span
+                            className={cn(
+                              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                              hasItems ? card.iconChipClass : 'bg-muted text-muted-foreground',
+                            )}
+                          >
                             <Icon className="h-5 w-5" />
                           </span>
                         </div>
                         <div className="space-y-3">
-                          <p className="text-[30px] font-extrabold leading-none tabular-nums text-foreground">
+                          <p
+                            className={cn(
+                              'text-[30px] font-extrabold leading-none tabular-nums',
+                              hasItems ? card.activeCountClass : 'text-muted-foreground',
+                            )}
+                          >
                             {hasItems ? `${card.count.toLocaleString('ko-KR')}건` : '대기 없음'}
                           </p>
                           <p className="text-kr-pretty text-[14px] leading-6 text-muted-foreground">
@@ -837,7 +871,7 @@ export default function DashboardPage() {
                           </p>
                           <Link
                             href={card.href}
-                            className="text-kr-keep inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-bold text-primary transition hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                            className="text-kr-keep inline-flex min-h-tap-min items-center gap-1 rounded-lg text-[14px] font-bold text-primary transition hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                           >
                             {card.cta} <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
@@ -1082,7 +1116,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/matching"
-              className="text-kr-keep hidden shrink-0 text-[14px] font-bold text-primary hover:underline sm:inline-flex"
+              className="text-kr-keep hidden min-h-tap-min shrink-0 items-center text-[14px] font-bold text-primary hover:underline sm:inline-flex"
             >
               AI 매칭 결과 보기 →
             </Link>
@@ -1158,7 +1192,7 @@ export default function DashboardPage() {
                     <Link
                       href={`/factories/${company.id}`}
                       onClick={(event) => event.stopPropagation()}
-                      className="text-kr-keep mt-auto inline-flex min-h-10 items-center gap-1 rounded-lg text-[15px] font-bold text-primary transition group-hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                      className="text-kr-keep mt-auto inline-flex min-h-tap-min items-center gap-1 rounded-lg text-[15px] font-bold text-primary transition group-hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                     >
                       기업 상세 보기 <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
